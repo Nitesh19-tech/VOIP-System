@@ -1,0 +1,9 @@
+SUPER_ADMIN = "SUPER_ADMIN"
+COMPANY_ADMIN = "COMPANY_ADMIN"
+CLIENT = "CLIENT"
+
+ROLE_CHOICES = [
+    (SUPER_ADMIN, "Super Admin"),
+    (COMPANY_ADMIN, "Company Admin"),
+    (CLIENT, "Client"),
+]
