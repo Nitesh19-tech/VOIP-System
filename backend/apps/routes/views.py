@@ -1,7 +1,7 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .serializers import RouteSerializer
 from .services import RouteService
@@ -66,7 +66,7 @@ class RouteDetailAPIView(APIView):
     def get(self, request, pk):
 
         serializer = RouteSerializer(
-            self.get_object(pk)
+            self.get_object(pk),
         )
 
         return Response(

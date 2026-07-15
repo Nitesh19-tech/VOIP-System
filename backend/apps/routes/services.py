@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 
+from apps.asterisk.asterisk_service import AsteriskService
+
 from .models import Route
 
 
@@ -10,7 +12,8 @@ class RouteService:
 
         queryset = Route.objects.select_related(
             "routing_plan",
-            "carrier",
+            "termination",
+            "termination__carrier",
         )
 
         if params:
@@ -31,12 +34,12 @@ class RouteService:
                     routing_plan_id=routing_plan,
                 )
 
-            carrier = params.get("carrier")
+            termination = params.get("termination")
 
-            if carrier:
+            if termination:
 
                 queryset = queryset.filter(
-                    carrier_id=carrier,
+                    termination_id=termination,
                 )
 
         return queryset
@@ -52,10 +55,14 @@ class RouteService:
     @staticmethod
     def create_route(data, user):
 
-        return Route.objects.create(
+        route = Route.objects.create(
             **data,
             created_by=user,
         )
+
+        AsteriskService.sync()
+
+        return route
 
     @staticmethod
     def update_route(route, data, user):
@@ -66,9 +73,13 @@ class RouteService:
 
         route.save()
 
+        AsteriskService.sync()
+
         return route
 
     @staticmethod
     def delete_route(route):
 
         route.delete()
+
+        AsteriskService.sync()

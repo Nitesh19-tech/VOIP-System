@@ -7,23 +7,22 @@ from .models import Route
 class RouteAdmin(admin.ModelAdmin):
 
     list_display = (
-        "id",
         "routing_plan",
-        "carrier",
         "prefix",
+        "termination",
         "priority",
         "is_active",
     )
 
     list_filter = (
         "routing_plan",
-        "carrier",
+        "termination",
         "is_active",
     )
 
     search_fields = (
         "prefix",
-        "carrier__name",
+        "termination__name",
         "routing_plan__name",
     )
 

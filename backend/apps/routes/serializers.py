@@ -10,8 +10,13 @@ class RouteSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    termination_name = serializers.CharField(
+        source="termination.name",
+        read_only=True,
+    )
+
     carrier_name = serializers.CharField(
-        source="carrier.name",
+        source="termination.carrier.name",
         read_only=True,
     )
 
@@ -23,22 +28,24 @@ class RouteSerializer(serializers.ModelSerializer):
             "id",
             "routing_plan",
             "routing_plan_name",
-            "carrier",
+            "termination",
+            "termination_name",
             "carrier_name",
             "prefix",
             "strip_digits",
             "add_prefix",
             "priority",
             "description",
+            "is_active",
             "created_at",
             "updated_at",
         )
 
         read_only_fields = (
             "id",
+            "routing_plan_name",
+            "termination_name",
+            "carrier_name",
             "created_at",
             "updated_at",
-            "created_by",
-            "routing_plan_name",
-            "carrier_name",
         )

@@ -2,7 +2,7 @@ from django.db import models
 
 from apps.common.models import BaseModel
 from apps.routing_plans.models import RoutingPlan
-from apps.carriers.models import Carrier
+from apps.carriers.models import Termination
 
 
 class Route(BaseModel):
@@ -13,8 +13,8 @@ class Route(BaseModel):
         related_name="routes",
     )
 
-    carrier = models.ForeignKey(
-        Carrier,
+    termination = models.ForeignKey(
+        Termination,
         on_delete=models.PROTECT,
         related_name="routes",
     )
@@ -52,17 +52,25 @@ class Route(BaseModel):
             "prefix",
         ]
 
-        unique_together = (
-            "routing_plan",
-            "carrier",
-            "prefix",
-            "priority",
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "routing_plan",
+                    "termination",
+                    "prefix",
+                    "priority",
+                ],
+                name="unique_route_priority",
+            )
+        ]
+
+        verbose_name = "Route"
+        verbose_name_plural = "Routes"
 
     def __str__(self):
 
         return (
             f"{self.routing_plan.name} | "
             f"{self.prefix} | "
-            f"{self.carrier.name}"
+            f"{self.termination.name}"
         )
