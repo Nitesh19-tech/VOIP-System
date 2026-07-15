@@ -104,6 +104,89 @@ export default function App() {
 
       {/* Public */}
       <Route
+        path="/superadmin/admin-users"
+        element={
+          <ProtectedRoute
+            user={user}
+            allowedRoles={["SUPER_ADMIN"]}
+          >
+            <AdminUsers />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute
+            user={user}
+            allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+          >
+            <Analytics />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/rates"
+        element={
+          <ProtectedRoute
+            user={user}
+            allowedRoles={["SUPER_ADMIN"]}
+          >
+            <RateManagement user={user} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/force-change-password"
+        element={
+          <ProtectedRoute
+            user={user}
+            allowedRoles={["CLIENT"]}
+          >
+            <ForcePasswordChange />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute
+            user={user}
+            allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN", "CLIENT"]}
+          >
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/cdr"
+        element={
+          <ProtectedRoute
+            user={user}
+            allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+          >
+            <CDRPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/provision"
+        element={
+          <ProtectedRoute
+            user={user}
+            allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+          >
+            <ProvisionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/login"
         element={<Login onLogin={loadUser} />}
       />
