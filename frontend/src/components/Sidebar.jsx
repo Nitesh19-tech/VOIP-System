@@ -166,6 +166,16 @@ const menu = [
       },
 
       {
+        name: "Terminations",
+        icon: Server,
+        path: "/dashboard/terminations",
+        roles: [
+          "SUPER_ADMIN",
+          "COMPANY_ADMIN",
+        ],
+      },
+
+      {
         name: "Trunks",
 
         icon: Server,

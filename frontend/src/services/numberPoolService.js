@@ -1,6 +1,7 @@
 import API from "./api";
 
 const numberPoolService = {
+
   getNumbers(params = {}) {
     return API.get("numbers/", {
       params,
@@ -24,6 +25,7 @@ const numberPoolService = {
   },
 
   importNumbers(file) {
+
     const formData = new FormData();
 
     formData.append("file", file);
@@ -37,11 +39,20 @@ const numberPoolService = {
         },
       }
     );
+
   },
 
   getStatistics() {
     return API.get("numbers/statistics/");
   },
+
+  bulkAllocate(data) {
+    return API.post(
+      "numbers/bulk-allocation/",
+      data
+    );
+  },
+
 };
 
 export default numberPoolService;

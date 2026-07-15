@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.db import transaction
+from django.utils import timezone
 
 from apps.accounts.constants import (
     SUPER_ADMIN,
@@ -70,19 +72,18 @@ class NumberPoolService:
     @staticmethod
     def create_number(data, user):
 
-        # Company Admin -> auto assign
         if user.role == COMPANY_ADMIN:
             data["admin"] = user
 
-        # Super Admin -> selected admin
         elif user.role == SUPER_ADMIN:
             data["admin"] = data.get("admin")
 
-        # Auto Status
         if data.get("client"):
             data["status"] = "ASSIGNED"
+            data["assigned_at"] = timezone.now()
         else:
             data["status"] = "AVAILABLE"
+            data["assigned_at"] = None
 
         return NumberPool.objects.create(
             created_by=user,
@@ -96,6 +97,8 @@ class NumberPoolService:
             "admin",
             "client",
             "country",
+            "carrier",
+            "termination",
         )
 
         if user.role == SUPER_ADMIN:
@@ -112,8 +115,9 @@ class NumberPoolService:
 
         search = filters.get("search")
         country = filters.get("country")
+        carrier = filters.get("carrier")
+        termination = filters.get("termination")
         status = filters.get("status")
-        provider = filters.get("provider")
         client = filters.get("client")
 
         if search:
@@ -121,19 +125,21 @@ class NumberPoolService:
                 Q(did_number__icontains=search)
                 | Q(extension__icontains=search)
                 | Q(country__name__icontains=search)
-                | Q(provider__icontains=search)
+                | Q(carrier__name__icontains=search)
+                | Q(termination__name__icontains=search)
             )
 
         if country:
             queryset = queryset.filter(country_id=country)
 
+        if carrier:
+            queryset = queryset.filter(carrier_id=carrier)
+
+        if termination:
+            queryset = queryset.filter(termination_id=termination)
+
         if status:
             queryset = queryset.filter(status=status)
-
-        if provider:
-            queryset = queryset.filter(
-                provider__icontains=provider
-            )
 
         if client:
             queryset = queryset.filter(client_id=client)
@@ -147,6 +153,8 @@ class NumberPoolService:
             "admin",
             "client",
             "country",
+            "carrier",
+            "termination",
         )
 
         if user.role == SUPER_ADMIN:
@@ -164,17 +172,17 @@ class NumberPoolService:
     @staticmethod
     def update_number(number, data, user):
 
-        # Company Admin owner change nahi kar sakta
         if user.role == COMPANY_ADMIN:
             data.pop("admin", None)
 
-        # Auto Status
         if "client" in data:
 
             if data["client"]:
                 data["status"] = "ASSIGNED"
+                data["assigned_at"] = timezone.now()
             else:
                 data["status"] = "AVAILABLE"
+                data["assigned_at"] = None
 
         for key, value in data.items():
             setattr(number, key, value)
@@ -187,3 +195,44 @@ class NumberPoolService:
     def delete_number(number):
 
         number.delete()
+
+    @staticmethod
+    @transaction.atomic
+    def bulk_allocate(data, user):
+
+        carrier = data["carrier"]
+        termination = data["termination"]
+        client = data["client"]
+        quantity = data["quantity"]
+
+        queryset = NumberPool.objects.filter(
+            carrier=carrier,
+            termination=termination,
+            status="AVAILABLE",
+            client__isnull=True,
+        ).order_by("id")
+
+        numbers = list(queryset[:quantity])
+
+        if not numbers:
+            raise ValueError(
+                "No available numbers found."
+            )
+
+        now = timezone.now()
+
+        for number in numbers:
+            number.client = client
+            number.status = "ASSIGNED"
+            number.assigned_at = now
+
+        NumberPool.objects.bulk_update(
+            numbers,
+            [
+                "client",
+                "status",
+                "assigned_at",
+            ],
+        )
+
+        return len(numbers)

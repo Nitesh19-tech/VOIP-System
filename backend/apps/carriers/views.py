@@ -6,9 +6,14 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import (
     CarrierSerializer,
     CarrierIPSerializer,
+    TerminationSerializer,
 )
-from .services import CarrierIPService, CarrierService
 
+from .services import (
+    CarrierService,
+    CarrierIPService,
+    TerminationService,
+)
 
 class CarrierListCreateAPIView(APIView):
 
@@ -240,3 +245,120 @@ class CarrierIPDetailAPIView(APIView):
             "message": "Carrier IP deleted successfully.",
 
         }, status=status.HTTP_204_NO_CONTENT)
+
+class TerminationListCreateAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        terminations = TerminationService.get_all(
+            request.user,
+            request.query_params,
+        )
+
+        serializer = TerminationSerializer(
+            terminations,
+            many=True,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+            }
+        )
+
+    def post(self, request):
+
+        serializer = TerminationSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        termination = TerminationService.create_termination(
+            serializer.validated_data,
+            request.user,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Termination created successfully.",
+                "data": TerminationSerializer(
+                    termination,
+                ).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class TerminationDetailAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+
+        return TerminationService.get_by_id(pk)
+
+    def get(self, request, pk):
+
+        serializer = TerminationSerializer(
+            self.get_object(pk),
+        )
+
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+            }
+        )
+
+    def put(self, request, pk):
+
+        termination = self.get_object(pk)
+
+        serializer = TerminationSerializer(
+            termination,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        termination = TerminationService.update_termination(
+            termination,
+            serializer.validated_data,
+            request.user,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Termination updated successfully.",
+                "data": TerminationSerializer(
+                    termination,
+                ).data,
+            }
+        )
+
+    def delete(self, request, pk):
+
+        termination = self.get_object(pk)
+
+        TerminationService.delete_termination(
+            termination,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Termination deleted successfully.",
+            },
+            status=status.HTTP_204_NO_CONTENT,
+        )

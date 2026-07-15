@@ -5,6 +5,7 @@ from .views import (
     NumberPoolDetailAPIView,
     NumberPoolImportAPIView,
     NumberPoolStatisticsAPIView,
+    BulkAllocationAPIView,
 )
 
 from .country_views import (
@@ -62,5 +63,10 @@ urlpatterns = [
     "statistics/",
     NumberPoolStatisticsAPIView.as_view(),
     name="number-statistics",
+),
+    path(
+    "bulk-allocation/",
+    BulkAllocationAPIView.as_view(),
+    name="bulk-allocation",
 ),
 ]

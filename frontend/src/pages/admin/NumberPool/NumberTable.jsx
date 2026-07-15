@@ -14,10 +14,9 @@ export default function NumberTable({
   onDelete,
   user,
 }) {
-
   if (loading) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow p-10 text-center">
+      <div className="rounded-xl bg-white p-10 text-center shadow dark:bg-slate-900">
         Loading Numbers...
       </div>
     );
@@ -25,14 +24,14 @@ export default function NumberTable({
 
   if (!numbers.length) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow p-10 text-center">
+      <div className="rounded-xl bg-white p-10 text-center shadow dark:bg-slate-900">
         No Numbers Found
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow overflow-x-auto border border-slate-200 dark:border-slate-800">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow dark:border-slate-800 dark:bg-slate-900">
 
       <table className="min-w-full">
 
@@ -48,6 +47,10 @@ export default function NumberTable({
               DID Number
             </th>
 
+            <th className="px-5 py-3 text-left">
+              Extension
+            </th>
+
             {user?.role === "SUPER_ADMIN" && (
               <th className="px-5 py-3 text-left">
                 Admin
@@ -59,14 +62,20 @@ export default function NumberTable({
             </th>
 
             <th className="px-5 py-3 text-left">
-              Provider
+              Carrier
             </th>
 
-            {user?.role === "SUPER_ADMIN" && (
-              <>
-                
-              </>
-            )}
+            <th className="px-5 py-3 text-left">
+              Termination
+            </th>
+
+            <th className="px-5 py-3 text-right">
+              Purchase
+            </th>
+
+            <th className="px-5 py-3 text-right">
+              Monthly Rental
+            </th>
 
             <th className="px-5 py-3 text-center">
               Status
@@ -86,15 +95,19 @@ export default function NumberTable({
 
             <tr
               key={number.id}
-              className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              className="border-t border-slate-200 transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
             >
 
-              <td className="px-5 py-4 whitespace-nowrap">
+              <td className="whitespace-nowrap px-5 py-4">
                 {number.country_name || "-"}
               </td>
 
-              <td className="px-5 py-4 font-semibold whitespace-nowrap">
+              <td className="whitespace-nowrap px-5 py-4 font-semibold">
                 {number.did_number}
+              </td>
+
+              <td className="whitespace-nowrap px-5 py-4">
+                {number.extension}
               </td>
 
               {user?.role === "SUPER_ADMIN" && (
@@ -108,19 +121,25 @@ export default function NumberTable({
               </td>
 
               <td className="px-5 py-4">
-                {number.provider || "-"}
+                {number.carrier_name || "-"}
               </td>
 
-              {user?.role === "SUPER_ADMIN" && (
-                <>
-                  
-                </>
-              )}
+              <td className="px-5 py-4">
+                {number.termination_name || "-"}
+              </td>
+
+              <td className="px-5 py-4 text-right">
+                {number.purchase_price}
+              </td>
+
+              <td className="px-5 py-4 text-right">
+                {number.monthly_rental}
+              </td>
 
               <td className="px-5 py-4 text-center">
 
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     statusClasses[number.status] ||
                     "bg-gray-100 text-gray-700"
                   }`}
@@ -136,7 +155,7 @@ export default function NumberTable({
 
                   <button
                     onClick={() => onEdit(number)}
-                    className="p-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white"
+                    className="rounded-lg bg-yellow-500 p-2 text-white hover:bg-yellow-600"
                     title="Edit"
                   >
                     <Pencil size={16} />
@@ -144,7 +163,7 @@ export default function NumberTable({
 
                   <button
                     onClick={() => onDelete(number)}
-                    className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+                    className="rounded-lg bg-red-600 p-2 text-white hover:bg-red-700"
                     title="Delete"
                   >
                     <Trash2 size={16} />

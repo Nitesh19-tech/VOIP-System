@@ -7,6 +7,14 @@ import {
   getCountries,
 } from "../../../services/countryService";
 
+import {
+  getCarriers,
+} from "../../../services/carrierService";
+
+import {
+  getTerminations,
+} from "../../../services/terminationService";
+
 export default function NumberFormModal({
   open,
   onClose,
@@ -24,11 +32,13 @@ export default function NumberFormModal({
 
     country: "",
 
+    carrier: "",
+
+    termination: "",
+
     did_number: "",
 
     extension: "",
-
-    provider: "",
 
     purchase_price: 0,
 
@@ -46,6 +56,10 @@ export default function NumberFormModal({
 
   const [countries, setCountries] = useState([]);
 
+  const [carriers, setCarriers] = useState([]);
+
+  const [terminations, setTerminations] = useState([]);
+
   useEffect(() => {
 
     if (!open) return;
@@ -53,6 +67,10 @@ export default function NumberFormModal({
     loadClients();
 
     loadCountries();
+
+    loadCarriers();
+
+    loadTerminations();
 
     if (user?.role === "SUPER_ADMIN") {
 
@@ -70,17 +88,22 @@ export default function NumberFormModal({
 
         country: number.country || "",
 
+        carrier: number.carrier || "",
+
+        termination: number.termination || "",
+
         did_number: number.did_number || "",
 
         extension: number.extension || "",
 
-        provider: number.provider || "",
+        purchase_price:
+          number.purchase_price || 0,
 
-        purchase_price: number.purchase_price || 0,
+        monthly_rental:
+          number.monthly_rental || 0,
 
-        monthly_rental: number.monthly_rental || 0,
-
-        description: number.description || "",
+        description:
+          number.description || "",
 
       });
 
@@ -112,7 +135,8 @@ export default function NumberFormModal({
 
     try {
 
-      const res = await clientService.getClients();
+      const res =
+        await clientService.getClients();
 
       setClients(res.data.data || []);
 
@@ -128,9 +152,44 @@ export default function NumberFormModal({
 
     try {
 
-      const res = await userService.getUsers();
+      const res =
+        await userService.getUsers();
 
       setAdmins(res.data.data || []);
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
+
+  };
+
+  const loadCarriers = async () => {
+
+    try {
+
+      const res =
+        await getCarriers();
+
+      setCarriers(res.data.data || []);
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
+
+  };
+
+  const loadTerminations = async () => {
+
+    try {
+
+      const res =
+        await getTerminations();
+
+      setTerminations(res.data.data || []);
 
     } catch (err) {
 
@@ -166,12 +225,11 @@ export default function NumberFormModal({
 
   if (!open) return null;
     return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
 
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <div className="w-full max-w-4xl rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-3xl p-6">
-
-        <h2 className="text-2xl font-bold mb-6">
+        <h2 className="mb-6 text-2xl font-bold">
           {number ? "Edit Number" : "Add Number"}
         </h2>
 
@@ -180,18 +238,17 @@ export default function NumberFormModal({
           className="grid grid-cols-2 gap-4"
         >
 
+          {/* Admin */}
+
           {user?.role === "SUPER_ADMIN" && (
 
             <select
               name="admin"
               value={form.admin}
               onChange={handleChange}
-              className="border rounded-lg p-3"
+              className="rounded-lg border p-3"
             >
-
-              <option value="">
-                Select Admin
-              </option>
+              <option value="">Select Admin</option>
 
               {admins.map((admin) => (
 
@@ -208,11 +265,13 @@ export default function NumberFormModal({
 
           )}
 
+          {/* Client */}
+
           <select
             name="client"
             value={form.client}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="rounded-lg border p-3"
           >
 
             <option value="">
@@ -232,11 +291,13 @@ export default function NumberFormModal({
 
           </select>
 
+          {/* Country */}
+
           <select
             name="country"
             value={form.country}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="rounded-lg border p-3"
             required
           >
 
@@ -257,31 +318,92 @@ export default function NumberFormModal({
 
           </select>
 
+          {/* Carrier */}
+
+          <select
+            name="carrier"
+            value={form.carrier}
+            onChange={handleChange}
+            className="rounded-lg border p-3"
+          >
+
+            <option value="">
+              Select Carrier
+            </option>
+
+            {carriers.map((carrier) => (
+
+              <option
+                key={carrier.id}
+                value={carrier.id}
+              >
+                {carrier.name}
+              </option>
+
+            ))}
+
+          </select>
+
+          {/* Termination */}
+
+          <select
+            name="termination"
+            value={form.termination}
+            onChange={handleChange}
+            className="rounded-lg border p-3"
+          >
+
+            <option value="">
+              Select Termination
+            </option>
+
+            {terminations
+              .filter((item) => {
+
+                if (!form.carrier) return true;
+
+                return (
+                  Number(item.carrier) ===
+                  Number(form.carrier)
+                );
+
+              })
+              .map((termination) => (
+
+                <option
+                  key={termination.id}
+                  value={termination.id}
+                >
+                  {termination.name}
+                </option>
+
+              ))}
+
+          </select>
+
+          {/* DID */}
+
           <input
             name="did_number"
             placeholder="DID Number"
             value={form.did_number}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="rounded-lg border p-3"
             required
           />
+
+          {/* Extension */}
 
           <input
             name="extension"
             placeholder="Extension"
             value={form.extension}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="rounded-lg border p-3"
             required
           />
 
-          <input
-            name="provider"
-            placeholder="Provider"
-            value={form.provider}
-            onChange={handleChange}
-            className="border rounded-lg p-3"
-          />
+          {/* Purchase */}
 
           <input
             type="number"
@@ -290,8 +412,10 @@ export default function NumberFormModal({
             placeholder="Purchase Price"
             value={form.purchase_price}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="rounded-lg border p-3"
           />
+
+          {/* Rental */}
 
           <input
             type="number"
@@ -300,24 +424,26 @@ export default function NumberFormModal({
             placeholder="Monthly Rental"
             value={form.monthly_rental}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="rounded-lg border p-3"
           />
+
+          {/* Description */}
 
           <textarea
             name="description"
-            rows="4"
+            rows={4}
             placeholder="Description"
             value={form.description}
             onChange={handleChange}
-            className="border rounded-lg p-3 col-span-2"
+            className="col-span-2 rounded-lg border p-3"
           />
 
-          <div className="col-span-2 flex justify-end gap-3 mt-4">
+          <div className="col-span-2 mt-4 flex justify-end gap-3">
 
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-lg bg-slate-300 hover:bg-slate-400"
+              className="rounded-lg bg-slate-300 px-5 py-2 hover:bg-slate-400"
             >
               Cancel
             </button>
@@ -325,7 +451,7 @@ export default function NumberFormModal({
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+              className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {saving
                 ? "Saving..."
@@ -341,7 +467,6 @@ export default function NumberFormModal({
       </div>
 
     </div>
-
   );
 
 }

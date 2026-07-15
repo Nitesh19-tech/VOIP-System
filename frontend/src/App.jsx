@@ -359,6 +359,10 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/terminations"
+  element={<TerminationList />}
+/>
       </Route>
 
     </Routes>

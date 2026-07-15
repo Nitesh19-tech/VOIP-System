@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from .models import (
     Carrier,
     CarrierIP,
+    Termination,
 )
 
 
@@ -114,3 +115,72 @@ class CarrierIPService:
     def delete_ip(ip):
 
         ip.delete()
+
+class TerminationService:
+
+    @staticmethod
+    def get_all(user, params=None):
+
+        queryset = Termination.objects.select_related(
+            "carrier"
+        )
+
+        search = params.get("search")
+
+        if search:
+            queryset = queryset.filter(
+                name__icontains=search
+            )
+
+        carrier = params.get("carrier")
+
+        if carrier:
+            queryset = queryset.filter(
+                carrier_id=carrier
+            )
+
+        return queryset
+
+    @staticmethod
+    def get_by_id(pk):
+
+        return get_object_or_404(
+            Termination,
+            pk=pk,
+        )
+
+    @staticmethod
+    def create_termination(data, user):
+
+        termination = Termination.objects.create(
+            **data,
+            created_by=user,
+        )
+
+        return termination
+
+    @staticmethod
+    def update_termination(
+        termination,
+        data,
+        user,
+    ):
+
+        for key, value in data.items():
+
+            setattr(
+                termination,
+                key,
+                value,
+            )
+
+        termination.save()
+
+        return termination
+
+    @staticmethod
+    def delete_termination(
+        termination,
+    ):
+
+        termination.delete()

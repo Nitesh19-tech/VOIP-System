@@ -4,7 +4,10 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializers import NumberPoolSerializer
+from .serializers import (
+    NumberPoolSerializer,
+    BulkAllocationSerializer,
+)
 from .services import NumberPoolService
 from .import_service import NumberPoolImportService
 from .statistics import NumberPoolStatistics
@@ -184,3 +187,53 @@ class NumberPoolStatisticsAPIView(APIView):
             "data": NumberPoolStatistics.summary(),
 
         })
+
+class BulkAllocationAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = BulkAllocationSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+
+            allocated = NumberPoolService.bulk_allocate(
+                serializer.validated_data,
+                request.user,
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "allocated_count": allocated,
+                    "message": f"{allocated} numbers allocated successfully.",
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Internal server error.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

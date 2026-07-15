@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 "apps.carriers",
 "apps.routing_plans",
 "apps.routes",
+"apps.payment_terms",
 ]
 
 

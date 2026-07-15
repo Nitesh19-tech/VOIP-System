@@ -3,6 +3,7 @@ from django.conf import settings
 
 from apps.common.models import BaseModel
 from apps.clients.models import Client
+from apps.carriers.models import Carrier, Termination
 
 
 class Country(BaseModel):
@@ -20,10 +21,6 @@ class Country(BaseModel):
     dial_code = models.CharField(
         max_length=10,
         unique=True,
-    )
-
-    is_active = models.BooleanField(
-        default=True,
     )
 
     class Meta:
@@ -60,11 +57,26 @@ class NumberPool(BaseModel):
         related_name="numbers",
     )
 
+    carrier = models.ForeignKey(
+        Carrier,
+        on_delete=models.PROTECT,
+        related_name="numbers",
+        null=True,
+        blank=True,
+    )
+
+    termination = models.ForeignKey(
+        Termination,
+        on_delete=models.PROTECT,
+        related_name="numbers",
+        null=True,
+        blank=True,
+    )
+
     country = models.ForeignKey(
         Country,
         on_delete=models.PROTECT,
         related_name="numbers",
-        
     )
 
     did_number = models.CharField(
@@ -81,11 +93,6 @@ class NumberPool(BaseModel):
         max_length=20,
         choices=STATUS_CHOICES,
         default="AVAILABLE",
-    )
-
-    provider = models.CharField(
-        max_length=100,
-        blank=True,
     )
 
     purchase_price = models.DecimalField(

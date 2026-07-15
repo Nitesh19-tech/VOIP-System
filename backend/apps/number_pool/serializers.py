@@ -1,13 +1,14 @@
 from rest_framework import serializers
 
 from .models import Country, NumberPool
-
+from django.contrib.auth import get_user_model
+from apps.clients.models import Client
+from apps.carriers.models import Carrier, Termination
 
 class CountrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Country
-
         fields = "__all__"
 
         read_only_fields = (
@@ -27,6 +28,16 @@ class NumberPoolSerializer(serializers.ModelSerializer):
 
     client_name = serializers.CharField(
         source="client.name",
+        read_only=True,
+    )
+
+    carrier_name = serializers.CharField(
+        source="carrier.name",
+        read_only=True,
+    )
+
+    termination_name = serializers.CharField(
+        source="termination.name",
         read_only=True,
     )
 
@@ -53,14 +64,18 @@ class NumberPoolSerializer(serializers.ModelSerializer):
             "client",
             "client_name",
 
+            "carrier",
+            "carrier_name",
+
+            "termination",
+            "termination_name",
+
             "country",
             "country_name",
             "dial_code",
 
             "did_number",
             "extension",
-
-            "provider",
 
             "purchase_price",
             "monthly_rental",
@@ -84,6 +99,9 @@ class NumberPoolSerializer(serializers.ModelSerializer):
             "admin_name",
             "client_name",
 
+            "carrier_name",
+            "termination_name",
+
             "country_name",
             "dial_code",
         )
@@ -100,13 +118,18 @@ class NumberPoolSerializer(serializers.ModelSerializer):
                 "allow_null": True,
             },
 
-            "country": {
-                "required": True,
+            "carrier": {
+                "required": False,
+                "allow_null": True,
             },
 
-            "provider": {
+            "termination": {
                 "required": False,
-                "allow_blank": True,
+                "allow_null": True,
+            },
+
+            "country": {
+                "required": True,
             },
 
             "purchase_price": {
@@ -163,3 +186,49 @@ class NumberPoolSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+
+
+User = get_user_model()
+
+
+class BulkAllocationSerializer(serializers.Serializer):
+
+    carrier = serializers.PrimaryKeyRelatedField(
+        queryset=Carrier.objects.filter(
+            is_active=True,
+        )
+    )
+
+    termination = serializers.PrimaryKeyRelatedField(
+        queryset=Termination.objects.filter(
+            is_active=True,
+        )
+    )
+
+    client = serializers.PrimaryKeyRelatedField(
+        queryset=Client.objects.filter(
+            is_active=True,
+        )
+    )
+
+    quantity = serializers.IntegerField(
+        min_value=1,
+    )
+
+    def validate(self, attrs):
+
+        termination = attrs["termination"]
+
+        carrier = attrs["carrier"]
+
+        if termination.carrier_id != carrier.id:
+
+            raise serializers.ValidationError(
+                {
+                    "termination":
+                    "Selected termination does not belong to selected carrier."
+                }
+            )
+
+        return attrs

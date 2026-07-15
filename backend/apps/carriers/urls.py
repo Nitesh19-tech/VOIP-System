@@ -5,6 +5,8 @@ from .views import (
     CarrierDetailAPIView,
     CarrierIPListCreateAPIView,
     CarrierIPDetailAPIView,
+    TerminationListCreateAPIView,
+    TerminationDetailAPIView,
 )
 
 urlpatterns = [
@@ -29,4 +31,14 @@ urlpatterns = [
         CarrierIPDetailAPIView.as_view(),
     ),
 
+    path(
+        "terminations/",
+        TerminationListCreateAPIView.as_view(),
+    ),
+
+    path(
+        "terminations/<int:pk>/",
+        TerminationDetailAPIView.as_view(),
+    ),
+    
 ]
