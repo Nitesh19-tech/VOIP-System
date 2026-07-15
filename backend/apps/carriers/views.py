@@ -3,7 +3,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from .serializers import CarrierSerializer
+from .serializers import (
+    CarrierSerializer,
+    CarrierIPSerializer,
+)
 from .services import CarrierIPService, CarrierService
 
 

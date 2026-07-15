@@ -1,6 +1,9 @@
 from django.shortcuts import get_object_or_404
 
-from .models import Carrier
+from .models import (
+    Carrier,
+    CarrierIP,
+)
 
 
 class CarrierService:
