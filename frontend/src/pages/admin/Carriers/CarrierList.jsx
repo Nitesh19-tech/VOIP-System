@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
-import {
-  Plus,
-  Search,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Search } from "lucide-react";
 
 import {
   getCarriers,
@@ -21,53 +18,71 @@ export default function CarrierList() {
   const [carriers, setCarriers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [search, setSearch] = useState("");
+
+  const [selectedCarrier, setSelectedCarrier] = useState(null);
+
   const [showForm, setShowForm] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showIPs, setShowIPs] = useState(false);
 
-  const [selectedCarrier, setSelectedCarrier] =
-    useState(null);
-
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [search, setSearch] = useState("");
+  // ==========================================
+  // Load Carriers
+  // ==========================================
 
   const loadCarriers = async () => {
-
     try {
 
       setLoading(true);
 
       const res = await getCarriers();
 
-      setCarriers(res.data.data || []);
+      setCarriers(Array.isArray(res.data.data) ? res.data.data : []);
 
-    } catch (err) {
+    } catch (error) {
 
-      console.error(err);
+      console.error(error);
+
+      alert("Unable to load carriers.");
 
     } finally {
 
       setLoading(false);
 
     }
-
   };
 
   useEffect(() => {
-
     loadCarriers();
-
   }, []);
 
-  const filteredCarriers = carriers.filter(
-    (carrier) =>
-      `${carrier.name}
-       ${carrier.description || ""}`
-        .toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  // ==========================================
+  // Search
+  // ==========================================
+
+  const filteredCarriers = useMemo(() => {
+
+    return carriers.filter((carrier) => {
+
+      const keyword = search.toLowerCase();
+
+      return (
+        carrier.name.toLowerCase().includes(keyword) ||
+        (carrier.description || "")
+          .toLowerCase()
+          .includes(keyword)
+      );
+
+    });
+
+  }, [carriers, search]);
+
+  // ==========================================
+  // Save
+  // ==========================================
 
   const saveCarrier = async (data) => {
 
@@ -77,10 +92,7 @@ export default function CarrierList() {
 
       if (selectedCarrier) {
 
-        await updateCarrier(
-          selectedCarrier.id,
-          data,
-        );
+        await updateCarrier(selectedCarrier.id, data);
 
       } else {
 
@@ -89,14 +101,13 @@ export default function CarrierList() {
       }
 
       setShowForm(false);
-
       setSelectedCarrier(null);
 
-      loadCarriers();
+      await loadCarriers();
 
-    } catch (err) {
+    } catch (error) {
 
-      console.error(err);
+      console.error(error);
 
       alert("Unable to save carrier.");
 
@@ -105,8 +116,11 @@ export default function CarrierList() {
       setSaving(false);
 
     }
-
   };
+
+  // ==========================================
+  // Delete
+  // ==========================================
 
   const removeCarrier = async (id) => {
 
@@ -117,14 +131,13 @@ export default function CarrierList() {
       await deleteCarrier(id);
 
       setShowDelete(false);
-
       setSelectedCarrier(null);
 
-      loadCarriers();
+      await loadCarriers();
 
-    } catch (err) {
+    } catch (error) {
 
-      console.error(err);
+      console.error(error);
 
       alert("Unable to delete carrier.");
 
@@ -133,14 +146,15 @@ export default function CarrierList() {
       setDeleting(false);
 
     }
-
   };
 
   return (
 
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
 
-      <div className="flex justify-between items-center">
+      {/* Header */}
+
+      <div className="flex items-center justify-between">
 
         <div>
 
@@ -148,7 +162,7 @@ export default function CarrierList() {
             Carriers
           </h1>
 
-          <p className="text-slate-500">
+          <p className="text-slate-500 dark:text-slate-400">
             Carrier Management
           </p>
 
@@ -162,7 +176,7 @@ export default function CarrierList() {
             setShowForm(true);
 
           }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
+          className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-white hover:bg-blue-700"
         >
 
           <Plus size={18} />
@@ -173,6 +187,8 @@ export default function CarrierList() {
 
       </div>
 
+      {/* Search */}
+
       <div className="relative max-w-md">
 
         <Search
@@ -181,15 +197,16 @@ export default function CarrierList() {
         />
 
         <input
-          className="w-full pl-10 pr-4 py-3 rounded-xl border"
+          type="text"
           placeholder="Search Carrier..."
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
         />
 
       </div>
+
+      {/* Table */}
 
       <CarrierTable
         carriers={filteredCarriers}
@@ -217,10 +234,13 @@ export default function CarrierList() {
         }}
       />
 
+      {/* Form */}
+
       <CarrierFormModal
         open={showForm}
         carrier={selectedCarrier}
         saving={saving}
+        onSave={saveCarrier}
         onClose={() => {
 
           setShowForm(false);
@@ -228,13 +248,15 @@ export default function CarrierList() {
           setSelectedCarrier(null);
 
         }}
-        onSave={saveCarrier}
       />
+
+      {/* Delete */}
 
       <CarrierDeleteModal
         open={showDelete}
         carrier={selectedCarrier}
         deleting={deleting}
+        onConfirm={removeCarrier}
         onClose={() => {
 
           setShowDelete(false);
@@ -242,8 +264,9 @@ export default function CarrierList() {
           setSelectedCarrier(null);
 
         }}
-        onConfirm={removeCarrier}
       />
+
+      {/* IP */}
 
       <CarrierIPModal
         open={showIPs}
