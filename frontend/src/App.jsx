@@ -1,491 +1,351 @@
-import {
-  LayoutDashboard,
-  Phone,
-  Users,
-  Settings,
-  Wallet,
-  LogOut,
-  BarChart3,
-  Hash,
-  ClipboardList,
-  FileText,
-  Globe2,
-  DollarSign,
-  Receipt,
-  CreditCard,
-  Server,
-  Network,
-} from "lucide-react";
-
-import { NavLink } from "react-router-dom";
-
-const menu = [
-
-  // =====================================================
-  // Dashboard
-  // =====================================================
-
-  {
-    title: "Dashboard",
-
-    items: [
-
-      {
-        name: "Dashboard",
-
-        icon: LayoutDashboard,
-
-        path: "/dashboard",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-          "CLIENT",
-        ],
-      },
-
-    ],
-  },
-
-  // =====================================================
-  // Administration
-  // =====================================================
-
-  {
-    title: "Administration",
-
-    items: [
-
-      {
-        name: "Admin",
-
-        icon: Users,
-
-        path: "/superadmin/admin-users",
-
-        roles: [
-          "SUPER_ADMIN",
-        ],
-      },
-
-      {
-        name: "Clients",
-
-        icon: Users,
-
-        path: "/dashboard/clients",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-    ],
-  },
-  // =====================================================
-  // Telephony
-  // =====================================================
-
-  {
-    title: "Telephony",
-
-    items: [
-
-      {
-        name: "Countries",
-
-        icon: Globe2,
-
-        path: "/dashboard/countries",
-
-        roles: [
-          "SUPER_ADMIN",
-        ],
-      },
-
-      {
-        name: "Number Pool",
-
-        icon: Hash,
-
-        path: "/dashboard/number-pool",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "SIP Accounts",
-
-        icon: Phone,
-
-        path: "/dashboard/sip-accounts",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "Carriers",
-
-        icon: Network,
-
-        path: "/dashboard/carriers",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "Routing Plans",
-
-        icon: ClipboardList,
-
-        path: "/dashboard/routing-plans",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "Trunks",
-
-        icon: Server,
-
-        path: "/dashboard/trunks",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "Provision Jobs",
-
-        icon: ClipboardList,
-
-        path: "/provision",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-    ],
-  },
-
-  // =====================================================
-  // Monitoring
-  // =====================================================
-
-  {
-    title: "Monitoring",
-
-    items: [
-
-      {
-        name: "Active Calls",
-
-        icon: Phone,
-
-        path: "/calls",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-          "CLIENT",
-        ],
-      },
-
-      {
-        name: "CDR",
-
-        icon: FileText,
-
-        path: "/cdr",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "Analytics",
-
-        icon: BarChart3,
-
-        path: "/analytics",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-    ],
-  },
-  // =====================================================
-  // Rate Management
-  // =====================================================
-
-  {
-    title: "Rate Management",
-
-    items: [
-
-      {
-        name: "Rate Cards",
-
-        icon: DollarSign,
-
-        path: "/rates",
-
-        roles: [
-          "SUPER_ADMIN",
-        ],
-      },
-
-    ],
-  },
-
-  // =====================================================
-  // Billing
-  // =====================================================
-
-  {
-    title: "Billing",
-
-    items: [
-
-      {
-        name: "Invoices",
-
-        icon: Receipt,
-
-        path: "/billing/invoices",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "Payments",
-
-        icon: CreditCard,
-
-        path: "/billing/payments",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-        ],
-      },
-
-      {
-        name: "Wallet",
-
-        icon: Wallet,
-
-        path: "/billing/wallet",
-
-        roles: [
-          "CLIENT",
-        ],
-      },
-
-    ],
-  },
-
-  // =====================================================
-  // Settings
-  // =====================================================
-
-  {
-    title: "Settings",
-
-    items: [
-
-      {
-        name: "Settings",
-
-        icon: Settings,
-
-        path: "/settings",
-
-        roles: [
-          "SUPER_ADMIN",
-          "COMPANY_ADMIN",
-          "CLIENT",
-        ],
-      },
-
-    ],
-  },
-
-];
-export default function Sidebar({
-  open,
-  onLogout,
-  user,
-}) {
-
-  if (!user) return null;
-
-  return (
-
-    <aside
-      className={`
-        bg-white dark:bg-slate-900
-        border-r border-slate-200 dark:border-slate-800
-        h-screen
-        flex
-        flex-col
-        transition-all
-        duration-300
-        ${open ? "w-64" : "w-0 overflow-hidden"}
-      `}
-    >
-
-      {/* Logo */}
-
-      <div className="h-20 border-b border-slate-200 dark:border-slate-800 flex items-center px-6">
-
-        <div className="flex items-center gap-3">
-
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold">
-
-            V
-
-          </div>
-
-          <div>
-
-            <h1 className="font-bold text-lg text-slate-900 dark:text-white">
-
-              VoIP
-
-            </h1>
-
-            <p className="text-xs text-slate-500">
-
-              Management System
-
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* Menu */}
-
-      <div className="flex-1 overflow-y-auto px-3 py-5">
-
-        {menu.map((section) => {
-
-          const items = section.items.filter((item) =>
-            item.roles.includes(user.role)
-          );
-
-          if (!items.length) return null;
-
-          return (
-
-            <div
-              key={section.title}
-              className="mb-6"
-            >
-
-              <p className="px-3 mb-2 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-
-                {section.title}
-
-              </p>
-
-              <div className="space-y-1">
-
-                {items.map((item) => {
-
-                  const Icon = item.icon;
-
-                  return (
-
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className={({ isActive }) =>
-                        `
-                        flex items-center gap-3
-                        px-3 py-3
-                        rounded-xl
-                        transition-all
-
-                        ${isActive
-                          ? "bg-blue-600 text-white"
-                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        }
-                      `
-                      }
-                    >
-
-                      <Icon size={19} />
-
-                      <span>
-
-                        {item.name}
-
-                      </span>
-
-                    </NavLink>
-
-                  );
-
-                })}
-
-              </div>
-
-            </div>
-
-          );
-
-        })}
-
-      </div>
-
-      {/* Logout */}
-
-      <div className="border-t border-slate-200 dark:border-slate-800 p-4">
-
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-        >
-
-          <LogOut size={20} />
-
-          Logout
-
-        </button>
-
-      </div>
-
-    </aside>
-
+import { useEffect, useState } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import Companies from "./pages/superadmin/Companies/Companies";
+import API, { setAuthToken } from "./services/api";
+import Login from "./pages/Login";
+import DashboardLayout from "./layouts/DashboardLayout";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+import AdminUsers from "./pages/superadmin/AdminUsers/AdminUsers";
+import SipDashboard from "./pages/SipDashborad";
+import Calls from "./pages/Calls";
+import Billing from "./pages/Billing";
+import Settings from "./pages/Settings";
+import Clients from "./pages/admin/Clients/Clients";
+import Analytics from "./pages/Analytics";
+import ForcePasswordChange from "./pages/ForcePasswordChange";
+import SipUsers from "./pages/admin/SipUsers";
+import NumberPool from "./pages/admin/NumberPool/NumberPool";
+import AdminBillingDashboard from "./pages/admin/AdminBillingDashboard";
+import SIPAccounts from "./pages/admin/SIP/SIPAccounts";
+import CDRPage from "./pages/cdr/CDRPage";
+import ProvisionPage from "./pages/admin/Provision/ProvisionPage";
+import Countries from "./pages/admin/Countries/Countries";
+import RateManagement from "./pages/dashboard/rate/RateManagement";
+import TrunkPage from "./pages/admin/Trunks";
+import CarrierList from "./pages/admin/Carriers/CarrierList";
+import RoutingPlanList from "./pages/admin/RoutingPlans/RoutingPlanList";
+export default function App() {
+
+  // null = loading, false = not logged in, object = logged in
+  const [user, setUser] = useState(null);
+
+  const navigate = useNavigate();
+
+  // ------------------------------
+  // 🌙 THEME STATE
+  // ------------------------------
+  const [dark, setDark] = useState(
+    localStorage.getItem("theme") !== "light"
   );
 
-}  
+  const toggleTheme = () => {
+    const newTheme = !dark;
+    setDark(newTheme);
+    localStorage.setItem("theme", newTheme ? "dark" : "light");
+  };
+
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [dark]);
+
+  // ------------------------------
+  // 🔐 LOGOUT
+  // ------------------------------
+  const logout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    setAuthToken(null);
+    setUser(false);
+    navigate("/login", { replace: true });
+  };
+
+  // ------------------------------
+  // 👤 LOAD USER
+  // ------------------------------
+  const loadUser = async () => {
+    try {
+      const res = await API.get("auth/profile/");
+
+      if (res.data.force_password_change) {
+        setUser(res.data);
+        navigate("/force-change-password");
+        return;
+      }
+
+      setUser(res.data);
+
+    } catch (err) {
+      console.error("Load user failed", err);
+      logout();
+    }
+  };
+
+  // ------------------------------
+  // 🔑 CHECK TOKEN ON APP LOAD
+  // ------------------------------
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+
+    if (token) {
+      setAuthToken(token);
+      loadUser();
+    } else {
+      setUser(false);
+    }
+  }, []);
+
+  return (
+    <Routes>
+
+      {/* Public */}
+      <Route
+        path="/login"
+        element={<Login onLogin={loadUser} />}
+      />
+
+      {/* Protected */}
+      <Route
+        element={
+          <ProtectedRoute user={user}>
+            <DashboardLayout
+              user={user}
+              dark={dark}
+              toggleTheme={toggleTheme}
+              onLogout={logout}
+            />
+          </ProtectedRoute>
+        }
+      >
+
+        <Route index element={<SipDashboard />} />
+        <Route path="/dashboard" element={<SipDashboard />} />
+
+        <Route
+          path="/calls"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN", "CLIENT"]}
+            >
+              <Calls />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/billing"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["CLIENT", "COMPANY_ADMIN", "SUPER_ADMIN"]}
+            >
+              <Billing />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/companies"
+          element={
+            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN"]}>
+              <Companies />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/sip-users"
+          element={
+            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
+              <SipUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/billing"
+          element={
+            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
+              <AdminBillingDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rates"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+              ]}
+            >
+              <RateManagement
+                user={user}
+              />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/force-change-password"
+          element={
+            <ProtectedRoute user={user} allowedRoles={["CLIENT"]}>
+              <ForcePasswordChange />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN", "CLIENT"]}
+            >
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/superadmin/admin-users"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN"]}
+            >
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/clients"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+            >
+              <Clients user={user} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/number-pool"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+            >
+              <NumberPool user={user} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/countries"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN"]}
+            >
+              <Countries />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/sip-accounts"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+            >
+              <SIPAccounts user={user} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/cdr"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+            >
+              <CDRPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/provision"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+            >
+              <ProvisionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/trunks"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+            >
+              <TrunkPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/carriers"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
+              <CarrierList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/routing-plans"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
+              <RoutingPlanList />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+
+    </Routes>
+  );
+}

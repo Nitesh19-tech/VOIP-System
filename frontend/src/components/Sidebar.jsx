@@ -97,7 +97,7 @@ const menu = [
 
         icon: Globe2,
 
-        path: "//countries",
+        path: "/dashboard/countries",
 
         roles: [
           "SUPER_ADMIN",
@@ -488,4 +488,4 @@ export default function Sidebar({
 
   );
 
-}
+}  
