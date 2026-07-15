@@ -26,6 +26,7 @@ import TrunkPage from "./pages/admin/Trunks";
 import CarrierList from "./pages/admin/Carriers/CarrierList";
 import RoutingPlanList from "./pages/admin/RoutingPlans/RoutingPlanList";
 import RouteList from "./pages/admin/Routes/RouteList";
+import TerminationList from "./pages/admin/termination/TerminationList";
 export default function App() {
 
   // null = loading, false = not logged in, object = logged in
@@ -360,9 +361,16 @@ export default function App() {
           }
         />
         <Route
-  path="/admin/terminations"
-  element={<TerminationList />}
-/>
+          path="/dashboard/terminations"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+            >
+              <TerminationList />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
     </Routes>
