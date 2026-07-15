@@ -126,4 +126,22 @@ urlpatterns = [
     "api/carriers/",
     include("apps.carriers.urls"),
     ),
+
+# =====================================================
+# Routing Plans
+# =====================================================
+
+    path(
+    "api/routing-plans/",
+    include("apps.routing_plans.urls"),
+),
+
+# =====================================================
+# Routes
+# =====================================================
+
+    path(
+    "api/routes/",
+    include("apps.routes.urls"),
+),
 ]

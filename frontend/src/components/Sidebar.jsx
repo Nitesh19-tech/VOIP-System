@@ -144,6 +144,19 @@ const menu = [
       },
 
       {
+        name: "Routing Plans",
+
+        icon: ClipboardList,
+
+        path: "/admin/routing-plans",
+
+        roles: [
+          "SUPER_ADMIN",
+          "COMPANY_ADMIN",
+        ],
+      },
+
+      {
         name: "Trunks",
 
         icon: Server,

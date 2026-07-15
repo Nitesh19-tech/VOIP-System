@@ -46,6 +46,8 @@ INSTALLED_APPS = [
 "apps.common",
 "apps.trunks",
 "apps.carriers",
+"apps.routing_plans",
+"apps.routes",
 ]
 
 

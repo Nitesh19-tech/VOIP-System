@@ -24,6 +24,7 @@ import Countries from "./pages/admin/Countries/Countries";
 import RateManagement from "./pages/dashboard/rate/RateManagement";
 import TrunkPage from "./pages/admin/Trunks";
 import CarrierList from "./pages/admin/Carriers/CarrierList";
+import RoutingPlanList from "./pages/admin/RoutingPlans/RoutingPlanList";
 export default function App() {
 
   // null = loading, false = not logged in, object = logged in
@@ -325,6 +326,21 @@ export default function App() {
               ]}
             >
               <CarrierList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/routing-plans"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
+              <RoutingPlanList />
             </ProtectedRoute>
           }
         />
