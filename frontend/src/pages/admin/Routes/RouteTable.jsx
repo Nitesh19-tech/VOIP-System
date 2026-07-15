@@ -9,15 +9,23 @@ export default function RouteTable({
   onEdit,
   onDelete,
 }) {
+
   if (loading) {
+
     return (
+
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
+
         Loading Routes...
+
       </div>
+
     );
+
   }
 
   return (
+
     <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
 
       <table className="min-w-full">
@@ -28,6 +36,10 @@ export default function RouteTable({
 
             <th className="px-4 py-3 text-left">
               Routing Plan
+            </th>
+
+            <th className="px-4 py-3 text-left">
+              Termination
             </th>
 
             <th className="px-4 py-3 text-left">
@@ -69,10 +81,12 @@ export default function RouteTable({
             <tr>
 
               <td
-                colSpan={8}
+                colSpan={9}
                 className="py-8 text-center text-slate-500"
               >
+
                 No Routes Found
+
               </td>
 
             </tr>
@@ -87,33 +101,53 @@ export default function RouteTable({
               >
 
                 <td className="px-4 py-3">
+
                   {route.routing_plan_name ||
                     route.routing_plan}
+
                 </td>
 
                 <td className="px-4 py-3">
-                  {route.carrier_name ||
-                    route.carrier}
+
+                  {route.termination_name ||
+                    route.termination}
+
+                </td>
+
+                <td className="px-4 py-3">
+
+                  {route.carrier_name}
+
                 </td>
 
                 <td className="px-4 py-3 font-medium">
+
                   {route.prefix}
+
                 </td>
 
                 <td className="px-4 py-3 text-center">
+
                   {route.priority}
+
                 </td>
 
                 <td className="px-4 py-3 text-center">
+
                   {route.strip_digits}
+
                 </td>
 
                 <td className="px-4 py-3 text-center">
+
                   {route.add_prefix}
+
                 </td>
 
                 <td className="px-4 py-3">
+
                   {route.description}
+
                 </td>
 
                 <td className="px-4 py-3">
@@ -124,14 +158,18 @@ export default function RouteTable({
                       onClick={() => onEdit(route)}
                       className="rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700"
                     >
+
                       <Pencil size={16} />
+
                     </button>
 
                     <button
                       onClick={() => onDelete(route)}
                       className="rounded-lg bg-red-600 p-2 text-white hover:bg-red-700"
                     >
+
                       <Trash2 size={16} />
+
                     </button>
 
                   </div>
@@ -149,5 +187,7 @@ export default function RouteTable({
       </table>
 
     </div>
+
   );
+
 }

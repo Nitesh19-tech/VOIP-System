@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getRoutingPlans } from "../../../services/routingPlanService";
-import { getCarriers } from "../../../services/carrierService";
+import { getTerminations } from "../../../services/carrierService";
 
 export default function RouteFormModal({
   open,
@@ -12,11 +12,11 @@ export default function RouteFormModal({
 }) {
 
   const [routingPlans, setRoutingPlans] = useState([]);
-  const [carriers, setCarriers] = useState([]);
+  const [terminations, setTerminations] = useState([]);
 
   const [form, setForm] = useState({
     routing_plan: "",
-    carrier: "",
+    termination: "",
     prefix: "",
     priority: 1,
     strip_digits: 0,
@@ -40,7 +40,7 @@ export default function RouteFormModal({
 
         routing_plan: route.routing_plan,
 
-        carrier: route.carrier,
+        termination: route.termination,
 
         prefix: route.prefix,
 
@@ -60,7 +60,7 @@ export default function RouteFormModal({
 
         routing_plan: "",
 
-        carrier: "",
+        termination: "",
 
         prefix: "",
 
@@ -82,17 +82,17 @@ export default function RouteFormModal({
 
     try {
 
-      const [plansRes, carrierRes] = await Promise.all([
+      const [plansRes, terminationRes] = await Promise.all([
 
         getRoutingPlans(),
 
-        getCarriers(),
+        getTerminations(),
 
       ]);
 
       setRoutingPlans(plansRes.data.data || []);
 
-      setCarriers(carrierRes.data.data || []);
+      setTerminations(terminationRes.data.data || []);
 
     } catch (err) {
 
@@ -177,16 +177,16 @@ export default function RouteFormModal({
 
             <label className="mb-2 block">
 
-              Carrier
+              Termination
 
             </label>
 
             <select
-              value={form.carrier}
+              value={form.termination}
               onChange={(e) =>
                 setForm({
                   ...form,
-                  carrier: e.target.value,
+                  termination: e.target.value,
                 })
               }
               className="w-full rounded-xl border p-3 dark:bg-slate-800"
@@ -198,14 +198,14 @@ export default function RouteFormModal({
 
               </option>
 
-              {carriers.map((carrier) => (
+              {terminations.map((termination) => (
 
                 <option
-                  key={carrier.id}
-                  value={carrier.id}
+                  key={termination.id}
+                  value={termination.id}
                 >
 
-                  {carrier.name}
+                  {termination.name}
 
                 </option>
 
