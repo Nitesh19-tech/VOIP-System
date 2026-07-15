@@ -5,21 +5,21 @@ import API from "./api";
 // =====================================================
 
 export const getTerminations = (params = {}) => {
-  return API.get("terminations/", { params });
+  return API.get("carriers/terminations/", { params });
 };
 
 export const getTermination = (id) => {
-  return API.get(`terminations/${id}/`);
+  return API.get(`carriers/terminations/${id}/`);
 };
 
 export const createTermination = (data) => {
-  return API.post("terminations/", data);
+  return API.post("carriers/terminations/", data);
 };
 
 export const updateTermination = (id, data) => {
-  return API.put(`terminations/${id}/`, data);
+  return API.put(`carriers/terminations/${id}/`, data);
 };
 
 export const deleteTermination = (id) => {
-  return API.delete(`terminations/${id}/`);
+  return API.delete(`carriers/terminations/${id}/`);
 };
