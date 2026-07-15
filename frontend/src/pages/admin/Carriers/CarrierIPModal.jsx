@@ -1,378 +1,533 @@
 import { useEffect, useState } from "react";
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  X,
+    Plus,
+    Pencil,
+    Trash2,
+    X,
 } from "lucide-react";
 
 import {
-  getCarrierIPs,
-  createCarrierIP,
-  updateCarrierIP,
-  deleteCarrierIP,
+    getCarrierIPs,
+    createCarrierIP,
+    updateCarrierIP,
+    deleteCarrierIP,
 } from "../../../services/carrierService";
 
 export default function CarrierIPModal({
-  open,
-  carrier,
-  onClose,
+    open,
+    carrier,
+    onClose,
 }) {
 
-  const [ips, setIps] = useState([]);
-  const [loading, setLoading] = useState(false);
+    const [ips, setIps] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-  const [newIP, setNewIP] = useState("");
+    const [newIP, setNewIP] = useState("");
 
-  const [editingId, setEditingId] = useState(null);
-  const [editingIP, setEditingIP] = useState("");
+    const [editingId, setEditingId] = useState(null);
+    const [editingIP, setEditingIP] = useState("");
 
-  // =======================================
-  // Load IPs
-  // =======================================
+    // ============================================
+    // Load Carrier IPs
+    // ============================================
 
-  const loadIPs = async () => {
+    const loadIPs = async () => {
 
-    if (!carrier) return;
+        if (!carrier) return;
 
-    try {
+        try {
 
-      setLoading(true);
+            setLoading(true);
 
-      const res = await getCarrierIPs({
-        carrier: carrier.id,
-      });
+            const res = await getCarrierIPs({
+                carrier: carrier.id,
+            });
 
-      setIps(Array.isArray(res.data.data) ? res.data.data : []);
+            setIps(
+                Array.isArray(res.data.data)
+                    ? res.data.data
+                    : []
+            );
 
-    } catch (err) {
+        } catch (err) {
 
-      console.error(err);
+            console.error(err);
 
-      alert("Unable to load IPs.");
+            alert("Unable to load Carrier IPs.");
 
-    } finally {
+        } finally {
 
-      setLoading(false);
+            setLoading(false);
 
-    }
+        }
 
-  };
+    };
 
-  useEffect(() => {
+    useEffect(() => {
 
-    if (open && carrier) {
+        if (open && carrier) {
 
-      loadIPs();
+            loadIPs();
 
-    }
+        }
 
-  }, [open, carrier]);
+    }, [open, carrier]);
 
-  // =======================================
-  // Add
-  // =======================================
+    // ============================================
+    // Add New IP
+    // ============================================
 
-  const handleAdd = async () => {
+    const handleAdd = async () => {
 
-    if (!newIP.trim()) return;
+        if (!newIP.trim()) {
 
-    try {
+            alert("Please enter IP Address.");
 
-      await createCarrierIP({
-        carrier: carrier.id,
-        ip_address: newIP.trim(),
-      });
+            return;
 
-      setNewIP("");
+        }
 
-      loadIPs();
+        try {
 
-    } catch (err) {
+            await createCarrierIP({
 
-      console.error(err);
+                carrier: carrier.id,
 
-      alert("Unable to add IP.");
+                ip_address: newIP.trim(),
 
-    }
+            });
 
-  };
+            setNewIP("");
 
-  // =======================================
-  // Update
-  // =======================================
+            loadIPs();
 
-  const handleUpdate = async (id) => {
+        } catch (err) {
 
-    try {
+            console.error(err);
 
-      await updateCarrierIP(id, {
-        carrier: carrier.id,
-        ip_address: editingIP,
-      });
+            alert("Unable to add IP.");
 
-      setEditingId(null);
+        }
 
-      setEditingIP("");
+    };
 
-      loadIPs();
+    // ============================================
+    // Update IP
+    // ============================================
 
-    } catch (err) {
+    const handleUpdate = async (id) => {
 
-      console.error(err);
+        if (!editingIP.trim()) {
 
-      alert("Unable to update IP.");
+            alert("IP Address cannot be empty.");
 
-    }
+            return;
 
-  };
+        }
 
-  // =======================================
-  // Delete
-  // =======================================
+        try {
 
-  const handleDelete = async (id) => {
+            await updateCarrierIP(id, {
 
-    if (!window.confirm("Delete this IP?"))
-      return;
+                carrier: carrier.id,
 
-    try {
+                ip_address: editingIP.trim(),
 
-      await deleteCarrierIP(id);
+            });
 
-      loadIPs();
+            setEditingId(null);
 
-    } catch (err) {
+            setEditingIP("");
 
-      console.error(err);
+            loadIPs();
 
-      alert("Unable to delete IP.");
+        } catch (err) {
 
-    }
+            console.error(err);
 
-  };
+            alert("Unable to update IP.");
 
-  if (!open) return null;
+        }
 
-  return (
+    };
 
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    // ============================================
+    // Delete IP
+    // ============================================
 
-      <div className="w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
+    const handleDelete = async (id) => {
 
-        {/* Header */}
+        if (!window.confirm("Delete this IP Address?"))
+            return;
 
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+        try {
 
-          <div>
+            await deleteCarrierIP(id);
 
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-              Carrier IP Management
-            </h2>
+            loadIPs();
 
-            <p className="text-sm text-slate-500">
-              {carrier?.name}
-            </p>
+        } catch (err) {
 
-          </div>
+            console.error(err);
 
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <X size={20}/>
-          </button>
+            alert("Unable to delete IP.");
 
-        </div>
+        }
 
-        {/* Body */}
+    };
 
-        <div className="p-6">
+    if (!open) return null;
 
-          <div className="mb-6 flex gap-3">
+    return (
 
-            <input
-              type="text"
-              value={newIP}
-              onChange={(e)=>setNewIP(e.target.value)}
-              placeholder="Enter IP Address"
-              className="flex-1 rounded-xl border border-slate-300 px-4 py-3 dark:border-slate-700 dark:bg-slate-800"
-            />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
 
-            <button
-              onClick={handleAdd}
-              className="flex items-center gap-2 rounded-xl bg-green-600 px-5 text-white hover:bg-green-700"
-            >
-              <Plus size={18}/>
-              Add
-            </button>
+            <div className="w-[900px] max-w-[95vw] rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
 
-          </div>
+                {/* Header */}
 
-          {
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-5">
 
-            loading ?
+                    <div>
 
-            (
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
 
-              <div className="py-10 text-center">
+                            Carrier IP Management
 
-                Loading...
+                        </h2>
 
-              </div>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
 
-            )
+                            {carrier?.name}
 
-            :
+                        </p>
 
-            (
+                    </div>
 
-              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                    <button
 
-                <table className="min-w-full">
+                        onClick={onClose}
 
-                  <thead className="bg-slate-100 dark:bg-slate-800">
+                        className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
 
-                    <tr>
+                    >
 
-                      <th className="px-5 py-3 text-left">
-                        IP Address
-                      </th>
+                        <X size={22} />
 
-                      <th className="px-5 py-3 text-center">
-                        Actions
-                      </th>
+                    </button>
 
-                    </tr>
+                </div>
 
-                  </thead>
+                {/* Body */}
 
-                  <tbody>
+                <div className="p-6">
 
-                    {
+                    {/* Add New IP */}
 
-                      ips.length===0 ?
+                    <div className="mb-6 flex items-center gap-3">
 
-                      (
+                        <input
 
-                        <tr>
+                            type="text"
 
-                          <td
-                            colSpan={2}
-                            className="py-8 text-center text-slate-500"
-                          >
+                            value={newIP}
 
-                            No IP Address Found
-
-                          </td>
-
-                        </tr>
-
-                      )
-
-                      :
-
-                      ips.map((ip)=>(
-
-                        <tr
-                          key={ip.id}
-                          className="border-t border-slate-200 dark:border-slate-700"
-                        >
-
-                          <td className="px-5 py-3">
-
-                            {
-
-                              editingId===ip.id ?
-
-                              (
-
-                                <input
-                                  value={editingIP}
-                                  onChange={(e)=>setEditingIP(e.target.value)}
-                                  className="w-full rounded-lg border px-3 py-2"
-                                />
-
-                              )
-
-                              :
-
-                              ip.ip_address
-
+                            onChange={(e) =>
+                                setNewIP(e.target.value)
                             }
 
-                          </td>
+                            placeholder="Enter IP Address"
 
-                          <td>
+                            className="
+                w-full
+                rounded-xl
+                border
+                border-slate-300
+                bg-white
+                px-4
+                py-3
+                text-slate-900
+                placeholder:text-slate-400
+                outline-none
+                focus:border-blue-500
+                dark:border-slate-700
+                dark:bg-slate-800
+                dark:text-white
+              "
 
-                            <div className="flex justify-center gap-2">
+                        />
 
-                              {
+                        <button
 
-                                editingId===ip.id ?
+                            type="button"
 
-                                (
+                            onClick={handleAdd}
 
-                                  <button
-                                    onClick={()=>handleUpdate(ip.id)}
-                                    className="rounded-lg bg-blue-600 px-4 py-2 text-white"
-                                  >
-                                    Save
-                                  </button>
+                            className="
+                shrink-0
+                rounded-xl
+                bg-green-600
+                px-6
+                py-3
+                text-white
+                hover:bg-green-700
+                flex
+                items-center
+                gap-2
+              "
 
-                                )
+                        >
 
-                                :
+                            <Plus size={18} />
 
-                                (
+                            Add
 
-                                  <button
-                                    onClick={()=>{
-                                      setEditingId(ip.id);
-                                      setEditingIP(ip.ip_address);
-                                    }}
-                                    className="rounded-lg bg-yellow-100 p-2 hover:bg-yellow-200"
-                                  >
-                                    <Pencil size={18}/>
-                                  </button>
+                        </button>
 
-                                )
+                    </div>
+                    {
 
-                              }
+                        loading ?
 
-                              <button
-                                onClick={()=>handleDelete(ip.id)}
-                                className="rounded-lg bg-red-100 p-2 hover:bg-red-200"
-                              >
-                                <Trash2 size={18}/>
-                              </button>
+                            (
 
-                            </div>
+                                <div className="py-12 text-center text-slate-500 dark:text-slate-400">
 
-                          </td>
+                                    Loading Carrier IPs...
 
-                        </tr>
+                                </div>
 
-                      ))
+                            )
+
+                            :
+
+                            (
+
+                                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+
+                                    <table className="min-w-full">
+
+                                        <thead className="bg-slate-100 dark:bg-slate-800">
+
+                                            <tr>
+
+                                                <th className="px-5 py-4 text-left font-semibold">
+
+                                                    IP Address
+
+                                                </th>
+
+                                                <th className="px-5 py-4 text-center font-semibold">
+
+                                                    Actions
+
+                                                </th>
+
+                                            </tr>
+
+                                        </thead>
+
+                                        <tbody>
+
+                                            {
+
+                                                ips.length === 0 ?
+
+                                                    (
+
+                                                        <tr>
+
+                                                            <td
+                                                                colSpan={2}
+                                                                className="py-10 text-center text-slate-500 dark:text-slate-400"
+                                                            >
+
+                                                                No IP Addresses Found
+
+                                                            </td>
+
+                                                        </tr>
+
+                                                    )
+
+                                                    :
+
+                                                    ips.map((ip) => (
+
+                                                        <tr
+                                                            key={ip.id}
+                                                            className="border-t border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                                                        >
+
+                                                            <td className="px-5 py-4">
+
+                                                                {
+
+                                                                    editingId === ip.id ?
+
+                                                                        (
+
+                                                                            <input
+
+                                                                                type="text"
+
+                                                                                value={editingIP}
+
+                                                                                onChange={(e) =>
+                                                                                    setEditingIP(e.target.value)
+                                                                                }
+
+                                                                                className="
+                                    w-full
+                                    rounded-lg
+                                    border
+                                    border-slate-300
+                                    bg-white
+                                    px-3
+                                    py-2
+                                    text-slate-900
+                                    outline-none
+                                    focus:border-blue-500
+                                    dark:border-slate-700
+                                    dark:bg-slate-800
+                                    dark:text-white
+                                  "
+
+                                                                            />
+
+                                                                        )
+
+                                                                        :
+
+                                                                        (
+
+                                                                            <span className="font-medium">
+
+                                                                                {ip.ip_address}
+
+                                                                            </span>
+
+                                                                        )
+
+                                                                }
+
+                                                            </td>
+
+                                                            <td className="px-5 py-4">
+
+                                                                <div className="flex justify-center gap-2">
+
+                                                                    {
+
+                                                                        editingId === ip.id ?
+
+                                                                            (
+
+                                                                                <button
+
+                                                                                    onClick={() =>
+                                                                                        handleUpdate(ip.id)
+                                                                                    }
+
+                                                                                    className="
+                                      rounded-lg
+                                      bg-blue-600
+                                      px-4
+                                      py-2
+                                      text-white
+                                      hover:bg-blue-700
+                                    "
+
+                                                                                >
+
+                                                                                    Save
+
+                                                                                </button>
+
+                                                                            )
+
+                                                                            :
+
+                                                                            (
+
+                                                                                <button
+
+                                                                                    onClick={() => {
+
+                                                                                        setEditingId(ip.id);
+
+                                                                                        setEditingIP(ip.ip_address);
+
+                                                                                    }}
+
+                                                                                    className="
+                                      rounded-lg
+                                      bg-yellow-100
+                                      p-2
+                                      text-yellow-700
+                                      hover:bg-yellow-200
+                                    "
+
+                                                                                    title="Edit"
+
+                                                                                >
+
+                                                                                    <Pencil size={18} />
+
+                                                                                </button>
+
+                                                                            )
+
+                                                                    }
+
+                                                                    <button
+
+                                                                        onClick={() =>
+                                                                            handleDelete(ip.id)
+                                                                        }
+
+                                                                        className="
+                                  rounded-lg
+                                  bg-red-100
+                                  p-2
+                                  text-red-700
+                                  hover:bg-red-200
+                                "
+
+                                                                        title="Delete"
+
+                                                                    >
+
+                                                                        <Trash2 size={18} />
+
+                                                                    </button>
+
+                                                                </div>
+
+                                                            </td>
+
+                                                        </tr>
+
+                                                    ))
+
+                                            }
+
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+
+                            )
 
                     }
 
-                  </tbody>
+                </div>
 
-                </table>
-
-              </div>
-
-            )
-
-          }
+            </div>
 
         </div>
 
-      </div>
-
-    </div>
-
-  );
+    );
 
 }
