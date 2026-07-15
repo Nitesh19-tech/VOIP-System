@@ -163,7 +163,7 @@ const menu = [
           "SUPER_ADMIN",
           "COMPANY_ADMIN",
         ],
-      }
+      },
 
       {
         name: "Trunks",
