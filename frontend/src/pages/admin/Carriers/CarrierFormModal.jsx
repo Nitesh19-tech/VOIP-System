@@ -1,209 +1,191 @@
 import { useEffect, useState } from "react";
 
 export default function CarrierFormModal({
-
   open,
-
   onClose,
-
   onSave,
-
   carrier,
-
   saving,
-
 }) {
-
   const [form, setForm] = useState({
-
     name: "",
-
     description: "",
-
     is_active: true,
-
   });
 
   useEffect(() => {
-
     if (carrier) {
-
       setForm({
-
         name: carrier.name || "",
-
         description: carrier.description || "",
-
-        is_active: carrier.is_active,
-
+        is_active:
+          carrier.is_active === undefined
+            ? true
+            : carrier.is_active,
       });
-
     } else {
-
       setForm({
-
         name: "",
-
         description: "",
-
         is_active: true,
-
       });
-
     }
-
-  }, [carrier]);
+  }, [carrier, open]);
 
   if (!open) return null;
 
   const handleSubmit = (e) => {
-
     e.preventDefault();
-
     onSave(form);
-
   };
 
   return (
-
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
-
-        <div className="px-6 py-4 border-b">
-
-          <h2 className="text-xl font-semibold">
-
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-lg bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-6 py-4">
+          <h2
+            style={{
+              color: "#111827",
+              fontSize: "22px",
+              fontWeight: "700",
+            }}
+          >
             {carrier ? "Edit Carrier" : "Add Carrier"}
-
           </h2>
 
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              fontSize: "24px",
+              color: "#6b7280",
+            }}
+          >
+            ×
+          </button>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="p-6 space-y-5"
-        >
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="p-6">
 
-          <div>
-
-            <label className="block mb-2 font-medium">
-
+          <div className="mb-5">
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                color: "#111827",
+                fontWeight: "600",
+              }}
+            >
               Carrier Name
-
             </label>
 
             <input
-
               type="text"
-
+              required
               value={form.name}
-
               onChange={(e) =>
                 setForm({
                   ...form,
                   name: e.target.value,
                 })
               }
-
-              required
-
-              className="w-full border rounded-xl px-4 py-3"
-
+              style={{
+                width: "100%",
+                border: "1px solid #d1d5db",
+                padding: "12px",
+                borderRadius: "8px",
+                color: "#111827",
+                background: "#ffffff",
+              }}
+              placeholder="Carrier Name"
             />
-
           </div>
 
-          <div>
-
-            <label className="block mb-2 font-medium">
-
+          <div className="mb-5">
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                color: "#111827",
+                fontWeight: "600",
+              }}
+            >
               Description
-
             </label>
 
             <textarea
-
-              rows="3"
-
+              rows={4}
               value={form.description}
-
               onChange={(e) =>
                 setForm({
                   ...form,
                   description: e.target.value,
                 })
               }
-
-              className="w-full border rounded-xl px-4 py-3"
-
+              style={{
+                width: "100%",
+                border: "1px solid #d1d5db",
+                padding: "12px",
+                borderRadius: "8px",
+                color: "#111827",
+                background: "#ffffff",
+              }}
+              placeholder="Description"
             />
-
           </div>
 
-          <div className="flex items-center gap-3">
-
+          <div className="mb-6 flex items-center gap-3">
             <input
-
               type="checkbox"
-
               checked={form.is_active}
-
               onChange={(e) =>
                 setForm({
                   ...form,
                   is_active: e.target.checked,
                 })
               }
-
             />
 
-            <label>
-
+            <span
+              style={{
+                color: "#111827",
+                fontWeight: "500",
+              }}
+            >
               Active
-
-            </label>
-
+            </span>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 border-t pt-5">
 
             <button
-
               type="button"
-
               onClick={onClose}
-
-              className="px-5 py-2 rounded-xl border"
-
+              className="rounded border px-5 py-2"
             >
-
               Cancel
-
             </button>
 
             <button
-
               type="submit"
-
               disabled={saving}
-
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl"
-
+              className="rounded bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
             >
-
               {saving ? "Saving..." : "Save"}
-
             </button>
 
           </div>
 
         </form>
-
       </div>
-
     </div>
-
   );
-
 }
