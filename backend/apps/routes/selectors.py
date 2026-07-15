@@ -5,5 +5,6 @@ def get_routes():
 
     return Route.objects.select_related(
         "routing_plan",
-        "carrier",
+        "termination",
+        "termination__carrier",
     )
