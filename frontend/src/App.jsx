@@ -158,7 +158,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/sip-users"
+          path="/dashboard/sip-users"
           element={
             <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
               <SipUsers />
@@ -167,73 +167,16 @@ export default function App() {
         />
 
         <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
-              <Analytics />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/billing"
+          path="/dashboard/billing"
           element={
             <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
               <AdminBillingDashboard />
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/rates"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={[
-                "SUPER_ADMIN",
-              ]}
-            >
-              <RateManagement
-                user={user}
-              />
-            </ProtectedRoute>
-          }
-        />
 
         <Route
-          path="/force-change-password"
-          element={
-            <ProtectedRoute user={user} allowedRoles={["CLIENT"]}>
-              <ForcePasswordChange />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN", "CLIENT"]}
-            >
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/superadmin/admin-users"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={["SUPER_ADMIN"]}
-            >
-              <AdminUsers />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/clients"
+          path="/dashboard/clients"
           element={
             <ProtectedRoute
               user={user}
@@ -245,7 +188,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/number-pool"
+          path="/dashboard/number-pool"
           element={
             <ProtectedRoute
               user={user}
@@ -257,7 +200,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/countries"
+          path="/dashboard/countries"
           element={
             <ProtectedRoute
               user={user}
@@ -269,7 +212,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/sip-accounts"
+          path="/dashboard/sip-accounts"
           element={
             <ProtectedRoute
               user={user}
@@ -281,30 +224,7 @@ export default function App() {
         />
 
         <Route
-          path="/cdr"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
-            >
-              <CDRPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/provision"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
-            >
-              <ProvisionPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/trunks"
+          path="/dashboard/trunks"
           element={
             <ProtectedRoute
               user={user}
@@ -316,7 +236,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/carriers"
+          path="/dashboard/carriers"
           element={
             <ProtectedRoute
               user={user}
@@ -331,7 +251,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/routing-plans"
+          path="/dashboard/routing-plans"
           element={
             <ProtectedRoute
               user={user}

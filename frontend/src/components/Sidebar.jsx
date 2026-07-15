@@ -73,7 +73,7 @@ const menu = [
 
         icon: Users,
 
-        path: "/admin/clients",
+        path: "/dashboard/clients",
 
         roles: [
           "SUPER_ADMIN",
@@ -97,7 +97,7 @@ const menu = [
 
         icon: Globe2,
 
-        path: "/admin/countries",
+        path: "//countries",
 
         roles: [
           "SUPER_ADMIN",
@@ -109,7 +109,7 @@ const menu = [
 
         icon: Hash,
 
-        path: "/admin/number-pool",
+        path: "/dashboard/number-pool",
 
         roles: [
           "SUPER_ADMIN",
@@ -122,7 +122,7 @@ const menu = [
 
         icon: Phone,
 
-        path: "/admin/sip-accounts",
+        path: "/dashboard/sip-accounts",
 
         roles: [
           "SUPER_ADMIN",
@@ -135,7 +135,7 @@ const menu = [
 
         icon: Network,
 
-        path: "/admin/carriers",
+        path: "/dashboard/carriers",
 
         roles: [
           "SUPER_ADMIN",
@@ -148,7 +148,7 @@ const menu = [
 
         icon: ClipboardList,
 
-        path: "/admin/routing-plans",
+        path: "/dashboard/routing-plans",
 
         roles: [
           "SUPER_ADMIN",
@@ -161,7 +161,7 @@ const menu = [
 
         icon: Server,
 
-        path: "/admin/trunks",
+        path: "/dashboard/trunks",
 
         roles: [
           "SUPER_ADMIN",
