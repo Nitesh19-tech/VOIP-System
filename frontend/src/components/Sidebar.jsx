@@ -155,6 +155,15 @@ const menu = [
           "COMPANY_ADMIN",
         ],
       },
+      {
+        name: "Routes",
+        icon: Network,
+        path: "/dashboard/routes",
+        roles: [
+          "SUPER_ADMIN",
+          "COMPANY_ADMIN",
+        ],
+      }
 
       {
         name: "Trunks",
