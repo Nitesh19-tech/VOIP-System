@@ -14,6 +14,7 @@ import {
   Receipt,
   CreditCard,
   Server,
+  Network,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -82,7 +83,7 @@ const menu = [
 
     ],
   },
-    // =====================================================
+  // =====================================================
   // Telephony
   // =====================================================
 
@@ -128,18 +129,32 @@ const menu = [
           "COMPANY_ADMIN",
         ],
       },
+
       {
-  name: "Trunks",
+        name: "Carriers",
 
-  icon: Server,
+        icon: Network,
 
-  path: "/admin/trunks",
+        path: "/admin/carriers",
 
-  roles: [
-    "SUPER_ADMIN",
-    "COMPANY_ADMIN",
-  ],
-},
+        roles: [
+          "SUPER_ADMIN",
+          "COMPANY_ADMIN",
+        ],
+      },
+
+      {
+        name: "Trunks",
+
+        icon: Server,
+
+        path: "/admin/trunks",
+
+        roles: [
+          "SUPER_ADMIN",
+          "COMPANY_ADMIN",
+        ],
+      },
 
       {
         name: "Provision Jobs",
@@ -208,7 +223,7 @@ const menu = [
 
     ],
   },
-    // =====================================================
+  // =====================================================
   // Rate Management
   // =====================================================
 
@@ -407,10 +422,9 @@ export default function Sidebar({
                         rounded-xl
                         transition-all
 
-                        ${
-                          isActive
-                            ? "bg-blue-600 text-white"
-                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        ${isActive
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                         }
                       `
                       }

@@ -118,5 +118,12 @@ urlpatterns = [
         "api/trunks/",
         include("apps.trunks.urls"),
     ),
+    # =====================================================
+# Carriers
+# =====================================================
 
+    path(
+    "api/carriers/",
+    include("apps.carriers.urls"),
+    ),
 ]

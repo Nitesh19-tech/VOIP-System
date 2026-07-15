@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 "apps.audit",
 "apps.common",
 "apps.trunks",
+"apps.carriers",
 ]
 
 

@@ -23,6 +23,7 @@ import ProvisionPage from "./pages/admin/Provision/ProvisionPage";
 import Countries from "./pages/admin/Countries/Countries";
 import RateManagement from "./pages/dashboard/rate/RateManagement";
 import TrunkPage from "./pages/admin/Trunks";
+import CarrierList from "./pages/admin/Carriers/CarrierList";
 export default function App() {
 
   // null = loading, false = not logged in, object = logged in
@@ -309,6 +310,21 @@ export default function App() {
               allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
             >
               <TrunkPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/carriers"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
+              <CarrierList />
             </ProtectedRoute>
           }
         />
