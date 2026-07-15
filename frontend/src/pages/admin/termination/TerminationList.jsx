@@ -13,7 +13,6 @@ import TerminationFormModal from "./TerminationFormModal";
 import TerminationDeleteModal from "./TerminationDeleteModal";
 
 export default function TerminationList() {
-
   const [terminations, setTerminations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,13 +27,11 @@ export default function TerminationList() {
   const [deleting, setDeleting] = useState(false);
 
   // ==========================================
-  // Load
+  // Load Terminations
   // ==========================================
 
   const loadTerminations = async () => {
-
     try {
-
       setLoading(true);
 
       const res = await getTerminations();
@@ -44,25 +41,16 @@ export default function TerminationList() {
           ? res.data.data
           : []
       );
-
     } catch (err) {
-
       console.error(err);
-
       alert("Unable to load terminations.");
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   useEffect(() => {
-
     loadTerminations();
-
   }, []);
 
   // ==========================================
@@ -70,21 +58,15 @@ export default function TerminationList() {
   // ==========================================
 
   const filteredTerminations = useMemo(() => {
-
     const keyword = search.toLowerCase();
 
     return terminations.filter((item) =>
-
       item.name.toLowerCase().includes(keyword) ||
-
       item.prefix.toLowerCase().includes(keyword) ||
-
       (item.carrier_name || "")
         .toLowerCase()
         .includes(keyword)
-
     );
-
   }, [terminations, search]);
 
   // ==========================================
@@ -92,42 +74,28 @@ export default function TerminationList() {
   // ==========================================
 
   const saveTermination = async (data) => {
-
     try {
-
       setSaving(true);
 
       if (selectedTermination) {
-
         await updateTermination(
           selectedTermination.id,
           data
         );
-
       } else {
-
         await createTermination(data);
-
       }
 
       setShowForm(false);
-
       setSelectedTermination(null);
 
       await loadTerminations();
-
     } catch (err) {
-
       console.error(err);
-
       alert("Unable to save termination.");
-
     } finally {
-
       setSaving(false);
-
     }
-
   };
 
   // ==========================================
@@ -135,93 +103,104 @@ export default function TerminationList() {
   // ==========================================
 
   const removeTermination = async (id) => {
-
     try {
-
       setDeleting(true);
 
       await deleteTermination(id);
 
       setShowDelete(false);
-
       setSelectedTermination(null);
 
       await loadTerminations();
-
     } catch (err) {
-
       console.error(err);
-
       alert("Unable to delete termination.");
-
     } finally {
-
       setDeleting(false);
-
     }
-
   };
 
   return (
-
-    <div className="space-y-6">
+    <div className="space-y-8">
 
       {/* Header */}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 
         <div>
 
-          <h1 className="text-3xl font-bold">
-
+          <h1 className="text-4xl font-bold tracking-tight text-white">
             Terminations
-
           </h1>
 
-          <p className="text-slate-500">
-
+          <p className="mt-2 text-slate-400">
             Carrier Termination Management
-
           </p>
 
         </div>
 
         <button
           onClick={() => {
-
             setSelectedTermination(null);
-
             setShowForm(true);
-
           }}
-          className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-white hover:bg-blue-700"
+          className="
+            inline-flex
+            items-center
+            gap-2
+            rounded-xl
+            bg-gradient-to-r
+            from-blue-600
+            to-indigo-600
+            px-6
+            py-3
+            font-medium
+            text-white
+            shadow-lg
+            shadow-blue-500/20
+            transition-all
+            duration-300
+            hover:scale-105
+            hover:shadow-blue-500/40
+          "
         >
-
           <Plus size={18} />
 
           Add Termination
-
         </button>
 
       </div>
 
       {/* Search */}
 
-      <div className="relative max-w-md">
+      <div className="relative max-w-lg">
 
         <Search
-          className="absolute left-3 top-3.5 text-slate-400"
           size={18}
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
         />
 
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Search carrier, name or prefix..."
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-          className="w-full rounded-xl border py-3 pl-10 pr-4"
+          onChange={(e) => setSearch(e.target.value)}
+          className="
+            w-full
+            rounded-xl
+            border
+            border-slate-700
+            bg-slate-900
+            py-3
+            pl-11
+            pr-4
+            text-white
+            placeholder:text-slate-500
+            focus:border-blue-500
+            focus:outline-none
+            focus:ring-4
+            focus:ring-blue-500/20
+          "
         />
 
       </div>
@@ -232,22 +211,16 @@ export default function TerminationList() {
         terminations={filteredTerminations}
         loading={loading}
         onEdit={(item) => {
-
           setSelectedTermination(item);
-
           setShowForm(true);
-
         }}
         onDelete={(item) => {
-
           setSelectedTermination(item);
-
           setShowDelete(true);
-
         }}
       />
 
-      {/* Form */}
+      {/* Form Modal */}
 
       <TerminationFormModal
         open={showForm}
@@ -255,15 +228,12 @@ export default function TerminationList() {
         saving={saving}
         onSave={saveTermination}
         onClose={() => {
-
           setShowForm(false);
-
           setSelectedTermination(null);
-
         }}
       />
 
-      {/* Delete */}
+      {/* Delete Modal */}
 
       <TerminationDeleteModal
         open={showDelete}
@@ -271,16 +241,11 @@ export default function TerminationList() {
         deleting={deleting}
         onConfirm={removeTermination}
         onClose={() => {
-
           setShowDelete(false);
-
           setSelectedTermination(null);
-
         }}
       />
 
     </div>
-
   );
-
 }
