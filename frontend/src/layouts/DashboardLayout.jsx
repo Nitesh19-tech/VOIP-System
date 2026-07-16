@@ -10,40 +10,40 @@ export default function DashboardLayout({
   toggleTheme,
   onLogout,
 }) {
-
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
- return (
-  <div className="flex h-screen bg-slate-100 dark:bg-slate-950">
+  return (
+    <div className="flex h-screen bg-slate-100 dark:bg-slate-950">
 
-    <Sidebar
-      open={sidebarOpen}
-      onLogout={onLogout}
-      user={user}
-    />
-
-    <div className="flex flex-1 flex-col">
-
-      <Navbar
-        user={user}
-        dark={dark}
-        toggleTheme={toggleTheme}
+      <Sidebar
+        open={sidebarOpen}
         onLogout={onLogout}
-        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        sidebarOpen={sidebarOpen}
+        user={user}
       />
 
-      <main className="flex-1 overflow-y-auto pt-20 px-6">
+      <div className="flex flex-1 flex-col">
 
-        <div className="text-red-500 text-4xl mb-6">
-          TEST
-        </div>
+        <Navbar
+          user={user}
+          dark={dark}
+          toggleTheme={toggleTheme}
+          onLogout={onLogout}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+        />
 
-        <Outlet context={{ user }} />
+        <main className="flex-1 overflow-y-auto pt-20 px-6">
 
-      </main>
+          <div className="text-red-500 text-3xl mb-4">
+            TEST
+          </div>
+
+          <Outlet context={{ user }} />
+
+        </main>
+
+      </div>
 
     </div>
-
-  </div>
-);
+  );
+}
