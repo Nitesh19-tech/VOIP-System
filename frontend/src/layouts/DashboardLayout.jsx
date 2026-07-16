@@ -13,82 +13,37 @@ export default function DashboardLayout({
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  return (
+ return (
+  <div className="flex h-screen bg-slate-100 dark:bg-slate-950">
 
-    <div className="h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+    <Sidebar
+      open={sidebarOpen}
+      onLogout={onLogout}
+      user={user}
+    />
 
-      {/* Sidebar */}
+    <div className="flex flex-1 flex-col">
 
-      <Sidebar
-        open={sidebarOpen}
-        onLogout={onLogout}
+      <Navbar
         user={user}
+        dark={dark}
+        toggleTheme={toggleTheme}
+        onLogout={onLogout}
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        sidebarOpen={sidebarOpen}
       />
 
-      {/* Main Wrapper */}
+      <main className="flex-1 overflow-y-auto pt-20 px-6">
 
-      <div
-        className={`
-          transition-all
-          duration-300
+        <div className="text-red-500 text-4xl mb-6">
+          TEST
+        </div>
 
-          ${
-            sidebarOpen
-              ? "md:ml-72"
-              : "md:ml-0"
-          }
-        `}
-      >
+        <Outlet context={{ user }} />
 
-        {/* Navbar */}
-
-        <Navbar
-          user={user}
-          dark={dark}
-          toggleTheme={toggleTheme}
-          onLogout={onLogout}
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          sidebarOpen={sidebarOpen}
-        />
-
-        {/* Main Content */}
-
-        <main
-          className="
-            h-screen
-            overflow-y-auto
-
-            pt-20
-            pb-8
-
-            px-6
-            md:px-8
-            lg:px-10
-
-            bg-slate-100
-            dark:bg-slate-950
-          "
-        >
-
-          {/* Page */}
-
-          <div
-            className="
-              max-w-[1800px]
-              mx-auto
-            "
-          >
-
-            <Outlet context={{ user }} />
-
-          </div>
-
-        </main>
-
-      </div>
+      </main>
 
     </div>
 
-  );
-
-}
+  </div>
+);
