@@ -6,6 +6,13 @@ class CarrierGenerator:
     @staticmethod
     def generate(carrier):
 
+        ips = carrier.ips.filter(is_active=True)
+
+        if not ips.exists():
+            return ""
+
+        first_ip = ips.first()
+
         config = f"""
 ; ==================================================
 ; Carrier : {carrier.name}
@@ -22,22 +29,19 @@ allow=ulaw,alaw
 aors={carrier.name}
 
 direct_media=no
+rtp_symmetric=yes
 rewrite_contact=yes
 force_rport=yes
-rtp_symmetric=yes
 
-"""
+identify_by=ip
 
-        ips = carrier.ips.filter(is_active=True)
 
-        first_ip = ips.first()
-
-        if first_ip:
-
-            config += f"""
 [{carrier.name}]
 type=aor
+
 contact=sip:{first_ip.ip_address}:5060
+qualify_frequency=60
+
 
 """
 
@@ -46,7 +50,9 @@ contact=sip:{first_ip.ip_address}:5060
             config += f"""
 [{carrier.name}-identify-{index}]
 type=identify
+
 endpoint={carrier.name}
+
 match={ip.ip_address}
 
 """
@@ -65,7 +71,8 @@ match={ip.ip_address}
 """
 
         carriers = (
-            Carrier.objects.filter(is_active=True)
+            Carrier.objects
+            .filter(is_active=True)
             .prefetch_related("ips")
             .order_by("name")
         )

@@ -1,12 +1,7 @@
 from apps.sip.models import SIPAccount
-from apps.carriers.models import Carrier
 
 
 class PJSIPGenerator:
-
-    # ======================================================
-    # SIP ACCOUNT
-    # ======================================================
 
     @staticmethod
     def generate(account):
@@ -54,67 +49,16 @@ qualify_frequency=60
 
 """
 
-    # ======================================================
-    # CARRIER
-    # ======================================================
-
-    @staticmethod
-    def generate_carrier(carrier):
-
-        config = f"""
-; ==================================================
-; Carrier : {carrier.name}
-; ==================================================
-
-[{carrier.name}]
-type=endpoint
-transport=transport-udp
-context=from-carrier
-
-disallow=all
-allow=all
-
-direct_media=no
-rewrite_contact=yes
-force_rport=yes
-rtp_symmetric=yes
-
-"""
-
-        ips = carrier.ips.filter(is_active=True)
-
-        for index, ip in enumerate(ips, start=1):
-
-            config += f"""
-[{carrier.name}-identify-{index}]
-type=identify
-endpoint={carrier.name}
-match={ip.ip_address}
-
-"""
-
-        return config
-
-    # ======================================================
-    # GENERATE COMPLETE CONFIG
-    # ======================================================
-
     @staticmethod
     def generate_all():
 
-        config = ""
-
-        config += """
+        config = """
 ; ==================================================
-; AUTO GENERATED FILE
+; AUTO GENERATED PJSIP FILE
 ; DO NOT EDIT MANUALLY
 ; ==================================================
 
 """
-
-        # -----------------------------
-        # SIP Accounts
-        # -----------------------------
 
         accounts = (
             SIPAccount.objects.filter(status="ACTIVE")
@@ -126,17 +70,5 @@ match={ip.ip_address}
 
         for account in accounts:
             config += PJSIPGenerator.generate(account)
-
-        # -----------------------------
-        # Carriers
-        # -----------------------------
-
-        carriers = (
-            Carrier.objects.filter(is_active=True)
-            .prefetch_related("ips")
-        )
-
-        for carrier in carriers:
-            config += PJSIPGenerator.generate_carrier(carrier)
 
         return config
