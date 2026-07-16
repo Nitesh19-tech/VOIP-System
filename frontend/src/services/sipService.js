@@ -34,11 +34,7 @@ const sipService = {
 
   getAvailableNumbers() {
 
-    return API.get("numbers/", {
-      params: {
-        status: "AVAILABLE",
-      },
-    });
+    return API.get("numbers/");
 
   },
 
