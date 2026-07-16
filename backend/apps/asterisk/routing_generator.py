@@ -1,4 +1,5 @@
 from apps.routes.models import Route
+from apps.routing_engine.services import RoutingService
 
 
 class RoutingGenerator:
@@ -6,26 +7,17 @@ class RoutingGenerator:
     @staticmethod
     def generate(route):
 
-        dial_string = "${EXTEN}"
-
-        if route.strip_digits > 0:
-            dial_string = "${EXTEN:%d}" % route.strip_digits
-
-        if route.add_prefix:
-            dial_string = f"{route.add_prefix}{dial_string}"
+        failover = RoutingService.build_failover(route)
 
         return f"""
 ; ==================================================
 ; Routing Plan : {route.routing_plan.name}
 ; Prefix       : {route.prefix}
-; Termination  : {route.termination.name}
-; Carrier      : {route.termination.carrier.name}
-; Priority     : {route.priority}
 ; ==================================================
 
-exten => _{route.prefix}X.,1,NoOp(Route : {route.termination.name})
- same => n,Dial(PJSIP/{dial_string}@{route.termination.carrier.name},60)
- same => n,Hangup()
+exten => _{route.prefix}X.,1,NoOp(Route Prefix : {route.prefix})
+
+{failover}
 
 """
 
@@ -50,13 +42,25 @@ exten => _{route.prefix}X.,1,NoOp(Route : {route.termination.name})
                 "termination__carrier",
             )
             .order_by(
-                "routing_plan",
+                "routing_plan__id",
+                "-prefix",
                 "priority",
-                "prefix",
             )
         )
 
+        processed = set()
+
         for route in routes:
+
+            key = (
+                route.routing_plan_id,
+                route.prefix,
+            )
+
+            if key in processed:
+                continue
+
+            processed.add(key)
 
             dialplan += RoutingGenerator.generate(route)
 

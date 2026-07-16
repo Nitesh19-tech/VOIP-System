@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 "apps.routing_plans",
 "apps.routes",
 "apps.payment_terms",
+"apps.routing_engine",
 ]
 
 

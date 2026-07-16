@@ -2,56 +2,159 @@ import socket
 
 from django.conf import settings
 
+from .actions import AMIActions
+
 
 class AMIService:
 
-    @staticmethod
-    def connect():
+    def __init__(self):
 
-        sock = socket.socket(
-            socket.AF_INET,
-            socket.SOCK_STREAM,
-        )
+        self.sock = None
 
-        sock.connect(
+    # =====================================================
+    # Context Manager
+    # =====================================================
+
+    def __enter__(self):
+
+        self.connect()
+        self.login()
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+
+        self.logout()
+
+    # =====================================================
+    # Connect
+    # =====================================================
+
+    def connect(self):
+
+        if self.sock:
+            return
+
+        self.sock = socket.create_connection(
             (
                 settings.AMI_HOST,
                 settings.AMI_PORT,
+            ),
+            timeout=10,
+        )
+
+        # Read Banner
+        self.sock.recv(1024)
+
+    # =====================================================
+    # Login
+    # =====================================================
+
+    def login(self):
+
+        action = AMIActions.login(
+            settings.AMI_USERNAME,
+            settings.AMI_SECRET,
+        )
+
+        return self.execute(action)
+
+    # =====================================================
+    # Send
+    # =====================================================
+
+    def send(self, action):
+
+        if not self.sock:
+            raise ConnectionError(
+                "AMI is not connected."
             )
-        )
 
-        banner = sock.recv(1024).decode()
+        self.sock.sendall(action.encode())
 
-        return sock, banner
+    # =====================================================
+    # Receive
+    # =====================================================
 
-    @staticmethod
-    def login():
+    def receive(self):
 
-        sock = socket.socket(
-            socket.AF_INET,
-            socket.SOCK_STREAM,
-        )
-
-        sock.connect(
-            (
-                settings.AMI_HOST,
-                settings.AMI_PORT,
+        if not self.sock:
+            raise ConnectionError(
+                "AMI is not connected."
             )
+
+        data = b""
+
+        while True:
+
+            chunk = self.sock.recv(4096)
+
+            if not chunk:
+                break
+
+            data += chunk
+
+            if b"\r\n\r\n" in data:
+                break
+
+        return data.decode()
+
+    # =====================================================
+    # Execute
+    # =====================================================
+
+    def execute(self, action):
+
+        self.send(action)
+
+        return self.receive()
+
+    # =====================================================
+    # Execute CLI Command
+    # =====================================================
+
+    def command(self, cli_command):
+
+        action = (
+            "Action: Command\r\n"
+            f"Command: {cli_command}\r\n"
+            "\r\n"
         )
 
-        # Read AMI banner
-        sock.recv(1024)
+        return self.execute(action)
 
-        login_action = (
-            f"Action: Login\r\n"
-            f"Username: {settings.AMI_USERNAME}\r\n"
-            f"Secret: {settings.AMI_SECRET}\r\n"
-            f"Events: on\r\n"
-            f"\r\n"
+    # =====================================================
+    # Ping
+    # =====================================================
+
+    def ping(self):
+
+        return self.execute(
+            AMIActions.ping()
         )
 
-        sock.send(login_action.encode())
+    # =====================================================
+    # Logoff
+    # =====================================================
 
-        response = sock.recv(4096).decode()
+    def logout(self):
 
-        return sock, response
+        if not self.sock:
+            return
+
+        try:
+
+            self.send(
+                AMIActions.logoff()
+            )
+
+        except Exception:
+            pass
+
+        try:
+
+            self.sock.close()
+
+        finally:
+
+            self.sock = None
