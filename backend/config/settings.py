@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 "apps.routes",
 "apps.payment_terms",
 "apps.routing_engine",
+"apps.inbound.apps.InboundConfig",
 ]
 
 
@@ -238,3 +239,12 @@ AMI_PORT = config(
 AMI_USERNAME = config("AMI_USERNAME")
 
 AMI_SECRET = config("AMI_SECRET")
+
+# ==========================
+# INBOUND SETTINGS
+# ==========================
+
+INBOUND_DIALPLAN_FILE = config(
+    "INBOUND_DIALPLAN_FILE",
+    default=str(BASE_DIR / "generated" / "inbound_routes.conf"),
+)

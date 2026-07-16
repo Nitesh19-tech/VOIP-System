@@ -144,4 +144,5 @@ urlpatterns = [
     "api/routes/",
     include("apps.routes.urls"),
 ),
+path("api/inbound/", include("apps.inbound.urls")),
 ]
