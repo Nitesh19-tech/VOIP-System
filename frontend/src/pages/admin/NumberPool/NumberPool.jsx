@@ -3,6 +3,9 @@ import {
   Plus,
   Search,
   Upload,
+  RefreshCw,
+  Globe,
+  Phone,
 } from "lucide-react";
 
 import numberPoolService from "../../../services/numberPoolService";
@@ -44,8 +47,7 @@ export default function NumberPool({ user }) {
 
     try {
 
-      const res =
-        await numberPoolService.getStatistics();
+      const res = await numberPoolService.getStatistics();
 
       setStats(res.data.data);
 
@@ -61,8 +63,7 @@ export default function NumberPool({ user }) {
 
     try {
 
-      const res =
-        await getCountries();
+      const res = await getCountries();
 
       setCountries(res.data.data || []);
 
@@ -80,15 +81,14 @@ export default function NumberPool({ user }) {
 
       setLoading(true);
 
-      const res =
-        await numberPoolService.getNumbers({
+      const res = await numberPoolService.getNumbers({
 
-          search,
-          country,
-          status,
-          provider,
+        search,
+        country,
+        status,
+        provider,
 
-        });
+      });
 
       setNumbers(res.data.data || []);
 
@@ -124,6 +124,7 @@ export default function NumberPool({ user }) {
     provider,
 
   ]);
+
   const handleImport = async (e) => {
 
     const file = e.target.files[0];
@@ -132,8 +133,7 @@ export default function NumberPool({ user }) {
 
     try {
 
-      const res =
-        await numberPoolService.importNumbers(file);
+      const res = await numberPoolService.importNumbers(file);
 
       const result = res.data.data;
 
@@ -162,9 +162,9 @@ Invalid : ${result.invalid}`);
 
     e.target.value = "";
 
-  };
 
-  const openCreate = () => {
+  };
+    const openCreate = () => {
 
     setSelectedNumber(null);
 
@@ -266,36 +266,65 @@ Invalid : ${result.invalid}`);
 
   return (
 
-    <div className="p-6 space-y-6">
+    <div className="space-y-8">
 
-      {/* Header */}
+      {/* ===========================================
+                  Header
+      ============================================ */}
 
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
 
         <div>
 
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+
             Number Pool
+
           </h1>
 
-          <p className="text-slate-500 mt-1">
-            Manage DID Numbers.
+          <p className="mt-2 text-slate-500 dark:text-slate-400">
+
+            Manage, assign and monitor DID inventory.
+
           </p>
 
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
 
-          <label className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl cursor-pointer">
+          <label
+            className="
+              flex
+              items-center
+              gap-2
+
+              px-5
+              py-3
+
+              rounded-xl
+
+              bg-emerald-600
+              hover:bg-emerald-700
+
+              text-white
+              font-medium
+
+              shadow-lg
+
+              cursor-pointer
+
+              transition
+            "
+          >
 
             <Upload size={18} />
 
-            Import
+            Import Numbers
 
             <input
+              hidden
               type="file"
               accept=".csv,.xlsx,.xls"
-              hidden
               onChange={handleImport}
             />
 
@@ -303,7 +332,27 @@ Invalid : ${result.invalid}`);
 
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
+            className="
+              flex
+              items-center
+              gap-2
+
+              px-5
+              py-3
+
+              rounded-xl
+
+              bg-gradient-to-r
+              from-blue-600
+              to-cyan-500
+
+              hover:shadow-xl
+
+              text-white
+              font-medium
+
+              transition
+            "
           >
 
             <Plus size={18} />
@@ -312,179 +361,443 @@ Invalid : ${result.invalid}`);
 
           </button>
 
+          <button
+            onClick={() => {
+
+              loadNumbers();
+
+              loadStatistics();
+
+            }}
+            className="
+              flex
+              items-center
+              gap-2
+
+              px-5
+              py-3
+
+              rounded-xl
+
+              border
+              border-slate-300
+              dark:border-slate-700
+
+              hover:bg-slate-100
+              dark:hover:bg-slate-800
+
+              transition
+            "
+          >
+
+            <RefreshCw size={18} />
+
+            Refresh
+
+          </button>
+
         </div>
 
       </div>
+            {/* ===========================================
+                  Statistics
+      ============================================ */}
 
-      {/* Statistics */}
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all">
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl border shadow p-5">
-          <p className="text-sm text-slate-500">Total</p>
-          <h2 className="text-3xl font-bold mt-2">
-            {stats.total}
-          </h2>
+          <div className="flex items-center justify-between">
+
+            <div>
+
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+
+                Total Numbers
+
+              </p>
+
+              <h2 className="mt-3 text-4xl font-bold text-slate-900 dark:text-white">
+
+                {stats.total}
+
+              </h2>
+
+            </div>
+
+            <div className="h-14 w-14 rounded-2xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+
+              <Phone className="text-blue-600" size={24} />
+
+            </div>
+
+          </div>
+
         </div>
 
-        <div className="bg-green-50 rounded-xl border border-green-100 shadow p-5">
-          <p className="text-sm text-green-700">Available</p>
-          <h2 className="text-3xl font-bold mt-2 text-green-700">
+        <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+
+          <p className="text-xs uppercase tracking-[0.18em] text-emerald-600">
+
+            Available
+
+          </p>
+
+          <h2 className="mt-3 text-4xl font-bold text-emerald-600">
+
             {stats.available}
+
           </h2>
+
         </div>
 
-        <div className="bg-blue-50 rounded-xl border border-blue-100 shadow p-5">
-          <p className="text-sm text-blue-700">Assigned</p>
-          <h2 className="text-3xl font-bold mt-2 text-blue-700">
+        <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+
+          <p className="text-xs uppercase tracking-[0.18em] text-blue-600">
+
+            Assigned
+
+          </p>
+
+          <h2 className="mt-3 text-4xl font-bold text-blue-600">
+
             {stats.assigned}
+
           </h2>
+
         </div>
 
-        <div className="bg-yellow-50 rounded-xl border border-yellow-100 shadow p-5">
-          <p className="text-sm text-yellow-700">Reserved</p>
-          <h2 className="text-3xl font-bold mt-2 text-yellow-700">
+        <div className="rounded-2xl bg-yellow-500/10 border border-yellow-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+
+          <p className="text-xs uppercase tracking-[0.18em] text-yellow-600">
+
+            Reserved
+
+          </p>
+
+          <h2 className="mt-3 text-4xl font-bold text-yellow-600">
+
             {stats.reserved}
+
           </h2>
+
         </div>
 
-        <div className="bg-red-50 rounded-xl border border-red-100 shadow p-5">
-          <p className="text-sm text-red-700">Disabled</p>
-          <h2 className="text-3xl font-bold mt-2 text-red-700">
+        <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+
+          <p className="text-xs uppercase tracking-[0.18em] text-red-600">
+
+            Disabled
+
+          </p>
+
+          <h2 className="mt-3 text-4xl font-bold text-red-600">
+
             {stats.disabled}
+
           </h2>
+
         </div>
 
       </div>
-      {/* Search & Filters */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      {/* ===========================================
+                  Filters
+      ============================================ */}
 
-        {/* Search */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
 
-        <div className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
-          <Search
-            size={18}
-            className="absolute left-3 top-3.5 text-slate-400"
-          />
+          {/* Search */}
+
+          <div className="relative">
+
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Search DID, Extension..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="
+                w-full
+                pl-11
+                pr-4
+                py-3
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                outline-none
+              "
+            />
+
+          </div>
+
+          {/* Country */}
+
+          <div className="relative">
+
+            <Globe
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="
+                w-full
+                pl-11
+                pr-4
+                py-3
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                outline-none
+              "
+            >
+
+              <option value="">All Countries</option>
+
+              {countries.map((item) => (
+
+                <option
+                  key={item.id}
+                  value={item.id}
+                >
+                  {item.name}
+                </option>
+
+              ))}
+
+            </select>
+
+          </div>
+                    {/* Status */}
+
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="
+              w-full
+              px-4
+              py-3
+
+              rounded-xl
+
+              border
+              border-slate-300
+              dark:border-slate-700
+
+              bg-white
+              dark:bg-slate-950
+
+              outline-none
+
+              focus:ring-2
+              focus:ring-blue-500
+            "
+          >
+
+            <option value="">
+
+              All Status
+
+            </option>
+
+            <option value="AVAILABLE">
+
+              Available
+
+            </option>
+
+            <option value="ASSIGNED">
+
+              Assigned
+
+            </option>
+
+            <option value="RESERVED">
+
+              Reserved
+
+            </option>
+
+            <option value="DISABLED">
+
+              Disabled
+
+            </option>
+
+          </select>
+
+          {/* Provider */}
 
           <input
             type="text"
-            placeholder="Search DID, Extension..."
-            value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+            placeholder="Provider"
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            className="
+              w-full
+              px-4
+              py-3
+
+              rounded-xl
+
+              border
+              border-slate-300
+              dark:border-slate-700
+
+              bg-white
+              dark:bg-slate-950
+
+              outline-none
+
+              focus:ring-2
+              focus:ring-blue-500
+            "
           />
 
         </div>
 
-        {/* Country */}
+        {/* Bottom Actions */}
 
-        <select
-          value={country}
-          onChange={(e) =>
-            setCountry(e.target.value)
-          }
-          className="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mt-6">
+
+          <div className="text-sm text-slate-500">
+
+            Showing
+
+            <span className="font-semibold text-slate-900 dark:text-white mx-1">
+
+              {numbers.length}
+
+            </span>
+
+            Numbers
+
+          </div>
+
+          <button
+            onClick={() => {
+
+              setSearch("");
+              setCountry("");
+              setStatus("");
+              setProvider("");
+
+            }}
+            className="
+              px-5
+              py-3
+
+              rounded-xl
+
+              bg-slate-700
+              hover:bg-slate-800
+
+              text-white
+
+              transition
+            "
+          >
+
+            Clear Filters
+
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* ===========================================
+                  Table
+      ============================================ */}
+
+      <div
+        className="
+          rounded-2xl
+
+          border
+          border-slate-200
+          dark:border-slate-800
+
+          bg-white
+          dark:bg-slate-900
+
+          shadow-sm
+
+          overflow-hidden
+        "
+      >
+
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+
+            px-6
+            py-5
+
+            border-b
+            border-slate-200
+            dark:border-slate-800
+          "
         >
 
-          <option value="">
-            All Countries
-          </option>
+          <div>
 
-          {countries.map((item) => (
+            <h3 className="text-lg font-bold">
 
-            <option
-              key={item.id}
-              value={item.id}
-            >
-              {item.name}
-            </option>
+              DID Inventory
 
-          ))}
+            </h3>
 
-        </select>
+            <p className="text-sm text-slate-500 mt-1">
 
-        {/* Status */}
+              Manage assigned and available phone numbers.
 
-        <select
-          value={status}
-          onChange={(e) =>
-            setStatus(e.target.value)
-          }
-          className="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-        >
+            </p>
 
-          <option value="">
-            All Status
-          </option>
+          </div>
 
-          <option value="AVAILABLE">
-            Available
-          </option>
+        </div>
 
-          <option value="ASSIGNED">
-            Assigned
-          </option>
-
-          <option value="RESERVED">
-            Reserved
-          </option>
-
-          <option value="DISABLED">
-            Disabled
-          </option>
-
-        </select>
-
-        {/* Provider */}
-
-        <input
-          type="text"
-          placeholder="Provider"
-          value={provider}
-          onChange={(e) =>
-            setProvider(e.target.value)
-          }
-          className="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+        <NumberTable
+          numbers={numbers}
+          loading={loading}
+          onEdit={openEdit}
+          onDelete={openDelete}
+          user={user}
         />
 
       </div>
-
-      {/* Filter Actions */}
-
-      <div className="flex justify-end">
-
-        <button
-          onClick={() => {
-
-            setSearch("");
-            setCountry("");
-            setStatus("");
-            setProvider("");
-
-          }}
-          className="px-5 py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white"
-        >
-          Clear Filters
-        </button>
-
-      </div>
-
-      {/* Number Table */}
-
-      <NumberTable
-        numbers={numbers}
-        loading={loading}
-        onEdit={openEdit}
-        onDelete={openDelete}
-        user={user}
-      />
-
-      {/* Add / Edit Number */}
+            {/* ===========================================
+                  Add / Edit Modal
+      ============================================ */}
 
       <NumberFormModal
         open={showForm}
@@ -501,7 +814,9 @@ Invalid : ${result.invalid}`);
         saving={saving}
       />
 
-      {/* Delete Number */}
+      {/* ===========================================
+                  Delete Modal
+      ============================================ */}
 
       <NumberDeleteModal
         open={showDelete}

@@ -1,3 +1,9 @@
+import {
+  AlertTriangle,
+  X,
+  Trash2,
+} from "lucide-react";
+
 export default function NumberDeleteModal({
   open,
   onClose,
@@ -10,102 +16,351 @@ export default function NumberDeleteModal({
 
   return (
 
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div
+      className="
+        fixed
+        inset-0
+        z-50
 
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+        flex
+        items-center
+        justify-center
+
+        bg-black/60
+        backdrop-blur-md
+
+        p-6
+      "
+    >
+
+      <div
+        className="
+          w-full
+          max-w-lg
+
+          overflow-hidden
+
+          rounded-3xl
+
+          border
+          border-slate-200
+          dark:border-slate-800
+
+          bg-white
+          dark:bg-slate-900
+
+          shadow-2xl
+        "
+      >
 
         {/* Header */}
 
-        <h2 className="text-2xl font-bold text-red-600">
+        <div
+          className="
+            flex
+            items-center
+            justify-between
 
-          Delete Number
+            border-b
+            border-slate-200
+            dark:border-slate-800
 
-        </h2>
+            px-8
+            py-6
+          "
+        >
 
-        {/* Body */}
+          <div className="flex items-center gap-4">
 
-        <div className="mt-5 space-y-2">
+            <div
+              className="
+                flex
+                h-14
+                w-14
+                items-center
+                justify-center
 
-          <p className="text-slate-600 dark:text-slate-300">
+                rounded-2xl
 
-            Are you sure you want to delete this DID number?
+                bg-red-100
+                dark:bg-red-500/20
+              "
+            >
 
-          </p>
+              <AlertTriangle
+                size={28}
+                className="text-red-600"
+              />
 
-          <div className="rounded-lg border bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            </div>
 
-            <p>
-              <span className="font-semibold">
-                DID :
-              </span>{" "}
-              {number.did_number}
-            </p>
+            <div>
 
-            <p>
-              <span className="font-semibold">
-                Extension :
-              </span>{" "}
-              {number.extension}
-            </p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
 
-            <p>
-              <span className="font-semibold">
-                Country :
-              </span>{" "}
-              {number.country_name || "-"}
-            </p>
+                Delete DID Number
 
-            <p>
-              <span className="font-semibold">
-                Carrier :
-              </span>{" "}
-              {number.carrier_name || "-"}
-            </p>
+              </h2>
 
-            <p>
-              <span className="font-semibold">
-                Termination :
-              </span>{" "}
-              {number.termination_name || "-"}
-            </p>
+              <p className="mt-1 text-sm text-slate-500">
 
-            <p>
-              <span className="font-semibold">
-                Client :
-              </span>{" "}
-              {number.client_name || "-"}
-            </p>
+                This action is permanent.
+
+              </p>
+
+            </div>
 
           </div>
 
-          <p className="text-sm text-red-500">
+          <button
+            onClick={onClose}
+            disabled={deleting}
+            className="
+              h-10
+              w-10
 
-            This action cannot be undone.
+              rounded-xl
+
+              hover:bg-slate-100
+              dark:hover:bg-slate-800
+
+              transition
+            "
+          >
+
+            <X size={20} />
+
+          </button>
+
+        </div>
+
+        {/* Body */}
+
+        <div className="space-y-5 p-8">
+
+          <p className="text-slate-600 dark:text-slate-300">
+
+            Are you sure you want to permanently delete this DID number?
 
           </p>
+
+          <div
+            className="
+              rounded-2xl
+
+              border
+              border-slate-200
+              dark:border-slate-700
+
+              bg-slate-50
+              dark:bg-slate-800
+
+              p-5
+
+              space-y-3
+            "
+          >
+
+            <div className="flex justify-between">
+
+              <span className="font-medium text-slate-500">
+
+                DID Number
+
+              </span>
+
+              <span className="font-semibold">
+
+                {number.did_number}
+
+              </span>
+
+            </div>
+
+            <div className="flex justify-between">
+
+              <span className="font-medium text-slate-500">
+
+                Extension
+
+              </span>
+
+              <span>
+
+                {number.extension || "-"}
+
+              </span>
+
+            </div>
+
+            <div className="flex justify-between">
+
+              <span className="font-medium text-slate-500">
+
+                Country
+
+              </span>
+
+              <span>
+
+                {number.country_name || "-"}
+
+              </span>
+
+            </div>
+
+            <div className="flex justify-between">
+
+              <span className="font-medium text-slate-500">
+
+                Carrier
+
+              </span>
+
+              <span>
+
+                {number.carrier_name || "-"}
+
+              </span>
+
+            </div>
+
+            <div className="flex justify-between">
+
+              <span className="font-medium text-slate-500">
+
+                Termination
+
+              </span>
+
+              <span>
+
+                {number.termination_name || "-"}
+
+              </span>
+
+            </div>
+
+            <div className="flex justify-between">
+
+              <span className="font-medium text-slate-500">
+
+                Client
+
+              </span>
+
+              <span>
+
+                {number.client_name || "-"}
+
+              </span>
+
+            </div>
+
+          </div>
+
+          <div
+            className="
+              rounded-xl
+
+              border
+              border-red-200
+              dark:border-red-500/30
+
+              bg-red-50
+              dark:bg-red-500/10
+
+              p-4
+            "
+          >
+
+            <p className="text-sm text-red-600 dark:text-red-400">
+
+              ⚠ This operation cannot be undone. The DID will be permanently removed.
+
+            </p>
+
+          </div>
 
         </div>
 
         {/* Footer */}
 
-        <div className="mt-8 flex justify-end gap-3">
+        <div
+          className="
+            flex
+            justify-end
+            gap-3
+
+            border-t
+            border-slate-200
+            dark:border-slate-800
+
+            px-8
+            py-6
+          "
+        >
 
           <button
             type="button"
             onClick={onClose}
             disabled={deleting}
-            className="rounded-lg bg-slate-300 px-5 py-2 dark:bg-slate-700"
+            className="
+              rounded-xl
+
+              border
+              border-slate-300
+              dark:border-slate-700
+
+              px-6
+              py-3
+
+              hover:bg-slate-100
+              dark:hover:bg-slate-800
+
+              transition
+            "
           >
+
             Cancel
+
           </button>
 
           <button
             type="button"
             onClick={() => onConfirm(number.id)}
             disabled={deleting}
-            className="rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+            className="
+              flex
+              items-center
+              gap-2
+
+              rounded-xl
+
+              bg-red-600
+
+              px-6
+              py-3
+
+              font-medium
+              text-white
+
+              hover:bg-red-700
+
+              shadow-lg
+
+              transition
+
+              disabled:opacity-50
+            "
           >
-            {deleting ? "Deleting..." : "Delete"}
+
+            <Trash2 size={18} />
+
+            {deleting
+              ? "Deleting..."
+              : "Delete Number"}
+
           </button>
 
         </div>

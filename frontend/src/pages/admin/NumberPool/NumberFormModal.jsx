@@ -1,4 +1,14 @@
 import { useEffect, useState } from "react";
+import {
+  X,
+  Phone,
+  User,
+  Globe,
+  Building2,
+  Server,
+  DollarSign,
+  FileText,
+} from "lucide-react";
 
 import clientService from "../../../services/clientService";
 import userService from "../../../services/userService";
@@ -114,8 +124,7 @@ export default function NumberFormModal({
     }
 
   }, [open, number]);
-
-  const loadCountries = async () => {
+    const loadCountries = async () => {
 
     try {
 
@@ -224,241 +233,741 @@ export default function NumberFormModal({
   };
 
   if (!open) return null;
-    return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
 
-      <div className="w-full max-w-4xl rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+  return (
 
-        <h2 className="mb-6 text-2xl font-bold">
-          {number ? "Edit Number" : "Add Number"}
-        </h2>
+    <div
+      className="
+        fixed
+        inset-0
+        z-50
+
+        flex
+        items-center
+        justify-center
+
+        bg-black/60
+        backdrop-blur-md
+
+        p-6
+      "
+    >
+
+      <div
+        className="
+          w-full
+          max-w-5xl
+
+          rounded-3xl
+
+          bg-white
+          dark:bg-slate-900
+
+          border
+          border-slate-200
+          dark:border-slate-800
+
+          shadow-2xl
+
+          overflow-hidden
+        "
+      >
+
+        {/* Header */}
+
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+
+            px-8
+            py-6
+
+            border-b
+            border-slate-200
+            dark:border-slate-800
+          "
+        >
+
+          <div>
+
+            <h2 className="text-2xl font-bold">
+
+              {number
+                ? "Edit DID Number"
+                : "Add DID Number"}
+
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+
+              Configure DID information.
+
+            </p>
+
+          </div>
+
+          <button
+            onClick={onClose}
+            className="
+              h-11
+              w-11
+
+              rounded-xl
+
+              hover:bg-slate-100
+              dark:hover:bg-slate-800
+
+              flex
+              items-center
+              justify-center
+
+              transition
+            "
+          >
+
+            <X size={20} />
+
+          </button>
+
+        </div>
+
+        {/* Form */}
 
         <form
           onSubmit={submit}
-          className="grid grid-cols-2 gap-4"
-        >
+          className="
+            grid
+            grid-cols-1
+            md:grid-cols-2
 
-          {/* Admin */}
+            gap-5
+
+            p-8
+          "
+        >          {/* ===========================
+                Admin
+          =========================== */}
 
           {user?.role === "SUPER_ADMIN" && (
 
-            <select
-              name="admin"
-              value={form.admin}
-              onChange={handleChange}
-              className="rounded-lg border p-3"
-            >
-              <option value="">Select Admin</option>
+            <div>
 
-              {admins.map((admin) => (
+              <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+                Admin
+
+              </label>
+
+              <select
+                name="admin"
+                value={form.admin}
+                onChange={handleChange}
+                className="
+                  w-full
+
+                  rounded-xl
+
+                  border
+                  border-slate-300
+                  dark:border-slate-700
+
+                  bg-white
+                  dark:bg-slate-950
+
+                  px-4
+                  py-3
+
+                  outline-none
+
+                  focus:ring-2
+                  focus:ring-blue-500
+
+                  transition
+                "
+              >
+
+                <option value="">
+
+                  Select Admin
+
+                </option>
+
+                {admins.map((admin) => (
+
+                  <option
+                    key={admin.id}
+                    value={admin.id}
+                  >
+
+                    {admin.first_name} {admin.last_name}
+
+                  </option>
+
+                ))}
+
+              </select>
+
+            </div>
+
+          )}
+
+          {/* ===========================
+                Client
+          =========================== */}
+
+          <div>
+
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+              Client
+
+            </label>
+
+            <select
+              name="client"
+              value={form.client}
+              onChange={handleChange}
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
+            >
+
+              <option value="">
+
+                Select Client
+
+              </option>
+
+              {clients.map((client) => (
 
                 <option
-                  key={admin.id}
-                  value={admin.id}
+                  key={client.id}
+                  value={client.id}
                 >
-                  {admin.first_name} {admin.last_name}
+
+                  {client.name}
+
                 </option>
 
               ))}
 
             </select>
 
-          )}
+          </div>
 
-          {/* Client */}
+          {/* ===========================
+                Country
+          =========================== */}
 
-          <select
-            name="client"
-            value={form.client}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-          >
+          <div>
 
-            <option value="">
-              Select Client
-            </option>
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
 
-            {clients.map((client) => (
+              Country
 
-              <option
-                key={client.id}
-                value={client.id}
-              >
-                {client.name}
+            </label>
+
+            <select
+              name="country"
+              value={form.country}
+              onChange={handleChange}
+              required
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
+            >
+
+              <option value="">
+
+                Select Country
+
               </option>
 
-            ))}
-
-          </select>
-
-          {/* Country */}
-
-          <select
-            name="country"
-            value={form.country}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-            required
-          >
-
-            <option value="">
-              Select Country
-            </option>
-
-            {countries.map((country) => (
-
-              <option
-                key={country.id}
-                value={country.id}
-              >
-                {country.name} (+{country.dial_code})
-              </option>
-
-            ))}
-
-          </select>
-
-          {/* Carrier */}
-
-          <select
-            name="carrier"
-            value={form.carrier}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-          >
-
-            <option value="">
-              Select Carrier
-            </option>
-
-            {carriers.map((carrier) => (
-
-              <option
-                key={carrier.id}
-                value={carrier.id}
-              >
-                {carrier.name}
-              </option>
-
-            ))}
-
-          </select>
-
-          {/* Termination */}
-
-          <select
-            name="termination"
-            value={form.termination}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-          >
-
-            <option value="">
-              Select Termination
-            </option>
-
-            {terminations
-              .filter((item) => {
-
-                if (!form.carrier) return true;
-
-                return (
-                  Number(item.carrier) ===
-                  Number(form.carrier)
-                );
-
-              })
-              .map((termination) => (
+              {countries.map((country) => (
 
                 <option
-                  key={termination.id}
-                  value={termination.id}
+                  key={country.id}
+                  value={country.id}
                 >
-                  {termination.name}
+
+                  {country.name} (+{country.dial_code})
+
                 </option>
 
               ))}
 
-          </select>
+            </select>
 
-          {/* DID */}
+          </div>
 
-          <input
-            name="did_number"
-            placeholder="DID Number"
-            value={form.did_number}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-            required
-          />
+          {/* ===========================
+                Carrier
+          =========================== */}
 
-          {/* Extension */}
+          <div>
 
-          <input
-            name="extension"
-            placeholder="Extension"
-            value={form.extension}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-            required
-          />
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
 
-          {/* Purchase */}
+              Carrier
 
-          <input
-            type="number"
-            step="0.01"
-            name="purchase_price"
-            placeholder="Purchase Price"
-            value={form.purchase_price}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-          />
+            </label>
 
-          {/* Rental */}
+            <select
+              name="carrier"
+              value={form.carrier}
+              onChange={handleChange}
+              className="
+                w-full
 
-          <input
-            type="number"
-            step="0.01"
-            name="monthly_rental"
-            placeholder="Monthly Rental"
-            value={form.monthly_rental}
-            onChange={handleChange}
-            className="rounded-lg border p-3"
-          />
+                rounded-xl
 
-          {/* Description */}
+                border
+                border-slate-300
+                dark:border-slate-700
 
-          <textarea
-            name="description"
-            rows={4}
-            placeholder="Description"
-            value={form.description}
-            onChange={handleChange}
-            className="col-span-2 rounded-lg border p-3"
-          />
+                bg-white
+                dark:bg-slate-950
 
-          <div className="col-span-2 mt-4 flex justify-end gap-3">
+                px-4
+                py-3
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg bg-slate-300 px-5 py-2 hover:bg-slate-400"
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
             >
-              Cancel
-            </button>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+              <option value="">
+
+                Select Carrier
+
+              </option>
+
+              {carriers.map((carrier) => (
+
+                <option
+                  key={carrier.id}
+                  value={carrier.id}
+                >
+
+                  {carrier.name}
+
+                </option>
+
+              ))}
+
+            </select>
+
+          </div>          {/* ===========================
+                Termination
+          =========================== */}
+
+          <div>
+
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+              Termination
+
+            </label>
+
+            <select
+              name="termination"
+              value={form.termination}
+              onChange={handleChange}
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
             >
-              {saving
-                ? "Saving..."
-                : number
-                ? "Update Number"
-                : "Create Number"}
-            </button>
+
+              <option value="">
+
+                Select Termination
+
+              </option>
+
+              {terminations
+                .filter((item) => {
+
+                  if (!form.carrier) return true;
+
+                  return (
+                    Number(item.carrier) ===
+                    Number(form.carrier)
+                  );
+
+                })
+                .map((termination) => (
+
+                  <option
+                    key={termination.id}
+                    value={termination.id}
+                  >
+
+                    {termination.name}
+
+                  </option>
+
+                ))}
+
+            </select>
+
+          </div>
+
+          {/* ===========================
+                DID Number
+          =========================== */}
+
+          <div>
+
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+              DID Number
+
+            </label>
+
+            <input
+              name="did_number"
+              value={form.did_number}
+              onChange={handleChange}
+              placeholder="e.g. +919876543210"
+              required
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
+            />
+
+          </div>
+
+          {/* ===========================
+                Extension
+          =========================== */}
+
+          <div>
+
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+              Extension
+
+            </label>
+
+            <input
+              name="extension"
+              value={form.extension}
+              onChange={handleChange}
+              placeholder="1001"
+              required
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
+            />
+
+          </div>
+
+          {/* ===========================
+                Purchase Price
+          =========================== */}
+
+          <div>
+
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+              Purchase Price
+
+            </label>
+
+            <input
+              type="number"
+              step="0.01"
+              name="purchase_price"
+              value={form.purchase_price}
+              onChange={handleChange}
+              placeholder="0.00"
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
+            />
+
+          </div>
+
+          {/* ===========================
+                Monthly Rental
+          =========================== */}
+
+          <div>
+
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+              Monthly Rental
+
+            </label>
+
+            <input
+              type="number"
+              step="0.01"
+              name="monthly_rental"
+              value={form.monthly_rental}
+              onChange={handleChange}
+              placeholder="0.00"
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
+            />
+
+          </div>          {/* ===========================
+                Description
+          =========================== */}
+
+          <div className="md:col-span-2">
+
+            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+
+              Description
+
+            </label>
+
+            <textarea
+              name="description"
+              rows={4}
+              value={form.description}
+              onChange={handleChange}
+              placeholder="Enter description..."
+              className="
+                w-full
+
+                rounded-xl
+
+                border
+                border-slate-300
+                dark:border-slate-700
+
+                bg-white
+                dark:bg-slate-950
+
+                px-4
+                py-3
+
+                outline-none
+
+                resize-none
+
+                focus:ring-2
+                focus:ring-blue-500
+
+                transition
+              "
+            />
+
+          </div>
+
+          {/* ===========================
+                Footer
+          =========================== */}
+
+          <div className="md:col-span-2 mt-4">
+
+            <div className="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800 pt-6">
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="
+                  rounded-xl
+
+                  border
+                  border-slate-300
+                  dark:border-slate-700
+
+                  px-6
+                  py-3
+
+                  font-medium
+
+                  hover:bg-slate-100
+                  dark:hover:bg-slate-800
+
+                  transition
+                "
+              >
+
+                Cancel
+
+              </button>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="
+                  rounded-xl
+
+                  bg-gradient-to-r
+                  from-blue-600
+                  to-cyan-500
+
+                  px-6
+                  py-3
+
+                  font-semibold
+                  text-white
+
+                  shadow-lg
+
+                  hover:shadow-xl
+                  hover:scale-[1.02]
+
+                  transition
+
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
+                "
+              >
+
+                {saving
+                  ? "Saving..."
+                  : number
+                  ? "Update Number"
+                  : "Create Number"}
+
+              </button>
+
+            </div>
 
           </div>
 
@@ -466,7 +975,7 @@ export default function NumberFormModal({
 
       </div>
 
-    </div>
-  );
+    </div>  
+    );
 
 }
