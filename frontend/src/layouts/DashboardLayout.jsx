@@ -15,13 +15,19 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-slate-950">
 
+      {/* Sidebar */}
+
       <Sidebar
         open={sidebarOpen}
         onLogout={onLogout}
         user={user}
       />
 
-      <div className="flex flex-1 flex-col">
+      {/* Main Section */}
+
+      <div className="flex flex-1 flex-col overflow-hidden">
+
+        {/* Navbar */}
 
         <Navbar
           user={user}
@@ -32,8 +38,33 @@ export default function DashboardLayout({
           sidebarOpen={sidebarOpen}
         />
 
-        <main className="flex-1 overflow-y-auto pt-20 px-6">
-          <Outlet context={{ user }} />
+        {/* Content */}
+
+        <main
+          className="
+            flex-1
+            overflow-y-auto
+
+            pt-20
+            pb-8
+
+            px-4
+            md:px-6
+            xl:px-8
+          "
+        >
+
+          <div
+            className="
+              w-full
+              max-w-[1600px]
+              mx-auto
+            "
+          >
+
+            <Outlet context={{ user }} />
+
+          </div>
 
         </main>
 

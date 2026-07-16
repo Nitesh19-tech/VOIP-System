@@ -164,7 +164,7 @@ Invalid : ${result.invalid}`);
 
 
   };
-    const openCreate = () => {
+  const openCreate = () => {
 
     setSelectedNumber(null);
 
@@ -272,7 +272,7 @@ Invalid : ${result.invalid}`);
                   Header
       ============================================ */}
 
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
 
         <div>
 
@@ -399,11 +399,11 @@ Invalid : ${result.invalid}`);
         </div>
 
       </div>
-            {/* ===========================================
+      {/* ===========================================
                   Statistics
       ============================================ */}
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-5">
 
         <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all">
 
@@ -507,11 +507,11 @@ Invalid : ${result.invalid}`);
 
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
           {/* Search */}
 
-          <div className="relative">
+          <div className="relative lg:col-span-3">
 
             <Search
               size={18}
@@ -549,8 +549,7 @@ Invalid : ${result.invalid}`);
 
           {/* Country */}
 
-          <div className="relative">
-
+          <div className="relative lg:col-span-3">
             <Globe
               size={18}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
@@ -594,7 +593,7 @@ Invalid : ${result.invalid}`);
             </select>
 
           </div>
-                    {/* Status */}
+          {/* Status */}
 
           <select
             value={status}
@@ -795,7 +794,7 @@ Invalid : ${result.invalid}`);
         />
 
       </div>
-            {/* ===========================================
+      {/* ===========================================
                   Add / Edit Modal
       ============================================ */}
 
