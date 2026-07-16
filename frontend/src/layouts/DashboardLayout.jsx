@@ -33,11 +33,6 @@ export default function DashboardLayout({
         />
 
         <main className="flex-1 overflow-y-auto pt-20 px-6">
-
-          <div className="text-red-500 text-3xl mb-4">
-            TEST
-          </div>
-
           <Outlet context={{ user }} />
 
         </main>
