@@ -125,17 +125,39 @@ class NumberPoolDetailAPIView(APIView):
             pk,
         )
 
-        NumberPoolService.delete_number(
-            number
-        )
+        try:
 
-        return Response(
-            {
-                "success": True,
-                "message": "Number deleted successfully.",
-            },
-            status=status.HTTP_204_NO_CONTENT,
-        )
+            NumberPoolService.delete_number(
+                number
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Number deleted successfully.",
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Unable to delete number.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class NumberPoolImportAPIView(APIView):

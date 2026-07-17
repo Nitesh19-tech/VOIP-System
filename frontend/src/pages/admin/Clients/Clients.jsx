@@ -120,14 +120,21 @@ export default function Clients({ user }) {
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-                <div>
-                    <h1 className="text-3xl font-bold">
-                        Clients
-                    </h1>
+                <div className="relative w-full md:max-w-md">
 
-                    <p className="text-slate-500 mt-1">
-                        Manage clients.
-                    </p>
+                    <Search
+                        size={18}
+                        className="absolute left-3 top-3.5 text-slate-400"
+                    />
+
+                    <input
+                        type="text"
+                        placeholder="Search client..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                    />
+
                 </div>
 
                 <button
@@ -137,23 +144,6 @@ export default function Clients({ user }) {
                     <Plus size={18} />
                     Add Client
                 </button>
-
-            </div>
-
-            <div className="relative max-w-md">
-
-                <Search
-                    size={18}
-                    className="absolute left-3 top-3.5 text-slate-400"
-                />
-
-                <input
-                    type="text"
-                    placeholder="Search client..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                />
 
             </div>
 

@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
+from django.db.models import Q, ProtectedError
 
 from apps.accounts.constants import (
     SUPER_ADMIN,
@@ -62,9 +63,25 @@ class CountryService:
         return country
 
     @staticmethod
-    def delete(country):
+    def delete_number(number):
 
-        country.delete()
+        if number.status == "ASSIGNED":
+            raise ValueError(
+                "Assigned numbers cannot be deleted. Please unassign the number first."
+            )
+
+        if number.status == "RESERVED":
+            raise ValueError(
+                "Reserved numbers cannot be deleted. Please release the reservation first."
+            )
+
+        try:
+            number.delete()
+
+        except ProtectedError:
+            raise ValueError(
+                "This number is linked with other records and cannot be deleted."
+            )
 
 
 class NumberPoolService:

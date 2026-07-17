@@ -133,49 +133,36 @@ export default function AdminUsers() {
   return (
     <div className="p-6 space-y-6">
 
-      {/* Header */}
+      {/* Header and Search */}
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-        <div>
-          <h1 className="text-3xl font-bold">
-            Admin Users
-          </h1>
+  <div className="relative w-full md:max-w-md">
 
-          <p className="text-slate-500 mt-1">
-            Manage system administrators.
-          </p>
-        </div>
+    <Search
+      size={18}
+      className="absolute left-3 top-3.5 text-slate-400"
+    />
 
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
-        >
-          <Plus size={18} />
-          Add Admin
-        </button>
+    <input
+      type="text"
+      placeholder="Search user..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+    />
 
-      </div>
+  </div>
 
-      {/* Search */}
+  <button
+    onClick={openCreate}
+    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
+  >
+    <Plus size={18} />
+    Add Admin
+  </button>
 
-      <div className="relative max-w-md">
-
-        <Search
-          size={18}
-          className="absolute left-3 top-3.5 text-slate-400"
-        />
-
-        <input
-          type="text"
-          placeholder="Search user..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-        />
-
-      </div>
-
+</div>
       {/* Table */}
 
       <AdminTable

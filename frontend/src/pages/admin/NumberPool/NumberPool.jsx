@@ -6,10 +6,11 @@ import {
   RefreshCw,
   Globe,
   Phone,
+  Trash2,
 } from "lucide-react";
 
-import numberPoolService from "../../../services/numberPoolService";
-import { getCountries } from "../../../services/countryService";
+  import numberPoolService from "../../../services/numberPoolService";
+  import { getCountries } from "../../../services/countryService";
 
 import NumberTable from "./NumberTable";
 import NumberFormModal from "./NumberFormModal";
@@ -34,6 +35,7 @@ export default function NumberPool({ user }) {
   const [showDelete, setShowDelete] = useState(false);
 
   const [selectedNumber, setSelectedNumber] = useState(null);
+  const [selectedNumbers, setSelectedNumbers] = useState([]);
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -233,6 +235,43 @@ Invalid : ${result.invalid}`);
     }
 
   };
+  const handleBulkDelete = async () => {
+  if (selectedNumbers.length === 0) {
+    alert("Please select at least one number.");
+    return;
+  }
+
+  if (
+    !window.confirm(
+      `Delete ${selectedNumbers.length} selected numbers?`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    setDeleting(true);
+
+    await Promise.all(
+      selectedNumbers.map((id) =>
+        numberPoolService.deleteNumber(id)
+      )
+    );
+
+    setSelectedNumbers([]);
+
+    await loadNumbers();
+    await loadStatistics();
+
+    alert("Selected numbers deleted successfully.");
+
+  } catch (err) {
+    console.error(err);
+    alert("Unable to delete selected numbers.");
+  } finally {
+    setDeleting(false);
+  }
+};
 
   const deleteNumber = async (id) => {
 
@@ -268,58 +307,46 @@ Invalid : ${result.invalid}`);
 
     <div className="space-y-8">
 
+      {/* ================= HEADER ================= */}
+
       {/* ===========================================
-                  Header
-      ============================================ */}
+            Action Toolbar
+=========================================== */}
 
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div className="flex justify-end mb-6">
 
-        <div>
+   
 
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+    <div className="flex flex-wrap items-center justify-end gap-3">
 
-            Number Pool
-
-          </h1>
-
-          <p className="mt-2 text-slate-500 dark:text-slate-400">
-
-            Manage, assign and monitor DID inventory.
-
-          </p>
-
-        </div>
-
-        <div className="flex flex-wrap gap-3">
+          {/* Import */}
 
           <label
             className="
-              flex
-              items-center
-              gap-2
+        flex items-center gap-2
 
-              px-5
-              py-3
+        px-5 py-3
 
-              rounded-xl
+        rounded-xl
 
-              bg-emerald-600
-              hover:bg-emerald-700
+        bg-emerald-600
+        hover:bg-emerald-700
 
-              text-white
-              font-medium
+        text-white
+        font-medium
 
-              shadow-lg
+        shadow-md
+        hover:shadow-lg
 
-              cursor-pointer
+        cursor-pointer
 
-              transition
-            "
+        transition-all
+        duration-300
+      "
           >
-
             <Upload size={18} />
 
-            Import Numbers
+            <span>Import Numbers</span>
 
             <input
               hidden
@@ -327,73 +354,113 @@ Invalid : ${result.invalid}`);
               accept=".csv,.xlsx,.xls"
               onChange={handleImport}
             />
-
           </label>
+
+          {/* Add */}
 
           <button
             onClick={openCreate}
             className="
-              flex
-              items-center
-              gap-2
+        flex items-center gap-2
 
-              px-5
-              py-3
+        px-5 py-3
 
-              rounded-xl
+        rounded-xl
 
-              bg-gradient-to-r
-              from-blue-600
-              to-cyan-500
+        bg-gradient-to-r
+        from-blue-600
+        to-cyan-500
 
-              hover:shadow-xl
+        text-white
+        font-medium
 
-              text-white
-              font-medium
+        shadow-md
+        hover:shadow-xl
 
-              transition
-            "
+        hover:scale-[1.02]
+
+        transition-all
+        duration-300
+      "
           >
-
             <Plus size={18} />
 
-            Add Number
-
+            <span>Add Number</span>
           </button>
+
+          {/* Refresh */}
 
           <button
             onClick={() => {
-
               loadNumbers();
-
               loadStatistics();
-
             }}
             className="
-              flex
-              items-center
-              gap-2
+        flex items-center gap-2
 
-              px-5
-              py-3
+        px-5 py-3
 
-              rounded-xl
+        rounded-xl
 
-              border
-              border-slate-300
-              dark:border-slate-700
+        border
+        border-slate-300
+        dark:border-slate-700
 
-              hover:bg-slate-100
-              dark:hover:bg-slate-800
+        bg-white
+        dark:bg-slate-900
 
-              transition
-            "
+        text-slate-700
+        dark:text-slate-200
+
+        hover:bg-slate-100
+        dark:hover:bg-slate-800
+
+        shadow-sm
+        hover:shadow-md
+
+        transition-all
+        duration-300
+      "
           >
-
             <RefreshCw size={18} />
 
-            Refresh
+            <span>Refresh</span>
+          </button>
 
+          {/* Delete */}
+
+          <button
+            onClick={handleBulkDelete} // apna delete function yahan call karo
+            disabled={selectedNumbers.length === 0}
+            className="
+    flex items-center gap-2
+
+    px-5 py-3
+
+    rounded-xl
+
+    bg-red-600
+    hover:bg-red-700
+
+    disabled:bg-red-300
+    disabled:cursor-not-allowed
+
+    text-white
+    font-medium
+
+    shadow-md
+    hover:shadow-xl
+
+    transition-all
+    duration-300
+  "
+          >
+            <Trash2 size={18} />
+
+            <span>
+              Delete
+              {selectedNumbers.length > 0 && ` (${selectedNumbers.length})`}
+            </span>
           </button>
 
         </div>
@@ -403,115 +470,83 @@ Invalid : ${result.invalid}`);
                   Statistics
       ============================================ */}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
 
-        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-xl transition">
 
-          <div className="flex items-center justify-between">
+          <div>
 
-            <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+              Total Numbers
+            </p>
 
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-
-                Total Numbers
-
-              </p>
-
-              <h2 className="mt-3 text-4xl font-bold text-slate-900 dark:text-white">
-
-                {stats.total}
-
-              </h2>
-
-            </div>
-
-            <div className="h-14 w-14 rounded-2xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
-
-              <Phone className="text-blue-600" size={24} />
-
-            </div>
+            <h2 className="mt-3 text-4xl font-bold text-slate-900 dark:text-white">
+              {stats.total}
+            </h2>
 
           </div>
-
         </div>
 
-        <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+        <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-5 hover:shadow-xl transition">
 
-          <p className="text-xs uppercase tracking-[0.18em] text-emerald-600">
-
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-600">
             Available
-
           </p>
 
           <h2 className="mt-3 text-4xl font-bold text-emerald-600">
-
             {stats.available}
-
           </h2>
 
         </div>
 
-        <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+        <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-5 hover:shadow-xl transition">
 
-          <p className="text-xs uppercase tracking-[0.18em] text-blue-600">
-
+          <p className="text-xs uppercase tracking-[0.2em] text-blue-600">
             Assigned
-
           </p>
 
           <h2 className="mt-3 text-4xl font-bold text-blue-600">
-
             {stats.assigned}
-
           </h2>
 
         </div>
 
-        <div className="rounded-2xl bg-yellow-500/10 border border-yellow-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+        <div className="rounded-2xl bg-yellow-500/10 border border-yellow-500/20 p-5 hover:shadow-xl transition">
 
-          <p className="text-xs uppercase tracking-[0.18em] text-yellow-600">
-
+          <p className="text-xs uppercase tracking-[0.2em] text-yellow-600">
             Reserved
-
           </p>
 
           <h2 className="mt-3 text-4xl font-bold text-yellow-600">
-
             {stats.reserved}
-
           </h2>
 
         </div>
 
-        <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-6 shadow-sm hover:shadow-xl transition-all">
+        <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-5 hover:shadow-xl transition">
 
-          <p className="text-xs uppercase tracking-[0.18em] text-red-600">
-
+          <p className="text-xs uppercase tracking-[0.2em] text-red-600">
             Disabled
-
           </p>
 
           <h2 className="mt-3 text-4xl font-bold text-red-600">
-
             {stats.disabled}
-
           </h2>
 
         </div>
 
       </div>
-
       {/* ===========================================
-                  Filters
-      ============================================ */}
+                Filters
+=========================================== */}
 
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6">
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
 
           {/* Search */}
 
-          <div className="relative lg:col-span-3">
+          <div className="relative xl:col-span-2">
 
             <Search
               size={18}
@@ -520,36 +555,46 @@ Invalid : ${result.invalid}`);
 
             <input
               type="text"
-              placeholder="Search DID, Extension..."
+              placeholder="Search DID, Client, Extension..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="
-                w-full
-                pl-11
-                pr-4
-                py-3
+          w-full
 
-                rounded-xl
+          pl-11
+          pr-4
+          py-3
 
-                border
-                border-slate-300
-                dark:border-slate-700
+          rounded-xl
 
-                bg-white
-                dark:bg-slate-950
+          border
+          border-slate-300
+          dark:border-slate-700
 
-                focus:ring-2
-                focus:ring-blue-500
+          bg-slate-50
+          dark:bg-slate-950
 
-                outline-none
-              "
+          text-slate-900
+          dark:text-white
+
+          placeholder:text-slate-400
+
+          outline-none
+
+          focus:border-blue-500
+          focus:ring-2
+          focus:ring-blue-500/20
+
+          transition
+        "
             />
 
           </div>
 
           {/* Country */}
 
-          <div className="relative lg:col-span-3">
+          <div className="relative">
+
             <Globe
               size={18}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
@@ -559,22 +604,32 @@ Invalid : ${result.invalid}`);
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               className="
-                w-full
-                pl-11
-                pr-4
-                py-3
+          w-full
 
-                rounded-xl
+          pl-11
+          pr-4
+          py-3
 
-                border
-                border-slate-300
-                dark:border-slate-700
+          rounded-xl
 
-                bg-white
-                dark:bg-slate-950
+          border
+          border-slate-300
+          dark:border-slate-700
 
-                outline-none
-              "
+          bg-slate-50
+          dark:bg-slate-950
+
+          text-slate-900
+          dark:text-white
+
+          outline-none
+
+          focus:border-blue-500
+          focus:ring-2
+          focus:ring-blue-500/20
+
+          transition
+        "
             >
 
               <option value="">All Countries</option>
@@ -593,197 +648,234 @@ Invalid : ${result.invalid}`);
             </select>
 
           </div>
+
           {/* Status */}
 
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             className="
-              w-full
-              px-4
-              py-3
+        w-full
 
-              rounded-xl
+        px-4
+        py-3
 
-              border
-              border-slate-300
-              dark:border-slate-700
+        rounded-xl
 
-              bg-white
-              dark:bg-slate-950
+        border
+        border-slate-300
+        dark:border-slate-700
 
-              outline-none
+        bg-slate-50
+        dark:bg-slate-950
 
-              focus:ring-2
-              focus:ring-blue-500
-            "
+        text-slate-900
+        dark:text-white
+
+        outline-none
+
+        focus:border-blue-500
+        focus:ring-2
+        focus:ring-blue-500/20
+
+        transition
+      "
           >
 
-            <option value="">
+            <option value="">All Status</option>
 
-              All Status
+          <option value="AVAILABLE">
+            🟢 Available
+          </option>
 
-            </option>
+          <option value="ASSIGNED">
+            🔵 Assigned
+          </option>
 
-            <option value="AVAILABLE">
+          <option value="RESERVED">
+            🟡 Reserved
+          </option>
 
-              Available
+          <option value="DISABLED">
+            🔴 Disabled
+          </option>
 
-            </option>
+        </select>
 
-            <option value="ASSIGNED">
+        {/* Provider */}
 
-              Assigned
+        <input
+          type="text"
+          placeholder="Provider"
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+          className="
+        w-full
 
-            </option>
+        px-4
+        py-3
 
-            <option value="RESERVED">
+        rounded-xl
 
-              Reserved
+        border
+        border-slate-300
+        dark:border-slate-700
 
-            </option>
+        bg-slate-50
+        dark:bg-slate-950
 
-            <option value="DISABLED">
+        text-slate-900
+        dark:text-white
 
-              Disabled
+        placeholder:text-slate-400
 
-            </option>
+        outline-none
 
-          </select>
+        focus:border-blue-500
+        focus:ring-2
+        focus:ring-blue-500/20
 
-          {/* Provider */}
+        transition
+      "
+        />
 
-          <input
-            type="text"
-            placeholder="Provider"
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className="
-              w-full
-              px-4
-              py-3
+      </div>
 
-              rounded-xl
+      <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-              border
-              border-slate-300
-              dark:border-slate-700
+        <div className="text-sm text-slate-500 dark:text-slate-400">
 
-              bg-white
-              dark:bg-slate-950
+          Showing
 
-              outline-none
+          <span className="mx-2 font-bold text-slate-900 dark:text-white">
+            {numbers.length}
+          </span>
 
-              focus:ring-2
-              focus:ring-blue-500
-            "
-          />
+          Numbers
 
         </div>
 
-        {/* Bottom Actions */}
+        <button
+          onClick={() => {
 
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mt-6">
+            setSearch("");
+            setCountry("");
+            setStatus("");
+            setProvider("");
 
-          <div className="text-sm text-slate-500">
+          }}
+          className="
+        px-5
+        py-3
 
-            Showing
+        rounded-xl
 
-            <span className="font-semibold text-slate-900 dark:text-white mx-1">
+        bg-slate-800
+        hover:bg-slate-700
 
-              {numbers.length}
+        text-white
+
+        transition-all
+        duration-300
+      "
+        >
+
+          Clear Filters
+
+        </button>
+
+      </div>
+
+    </div>
+
+    {/* ===========================================
+                DID Inventory
+=========================================== */}
+
+    <div
+      className="
+    rounded-2xl
+
+    border
+    border-slate-200
+    dark:border-slate-800
+
+    bg-white
+    dark:bg-slate-900
+
+    shadow-sm
+
+    overflow-hidden
+  "
+    >
+
+      {/* Header */}
+
+      <div
+        className="
+      flex
+      flex-col
+      lg:flex-row
+
+      lg:items-center
+      lg:justify-between
+
+      gap-5
+
+      px-6
+      py-5
+
+      border-b
+      border-slate-200
+      dark:border-slate-800
+    "
+      >
+
+        <div>
+
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+            DID Inventory
+          </h3>
+
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Manage assigned and available phone numbers
+          </p>
+
+        </div>
+
+        <div className="flex items-center gap-3">
+
+          <div
+            className="
+          rounded-xl
+
+          border
+          border-blue-200
+          dark:border-blue-500/20
+
+          bg-blue-50
+          dark:bg-blue-500/10
+
+          px-4
+          py-2
+        "
+          >
+
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+
+              {numbers.length} Numbers
 
             </span>
 
-            Numbers
-
           </div>
-
-          <button
-            onClick={() => {
-
-              setSearch("");
-              setCountry("");
-              setStatus("");
-              setProvider("");
-
-            }}
-            className="
-              px-5
-              py-3
-
-              rounded-xl
-
-              bg-slate-700
-              hover:bg-slate-800
-
-              text-white
-
-              transition
-            "
-          >
-
-            Clear Filters
-
-          </button>
 
         </div>
 
       </div>
 
-      {/* ===========================================
-                  Table
-      ============================================ */}
+      {/* Table */}
 
-      <div
-        className="
-          rounded-2xl
-
-          border
-          border-slate-200
-          dark:border-slate-800
-
-          bg-white
-          dark:bg-slate-900
-
-          shadow-sm
-
-          overflow-hidden
-        "
-      >
-
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-
-            px-6
-            py-5
-
-            border-b
-            border-slate-200
-            dark:border-slate-800
-          "
-        >
-
-          <div>
-
-            <h3 className="text-lg font-bold">
-
-              DID Inventory
-
-            </h3>
-
-            <p className="text-sm text-slate-500 mt-1">
-
-              Manage assigned and available phone numbers.
-
-            </p>
-
-          </div>
-
-        </div>
+      <div className="overflow-x-auto">
 
         <NumberTable
           numbers={numbers}
@@ -791,49 +883,46 @@ Invalid : ${result.invalid}`);
           onEdit={openEdit}
           onDelete={openDelete}
           user={user}
+          selectedNumbers={selectedNumbers}
+          setSelectedNumbers={setSelectedNumbers}
         />
 
       </div>
-      {/* ===========================================
-                  Add / Edit Modal
-      ============================================ */}
-
-      <NumberFormModal
-        open={showForm}
-        onClose={() => {
-
-          setShowForm(false);
-
-          setSelectedNumber(null);
-
-        }}
-        onSave={saveNumber}
-        number={selectedNumber}
-        user={user}
-        saving={saving}
-      />
-
-      {/* ===========================================
-                  Delete Modal
-      ============================================ */}
-
-      <NumberDeleteModal
-        open={showDelete}
-        onClose={() => {
-
-          setShowDelete(false);
-
-          setSelectedNumber(null);
-
-        }}
-        onConfirm={deleteNumber}
-        number={selectedNumber}
-        deleting={deleting}
-      />
 
     </div>
 
-  );
-  
+    {/* ===========================================
+                Add / Edit Modal
+=========================================== */}
 
+    <NumberFormModal
+      open={showForm}
+      onClose={() => {
+        setShowForm(false);
+        setSelectedNumber(null);
+      }}
+      onSave={saveNumber}
+      number={selectedNumber}
+      user={user}
+      saving={saving}
+    />
+
+    {/* ===========================================
+                Delete Modal
+=========================================== */}
+
+    <NumberDeleteModal
+      open={showDelete}
+      onClose={() => {
+        setShowDelete(false);
+        setSelectedNumber(null);
+      }}
+      onConfirm={deleteNumber}
+      number={selectedNumber}
+      deleting={deleting}
+    />
+
+  </div>
+
+  );
 }

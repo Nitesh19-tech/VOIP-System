@@ -276,7 +276,7 @@ export default function SIPFormModal({
               name="admin"
               value={form.admin}
               onChange={handleChange}
-              className="border rounded-lg p-3"
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
 
               <option value="">
@@ -304,7 +304,7 @@ export default function SIPFormModal({
             name="client"
             value={form.client}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
 
@@ -331,7 +331,7 @@ export default function SIPFormModal({
             name="number"
             value={form.number}
             onChange={handleChange}
-            className="border rounded-lg p-3 col-span-2"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
 
@@ -542,7 +542,7 @@ export default function SIPFormModal({
             name="status"
             value={form.status}
             onChange={handleChange}
-            className="border rounded-lg p-3 col-span-2"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 col-span-2"
           >
 
             <option value="ACTIVE">

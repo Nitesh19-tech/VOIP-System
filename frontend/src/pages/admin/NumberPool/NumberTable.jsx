@@ -24,6 +24,8 @@ export default function NumberTable({
   onEdit,
   onDelete,
   user,
+  selectedNumbers,
+  setSelectedNumbers,
 }) {
 
   if (loading) {
@@ -38,9 +40,7 @@ export default function NumberTable({
         />
 
         <h3 className="text-xl font-semibold">
-
           Loading Numbers...
-
         </h3>
 
       </div>
@@ -61,15 +61,11 @@ export default function NumberTable({
         />
 
         <h3 className="text-xl font-semibold">
-
           No Numbers Found
-
         </h3>
 
         <p className="mt-2 text-slate-500">
-
           Import numbers or create a new DID.
-
         </p>
 
       </div>
@@ -90,135 +86,195 @@ export default function NumberTable({
 
             <tr className="text-xs uppercase tracking-wider text-slate-500">
 
-              <th className="px-6 py-4 text-left">Country</th>
+              <th className="w-12 px-4 py-4 text-center">
 
-              <th className="px-6 py-4 text-left">DID Number</th>
+                <input
+                  type="checkbox"
+                  checked={
+                    numbers.length > 0 &&
+                    selectedNumbers.length === numbers.length
+                  }
+                  onChange={(e) => {
 
-              <th className="px-6 py-4 text-left">Extension</th>
+                    if (e.target.checked) {
+
+                      setSelectedNumbers(
+                        numbers.map((item) => item.id)
+                      );
+
+                    } else {
+
+                      setSelectedNumbers([]);
+
+                    }
+
+                  }}
+                  className="h-4 w-4 rounded"
+                />
+
+              </th>
+
+              <th className="px-6 py-4 text-left">
+                Country
+              </th>
+
+              <th className="px-6 py-4 text-left">
+                DID Number
+              </th>
+
+              <th className="px-6 py-4 text-left">
+                Extension
+              </th>
 
               {user?.role === "SUPER_ADMIN" && (
+
                 <th className="px-6 py-4 text-left">
-
                   Admin
-
                 </th>
+
               )}
 
-              <th className="px-6 py-4 text-left">Client</th>
+              <th className="px-6 py-4 text-left">
+                Client
+              </th>
 
-              <th className="px-6 py-4 text-left">Carrier</th>
+              <th className="px-6 py-4 text-left">
+                Carrier
+              </th>
 
-              <th className="px-6 py-4 text-left">Termination</th>
+              <th className="px-6 py-4 text-left">
+                Termination
+              </th>
 
-              <th className="px-6 py-4 text-right">Purchase</th>
+              <th className="px-6 py-4 text-right">
+                Purchase
+              </th>
 
-              <th className="px-6 py-4 text-right">Monthly</th>
+              <th className="px-6 py-4 text-right">
+                Monthly
+              </th>
 
-              <th className="px-6 py-4 text-center">Status</th>
+              <th className="px-6 py-4 text-center">
+                Status
+              </th>
 
-              <th className="px-6 py-4 text-center">Actions</th>
+              <th className="px-6 py-4 text-center">
+                Actions
+              </th>
 
             </tr>
 
           </thead>
 
           <tbody>
-
             {numbers.map((number, index) => (
 
               <tr
                 key={number.id}
                 className={`
-                  transition-all
-                  hover:bg-blue-50
-                  dark:hover:bg-slate-800
+      transition-all
+      hover:bg-blue-50
+      dark:hover:bg-slate-800
 
-                  ${
-                    index % 2 === 0
-                      ? "bg-white dark:bg-slate-900"
-                      : "bg-slate-50 dark:bg-slate-950"
+      ${index % 2 === 0
+                    ? "bg-white dark:bg-slate-900"
+                    : "bg-slate-50 dark:bg-slate-950"
                   }
-                `}
+    `}
               >
 
+                {/* Checkbox */}
+
+                <td className="px-4 py-4 text-center">
+
+                  <input
+                    type="checkbox"
+                    disabled={
+                      number.status === "ASSIGNED" ||
+                      number.status === "RESERVED"
+                    }
+                    checked={selectedNumbers.includes(number.id)}
+                    onChange={(e) => {
+
+                      if (e.target.checked) {
+
+                        setSelectedNumbers([
+                          ...selectedNumbers,
+                          number.id,
+                        ]);
+
+                      } else {
+
+                        setSelectedNumbers(
+                          selectedNumbers.filter(
+                            (id) => id !== number.id
+                          )
+                        );
+
+                      }
+
+                    }}
+                    className="h-4 w-4 rounded"
+                  />
+
+                </td>
+
                 <td className="px-6 py-4">
-
                   {number.country_name || "-"}
-
                 </td>
 
                 <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">
-
                   {number.did_number}
-
                 </td>
 
                 <td className="px-6 py-4">
-
                   {number.extension || "-"}
-
                 </td>
 
                 {user?.role === "SUPER_ADMIN" && (
 
                   <td className="px-6 py-4">
-
                     {number.admin_name || "-"}
-
                   </td>
 
                 )}
 
                 <td className="px-6 py-4">
-
                   {number.client_name || "-"}
-
                 </td>
 
                 <td className="px-6 py-4">
-
                   {number.carrier_name || "-"}
-
                 </td>
 
                 <td className="px-6 py-4">
-
                   {number.termination_name || "-"}
-
                 </td>
 
                 <td className="px-6 py-4 text-right font-medium">
-
                   ₹ {Number(number.purchase_price || 0).toFixed(2)}
-
                 </td>
 
                 <td className="px-6 py-4 text-right font-medium">
-
                   ₹ {Number(number.monthly_rental || 0).toFixed(2)}
-
                 </td>
 
                 <td className="px-6 py-4 text-center">
 
                   <span
                     className={`
-                      inline-flex
-                      items-center
+          inline-flex
+          items-center
+          rounded-full
+          px-3
+          py-1
+          text-xs
+          font-bold
 
-                      rounded-full
-
-                      px-3
-                      py-1
-
-                      text-xs
-                      font-bold
-
-                      ${
-                        statusClasses[number.status] ||
-                        "bg-slate-100 text-slate-700"
+          ${statusClasses[number.status] ||
+                      "bg-slate-100 text-slate-700"
                       }
-                    `}
+        `}
                   >
 
                     {number.status}
@@ -234,45 +290,31 @@ export default function NumberTable({
                     <button
                       onClick={() => onEdit(number)}
                       className="
-                        rounded-xl
-
-                        bg-amber-500
-
-                        p-2.5
-
-                        text-white
-
-                        transition
-
-                        hover:scale-105
-                        hover:bg-amber-600
-                      "
+            rounded-xl
+            bg-amber-500
+            p-2.5
+            text-white
+            transition
+            hover:bg-amber-600
+            hover:scale-105
+          "
                     >
-
                       <Pencil size={16} />
-
                     </button>
 
                     <button
                       onClick={() => onDelete(number)}
                       className="
-                        rounded-xl
-
-                        bg-red-600
-
-                        p-2.5
-
-                        text-white
-
-                        transition
-
-                        hover:scale-105
-                        hover:bg-red-700
-                      "
+            rounded-xl
+            bg-red-600
+            p-2.5
+            text-white
+            transition
+            hover:bg-red-700
+            hover:scale-105
+          "
                     >
-
                       <Trash2 size={16} />
-
                     </button>
 
                   </div>
@@ -292,5 +334,4 @@ export default function NumberTable({
     </div>
 
   );
-
 }

@@ -13,11 +13,9 @@ export default function Navbar({
   toggleSidebar,
   sidebarOpen,
 }) {
-
   const { dark, toggleTheme } = useTheme();
 
   return (
-
     <header
       className={`
         fixed
@@ -48,16 +46,14 @@ export default function Navbar({
         ${sidebarOpen ? "md:left-72" : "md:left-0"}
       `}
     >
-
       {/* Left */}
 
       <div className="flex items-center gap-4">
-
         <button
           onClick={toggleSidebar}
           className="
-            p-2.5
-            rounded-xl
+            p-2
+            rounded-lg
             text-slate-500
             dark:text-slate-400
             hover:bg-blue-600
@@ -65,35 +61,14 @@ export default function Navbar({
             transition
           "
         >
-
           <Menu size={20} />
-
         </button>
-
-        <div className="hidden md:block">
-
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-
-            Dashboard
-
-          </h1>
-
-          <p className="text-xs text-slate-500">
-
-            VoIP Wholesale Management Platform
-
-          </p>
-
-        </div>
-
       </div>
 
-      {/* Center */}
+      {/* Search */}
 
-      <div className="hidden lg:flex items-center">
-
-        <div className="relative">
-
+      <div className="hidden lg:flex flex-1 justify-center px-8">
+        <div className="relative w-full max-w-lg">
           <Search
             size={18}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -103,7 +78,7 @@ export default function Navbar({
             type="text"
             placeholder="Search..."
             className="
-              w-72
+              w-full
               pl-10
               pr-4
               py-2.5
@@ -125,21 +100,16 @@ export default function Navbar({
               focus:ring-blue-500
             "
           />
-
         </div>
-
       </div>
 
       {/* Right */}
 
       <div className="flex items-center gap-3">
-
         <button
           className="
             relative
-
             p-2.5
-
             rounded-xl
 
             text-slate-500
@@ -151,7 +121,6 @@ export default function Navbar({
             transition
           "
         >
-
           <Bell size={20} />
 
           <span
@@ -168,14 +137,12 @@ export default function Navbar({
               bg-red-500
             "
           />
-
         </button>
 
         <button
           onClick={toggleTheme}
           className="
             p-2.5
-
             rounded-xl
 
             text-slate-500
@@ -189,9 +156,7 @@ export default function Navbar({
             transition
           "
         >
-
           {dark ? <Sun size={20} /> : <Moon size={20} />}
-
         </button>
 
         <div
@@ -207,21 +172,14 @@ export default function Navbar({
             dark:border-slate-800
           "
         >
-
           <div className="hidden md:block text-right">
-
             <p className="text-sm font-semibold text-slate-900 dark:text-white">
-
               {user?.username}
-
             </p>
 
             <p className="text-xs uppercase tracking-wider text-slate-500">
-
               {user?.role?.replace("_", " ")}
-
             </p>
-
           </div>
 
           <div
@@ -245,17 +203,10 @@ export default function Navbar({
               shadow-lg
             "
           >
-
             {user?.username?.charAt(0).toUpperCase() || "U"}
-
           </div>
-
         </div>
-
       </div>
-
     </header>
-
   );
-
 }

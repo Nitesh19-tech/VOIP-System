@@ -54,24 +54,16 @@ export default function SipDashboard() {
 
   if (loading) {
     return (
-      <div className="p-10 text-center text-xl">
-        Loading Dashboard...
+      <div className="flex items-center justify-center h-96">
+        <div className="text-slate-500 text-lg font-medium">
+          Loading Dashboard...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-
-      <div>
-        <h1 className="text-3xl font-bold">
-          Dashboard
-        </h1>
-
-        <p className="text-slate-500 mt-1">
-          VoIP System Overview
-        </p>
-      </div>
+    <div className="space-y-8">
 
       <OverviewCards overview={overview} />
 

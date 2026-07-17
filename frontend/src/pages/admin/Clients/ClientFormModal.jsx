@@ -27,9 +27,7 @@ export default function ClientFormModal({
       const users = res.data.data || [];
 
       setAdmins(
-        users.filter(
-          (u) => u.role === "COMPANY_ADMIN"
-        )
+        users.filter((u) => u.role === "COMPANY_ADMIN")
       );
     } catch (err) {
       console.error("Load Admin Error", err);
@@ -76,104 +74,281 @@ export default function ClientFormModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
 
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl p-6">
+  <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
 
-        <h2 className="text-2xl font-bold mb-6">
-          {client ? "Edit Client" : "Create Client"}
-        </h2>
+    {/* Header */}
 
-        <form
-          onSubmit={submit}
-          className="grid grid-cols-2 gap-4"
-        >
+    <div className="border-b border-slate-800 px-6 py-5">
 
-          {user?.role === "SUPER_ADMIN" && (
-            <select
-              name="admin"
-              value={form.admin}
-              onChange={handleChange}
-              className="border rounded-lg p-3 col-span-2"
-            >
-              <option value="">Not Assigned</option>
-
-              {admins.map((admin) => (
-                <option
-                  key={admin.id}
-                  value={admin.id}
-                >
-                  {admin.first_name} {admin.last_name}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <input
-            name="name"
-            placeholder="Client Name"
-            value={form.name}
-            onChange={handleChange}
-            className="border rounded-lg p-3"
-            required
-          />
-
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="border rounded-lg p-3"
-            required
-          />
-
-          <input
-            name="phone"
-            placeholder="Phone"
-            value={form.phone}
-            onChange={handleChange}
-            className="border rounded-lg p-3"
-            required
-          />
-
-          <textarea
-            name="address"
-            rows="4"
-            placeholder="Address"
-            value={form.address}
-            onChange={handleChange}
-            className="border rounded-lg p-3 col-span-2"
-          />
-
-          <div className="col-span-2 flex justify-end gap-3 mt-4">
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2 rounded-lg bg-slate-300 hover:bg-slate-400"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-            >
-              {saving
-                ? "Saving..."
-                : client
-                ? "Update Client"
-                : "Create Client"}
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
+      <h2 className="text-2xl font-bold text-white">
+        {client ? "Edit Client" : "Create Client"}
+      </h2>
 
     </div>
-  );
+
+    {/* Body */}
+
+    <div className="p-6">
+
+      <form
+        onSubmit={submit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-5"
+      >
+
+        {user?.role === "SUPER_ADMIN" && (
+
+          <select
+            name="admin"
+            value={form.admin}
+            onChange={handleChange}
+            className="
+              col-span-1 md:col-span-2
+
+              w-full
+
+              rounded-xl
+
+              border
+              border-slate-700
+
+              bg-slate-800
+
+              text-white
+
+              px-4
+              py-3
+
+              outline-none
+
+              focus:border-blue-500
+              focus:ring-2
+              focus:ring-blue-500/20
+
+              transition
+            "
+          >
+
+            <option value="">
+              Not Assigned
+            </option>
+
+            {admins.map((admin) => (
+
+              <option
+                key={admin.id}
+                value={admin.id}
+              >
+                {admin.first_name} {admin.last_name}
+              </option>
+
+            ))}
+
+          </select>
+
+        )}
+
+        <input
+          name="name"
+          placeholder="Client Name"
+          value={form.name}
+          onChange={handleChange}
+          required
+          className="
+            w-full
+
+            rounded-xl
+
+            border
+            border-slate-700
+
+            bg-slate-800
+
+            text-white
+
+            placeholder:text-slate-400
+
+            px-4
+            py-3
+
+            outline-none
+
+            focus:border-blue-500
+            focus:ring-2
+            focus:ring-blue-500/20
+
+            transition
+          "
+        />
+
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+          className="
+            w-full
+
+            rounded-xl
+
+            border
+            border-slate-700
+
+            bg-slate-800
+
+            text-white
+
+            placeholder:text-slate-400
+
+            px-4
+            py-3
+
+            outline-none
+
+            focus:border-blue-500
+            focus:ring-2
+            focus:ring-blue-500/20
+
+            transition
+          "
+        />
+
+        <input
+          name="phone"
+          placeholder="Phone"
+          value={form.phone}
+          onChange={handleChange}
+          required
+          className="
+            w-full
+
+            rounded-xl
+
+            border
+            border-slate-700
+
+            bg-slate-800
+
+            text-white
+
+            placeholder:text-slate-400
+
+            px-4
+            py-3
+
+            outline-none
+
+            focus:border-blue-500
+            focus:ring-2
+            focus:ring-blue-500/20
+
+            transition
+          "
+        />
+
+        <textarea
+          name="address"
+          rows={4}
+          placeholder="Address"
+          value={form.address}
+          onChange={handleChange}
+          className="
+            col-span-1
+            md:col-span-2
+
+            w-full
+
+            rounded-xl
+
+            border
+            border-slate-700
+
+            bg-slate-800
+
+            text-white
+
+            placeholder:text-slate-400
+
+            px-4
+            py-3
+
+            outline-none
+
+            resize-none
+
+            focus:border-blue-500
+            focus:ring-2
+            focus:ring-blue-500/20
+
+            transition
+          "
+        />
+
+        <div className="col-span-1 md:col-span-2 flex justify-end gap-3 pt-6 border-t border-slate-800">
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="
+              px-6
+              py-2.5
+
+              rounded-xl
+
+              border
+              border-slate-700
+
+              bg-slate-800
+
+              text-slate-300
+
+              hover:bg-slate-700
+
+              transition
+            "
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="
+              px-6
+              py-2.5
+
+              rounded-xl
+
+              bg-blue-600
+
+              text-white
+
+              hover:bg-blue-700
+
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+
+              transition
+            "
+          >
+            {saving
+              ? "Saving..."
+              : client
+              ? "Update Client"
+              : "Create Client"}
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+);
 }
