@@ -1,305 +1,353 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import clientService from "../../../services/clientService";
-import { getCarriers } from "../../../services/carrierService";
-import { getTerminations } from "../../../services/terminationService";
 import numberPoolService from "../../../services/numberPoolService";
 
 export default function BulkAllocationModal({
   open,
   onClose,
   onSuccess,
+  selectedNumbers = [],
 }) {
+  // =====================================================
+  // STATE
+  // =====================================================
 
   const [loading, setLoading] = useState(false);
 
   const [clients, setClients] = useState([]);
 
-  const [carriers, setCarriers] = useState([]);
-
-  const [terminations, setTerminations] = useState([]);
-
   const [form, setForm] = useState({
-
-    carrier: "",
-
-    termination: "",
-
     client: "",
-
-    quantity: 1,
-
   });
 
-  // ==========================================
-  // Load Data
-  // ==========================================
+  // =====================================================
+  // RESET FORM
+  // =====================================================
+
+  const resetForm = () => {
+    setForm({
+      client: "",
+    });
+  };
+
+  // =====================================================
+  // LOAD CLIENTS
+  // =====================================================
 
   useEffect(() => {
+    if (!open) {
+      return;
+    }
 
-    if (!open) return;
-
+    resetForm();
     loadClients();
-
-    loadCarriers();
-
-    loadTerminations();
-
-    setForm({
-
-      carrier: "",
-
-      termination: "",
-
-      client: "",
-
-      quantity: 1,
-
-    });
-
   }, [open]);
 
   const loadClients = async () => {
-
     try {
+      const res = await clientService.getClients();
 
-      const res =
-        await clientService.getClients();
-
-      setClients(res.data.data || []);
-
+      setClients(res.data?.data || []);
     } catch (err) {
+      console.error(
+        "Load Clients Error:",
+        err
+      );
 
-      console.error(err);
-
+      setClients([]);
     }
-
   };
 
-  const loadCarriers = async () => {
-
-    try {
-
-      const res =
-        await getCarriers();
-
-      setCarriers(res.data.data || []);
-
-    } catch (err) {
-
-      console.error(err);
-
-    }
-
-  };
-
-  const loadTerminations = async () => {
-
-    try {
-
-      const res =
-        await getTerminations();
-
-      setTerminations(res.data.data || []);
-
-    } catch (err) {
-
-      console.error(err);
-
-    }
-
-  };
-
-  // ==========================================
-  // Filter
-  // ==========================================
-
-  const filteredTerminations = useMemo(() => {
-
-    if (!form.carrier)
-      return [];
-
-    return terminations.filter(
-
-      (item) =>
-
-        Number(item.carrier) ===
-        Number(form.carrier)
-
-    );
-
-  }, [
-    form.carrier,
-    terminations,
-  ]);
-
-  // ==========================================
-  // Change
-  // ==========================================
+  // =====================================================
+  // FORM CHANGE
+  // =====================================================
 
   const handleChange = (e) => {
-
-    const {
-      name,
-      value,
-    } = e.target;
+    const { name, value } = e.target;
 
     setForm((prev) => ({
-
       ...prev,
-
       [name]: value,
-
     }));
-
   };
 
-  // ==========================================
-  // Submit
-  // ==========================================
+  // =====================================================
+  // ALLOCATE SELECTED NUMBERS
+  // =====================================================
 
   const allocate = async (e) => {
-
     e.preventDefault();
 
-    if (loading) return;
+    if (loading) {
+      return;
+    }
+
+    // -------------------------------------------------
+    // CHECK SELECTED NUMBERS
+    // -------------------------------------------------
+
+    if (!selectedNumbers.length) {
+      alert(
+        "Please select at least one number."
+      );
+
+      return;
+    }
+
+    // -------------------------------------------------
+    // CHECK CLIENT
+    // -------------------------------------------------
+
+    if (!form.client) {
+      alert(
+        "Please select a client."
+      );
+
+      return;
+    }
 
     try {
-
       setLoading(true);
 
-      await numberPoolService.bulkAllocate(
-        form
+      // -------------------------------------------------
+      // PAYLOAD
+      // -------------------------------------------------
+
+      const payload = {
+        number_ids: selectedNumbers.map(
+          (id) => Number(id)
+        ),
+
+        client: Number(form.client),
+      };
+
+      console.log(
+        "Bulk Allocation Payload:",
+        payload
       );
 
+      // -------------------------------------------------
+      // API
+      // -------------------------------------------------
+
+      const res =
+        await numberPoolService.bulkAllocate(
+          payload
+        );
+
+      const allocated =
+        res.data?.allocated_count ||
+        selectedNumbers.length;
+
       alert(
-        "Numbers allocated successfully."
+        `${allocated} numbers allocated successfully.`
       );
+
+      resetForm();
 
       onSuccess();
 
     } catch (err) {
+      console.error(
+        "Bulk Allocation Error:",
+        err
+      );
 
-      console.error(err);
+      console.error(
+        "Backend Response:",
+        err.response?.data
+      );
+
+      const backendMessage =
+        err.response?.data?.message ||
+        err.response?.data?.detail;
 
       alert(
-
-        err?.response?.data?.message ||
-
+        backendMessage ||
         "Allocation failed."
-
       );
 
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
-  if (!open) return null;
-    return (
+  // =====================================================
+  // CLOSE
+  // =====================================================
 
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+  const handleClose = () => {
+    if (loading) {
+      return;
+    }
 
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+    resetForm();
 
-        {/* Header */}
+    onClose();
+  };
 
-        <h2 className="mb-6 text-2xl font-bold">
+  // =====================================================
+  // HIDDEN
+  // =====================================================
 
-          Bulk Number Allocation
+  if (!open) {
+    return null;
+  }
 
-        </h2>
+  // =====================================================
+  // UI
+  // =====================================================
+
+  return (
+    <div
+      className="
+        fixed
+        inset-0
+        z-50
+        flex
+        items-center
+        justify-center
+        bg-black/50
+        p-4
+      "
+    >
+      <div
+        className="
+          w-full
+          max-w-lg
+          rounded-2xl
+          border
+          border-slate-200
+          bg-white
+          p-6
+          shadow-2xl
+          dark:border-slate-800
+          dark:bg-slate-900
+        "
+      >
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
+        <div className="mb-6">
+
+          <h2
+            className="
+              text-2xl
+              font-bold
+              text-slate-900
+              dark:text-white
+            "
+          >
+            Bulk Number Allocation
+          </h2>
+
+          <p
+            className="
+              mt-1
+              text-sm
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
+            Allocate selected numbers to a client.
+          </p>
+
+        </div>
+
+        {/* =================================================
+            SELECTED NUMBERS SUMMARY
+        ================================================= */}
+
+        <div
+          className="
+            mb-6
+            rounded-xl
+            border
+            border-blue-200
+            bg-blue-50
+            p-4
+            dark:border-blue-900
+            dark:bg-blue-950/30
+          "
+        >
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+            "
+          >
+
+            <span
+              className="
+                text-sm
+                font-medium
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
+              Selected Numbers
+            </span>
+
+            <span
+              className="
+                rounded-full
+                bg-blue-600
+                px-3
+                py-1
+                text-sm
+                font-bold
+                text-white
+              "
+            >
+              {selectedNumbers.length}
+            </span>
+
+          </div>
+
+          <p
+            className="
+              mt-2
+              text-xs
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
+            Only these selected numbers will be
+            allocated.
+          </p>
+
+        </div>
+
+        {/* =================================================
+            FORM
+        ================================================= */}
 
         <form
           onSubmit={allocate}
           className="space-y-5"
         >
 
-          {/* Carrier */}
+          {/* =================================================
+              CLIENT
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block font-semibold">
-
-              Carrier
-
-            </label>
-
-            <select
-              name="carrier"
-              value={form.carrier}
-              onChange={handleChange}
-              required
-              className="w-full rounded-lg border p-3"
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-700
+                dark:text-slate-300
+              "
             >
-
-              <option value="">
-                Select Carrier
-              </option>
-
-              {carriers.map((carrier) => (
-
-                <option
-                  key={carrier.id}
-                  value={carrier.id}
-                >
-                  {carrier.name}
-                </option>
-
-              ))}
-
-            </select>
-
-          </div>
-
-          {/* Termination */}
-
-          <div>
-
-            <label className="mb-2 block font-semibold">
-
-              Termination
-
-            </label>
-
-            <select
-              name="termination"
-              value={form.termination}
-              onChange={handleChange}
-              required
-              className="w-full rounded-lg border p-3"
-            >
-
-              <option value="">
-                Select Termination
-              </option>
-
-              {filteredTerminations.map((termination) => (
-
-                <option
-                  key={termination.id}
-                  value={termination.id}
-                >
-                  {termination.name}
-                </option>
-
-              ))}
-
-            </select>
-
-          </div>
-
-          {/* Client */}
-
-          <div>
-
-            <label className="mb-2 block font-semibold">
-
               Client
-
             </label>
 
             <select
@@ -307,7 +355,24 @@ export default function BulkAllocationModal({
               value={form.client}
               onChange={handleChange}
               required
-              className="w-full rounded-lg border p-3"
+              disabled={loading}
+              className="
+                w-full
+                rounded-xl
+                border
+                border-slate-300
+                bg-white
+                p-3
+                text-slate-900
+                outline-none
+                focus:border-blue-500
+                focus:ring-2
+                focus:ring-blue-500/20
+                disabled:opacity-50
+                dark:border-slate-700
+                dark:bg-slate-950
+                dark:text-white
+              "
             >
 
               <option value="">
@@ -315,63 +380,76 @@ export default function BulkAllocationModal({
               </option>
 
               {clients.map((client) => (
-
                 <option
                   key={client.id}
                   value={client.id}
                 >
                   {client.name}
                 </option>
-
               ))}
 
             </select>
 
           </div>
 
-          {/* Quantity */}
+          {/* =================================================
+              FOOTER
+          ================================================= */}
 
-          <div>
-
-            <label className="mb-2 block font-semibold">
-
-              Quantity
-
-            </label>
-
-            <input
-              type="number"
-              name="quantity"
-              min="1"
-              value={form.quantity}
-              onChange={handleChange}
-              required
-              className="w-full rounded-lg border p-3"
-            />
-
-          </div>
-
-          {/* Footer */}
-
-          <div className="flex justify-end gap-3 border-t pt-5">
+          <div
+            className="
+              flex
+              justify-end
+              gap-3
+              border-t
+              border-slate-200
+              pt-5
+              dark:border-slate-800
+            "
+          >
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={loading}
-              className="rounded-lg bg-slate-300 px-5 py-2 hover:bg-slate-400 dark:bg-slate-700"
+              className="
+                rounded-xl
+                bg-slate-200
+                px-5
+                py-2.5
+                font-medium
+                text-slate-700
+                hover:bg-slate-300
+                disabled:opacity-50
+                dark:bg-slate-700
+                dark:text-white
+                dark:hover:bg-slate-600
+              "
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              disabled={loading}
-              className="rounded-lg bg-emerald-600 px-6 py-2 text-white hover:bg-emerald-700 disabled:opacity-50"
+              disabled={
+                loading ||
+                selectedNumbers.length === 0
+              }
+              className="
+                rounded-xl
+                bg-emerald-600
+                px-6
+                py-2.5
+                font-semibold
+                text-white
+                hover:bg-emerald-700
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+              "
             >
               {loading
                 ? "Allocating..."
-                : "Allocate"}
+                : `Allocate ${selectedNumbers.length} Numbers`}
             </button>
 
           </div>
@@ -379,9 +457,6 @@ export default function BulkAllocationModal({
         </form>
 
       </div>
-
     </div>
-
   );
-
 }

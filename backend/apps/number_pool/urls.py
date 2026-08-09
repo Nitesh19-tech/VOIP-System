@@ -6,6 +6,7 @@ from .views import (
     NumberPoolImportAPIView,
     NumberPoolStatisticsAPIView,
     BulkAllocationAPIView,
+    BulkUnallocationAPIView,
 )
 
 from .country_views import (
@@ -14,11 +15,12 @@ from .country_views import (
     CountryImportAPIView,
 )
 
+
 urlpatterns = [
 
-    # ==========================
+    # =====================================================
     # Number Pool
-    # ==========================
+    # =====================================================
 
     path(
         "",
@@ -38,9 +40,27 @@ urlpatterns = [
         name="number-import",
     ),
 
-    # ==========================
+    path(
+        "statistics/",
+        NumberPoolStatisticsAPIView.as_view(),
+        name="number-statistics",
+    ),
+
+    path(
+        "bulk-allocation/",
+        BulkAllocationAPIView.as_view(),
+        name="bulk-allocation",
+    ),
+
+    path(
+        "bulk-unallocation/",
+        BulkUnallocationAPIView.as_view(),
+        name="bulk-unallocation",
+    ),
+
+    # =====================================================
     # Countries
-    # ==========================
+    # =====================================================
 
     path(
         "countries/",
@@ -55,18 +75,8 @@ urlpatterns = [
     ),
 
     path(
-    "countries/import/",
-    CountryImportAPIView.as_view(),
-    name="country-import",
+        "countries/import/",
+        CountryImportAPIView.as_view(),
+        name="country-import",
     ),
-    path(
-    "statistics/",
-    NumberPoolStatisticsAPIView.as_view(),
-    name="number-statistics",
-),
-    path(
-    "bulk-allocation/",
-    BulkAllocationAPIView.as_view(),
-    name="bulk-allocation",
-),
 ]

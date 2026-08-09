@@ -2,56 +2,127 @@ import API from "./api";
 
 const numberPoolService = {
 
-  getNumbers(params = {}) {
-    return API.get("numbers/", {
-      params,
-    });
-  },
+    // =====================================================
+    // GET NUMBERS
+    // =====================================================
 
-  getNumber(id) {
-    return API.get(`numbers/${id}/`);
-  },
+    getNumbers(params = {}) {
 
-  createNumber(data) {
-    return API.post("numbers/", data);
-  },
+        return API.get(
+            "numbers/",
+            {
+                params,
+            }
+        );
+    },
 
-  updateNumber(id, data) {
-    return API.put(`numbers/${id}/`, data);
-  },
+    // =====================================================
+    // GET SINGLE NUMBER
+    // =====================================================
 
-  deleteNumber(id) {
-    return API.delete(`numbers/${id}/`);
-  },
+    getNumber(id) {
 
-  importNumbers(file) {
+        return API.get(
+            `numbers/${id}/`
+        );
+    },
 
-    const formData = new FormData();
+    // =====================================================
+    // CREATE NUMBER
+    // =====================================================
 
-    formData.append("file", file);
+    createNumber(data) {
 
-    return API.post(
-      "numbers/import/",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+        return API.post(
+            "numbers/",
+            data
+        );
+    },
 
-  },
+    // =====================================================
+    // UPDATE NUMBER
+    // =====================================================
 
-  getStatistics() {
-    return API.get("numbers/statistics/");
-  },
+    updateNumber(id, data) {
 
-  bulkAllocate(data) {
-    return API.post(
-      "numbers/bulk-allocation/",
-      data
-    );
-  },
+        return API.put(
+            `numbers/${id}/`,
+            data
+        );
+    },
+
+    // =====================================================
+    // DELETE NUMBER
+    // =====================================================
+
+    deleteNumber(id) {
+
+        return API.delete(
+            `numbers/${id}/`
+        );
+    },
+
+    // =====================================================
+    // IMPORT NUMBERS
+    // =====================================================
+
+    importNumbers(file) {
+
+        const formData = new FormData();
+
+        formData.append(
+            "file",
+            file
+        );
+
+        return API.post(
+            "numbers/import/",
+            formData,
+            {
+                headers: {
+                    "Content-Type":
+                        "multipart/form-data",
+                },
+            }
+        );
+    },
+
+    // =====================================================
+    // STATISTICS
+    // =====================================================
+
+    getStatistics() {
+
+        return API.get(
+            "numbers/statistics/"
+        );
+    },
+
+    // =====================================================
+    // BULK ALLOCATION
+    // =====================================================
+
+    bulkAllocate(data) {
+
+        return API.post(
+            "numbers/bulk-allocation/",
+            data
+        );
+    },
+
+    // =====================================================
+    // BULK UNALLOCATION
+    // =====================================================
+
+    bulkUnallocate(numberIds) {
+
+        return API.post(
+            "numbers/bulk-unallocation/",
+            {
+                number_ids: numberIds,
+            }
+        );
+    },
 
 };
 

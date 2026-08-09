@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
+
 import Companies from "./pages/superadmin/Companies/Companies";
 import API, { setAuthToken } from "./services/api";
 import Login from "./pages/Login";
@@ -27,164 +28,299 @@ import CarrierList from "./pages/admin/Carriers/CarrierList";
 import RoutingPlanList from "./pages/admin/RoutingPlans/RoutingPlanList";
 import RouteList from "./pages/admin/Routes/RouteList";
 import TerminationList from "./pages/admin/termination/TerminationList";
+
 export default function App() {
 
-  // null = loading, false = not logged in, object = logged in
+  // null = loading
+  // false = not logged in
+  // object = logged in
   const [user, setUser] = useState(null);
 
   const navigate = useNavigate();
 
-  // ------------------------------
-  // 🌙 THEME STATE
-  // ------------------------------
+  // =====================================================
+  // THEME STATE
+  // =====================================================
+
   const [dark, setDark] = useState(
     localStorage.getItem("theme") !== "light"
   );
 
   const toggleTheme = () => {
     const newTheme = !dark;
+
     setDark(newTheme);
-    localStorage.setItem("theme", newTheme ? "dark" : "light");
+
+    localStorage.setItem(
+      "theme",
+      newTheme ? "dark" : "light"
+    );
   };
 
   useEffect(() => {
+
     if (dark) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+
   }, [dark]);
 
-  // ------------------------------
-  // 🔐 LOGOUT
-  // ------------------------------
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
   const logout = () => {
+
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
+
     setAuthToken(null);
+
     setUser(false);
-    navigate("/login", { replace: true });
+
+    navigate("/login", {
+      replace: true,
+    });
   };
 
-  // ------------------------------
-  // 👤 LOAD USER
-  // ------------------------------
+  // =====================================================
+  // LOAD USER
+  // =====================================================
+
   const loadUser = async () => {
+
     try {
-      const res = await API.get("auth/profile/");
+
+      const res = await API.get(
+        "auth/profile/"
+      );
 
       if (res.data.force_password_change) {
+
         setUser(res.data);
-        navigate("/force-change-password");
+
+        navigate(
+          "/force-change-password"
+        );
+
         return;
       }
 
       setUser(res.data);
 
     } catch (err) {
-      console.error("Load user failed", err);
+
+      console.error(
+        "Load user failed",
+        err
+      );
+
       logout();
     }
   };
 
-  // ------------------------------
-  // 🔑 CHECK TOKEN ON APP LOAD
-  // ------------------------------
+  // =====================================================
+  // CHECK TOKEN ON APP LOAD
+  // =====================================================
+
   useEffect(() => {
-    const token = localStorage.getItem("access");
+
+    const token =
+      localStorage.getItem("access");
 
     if (token) {
+
       setAuthToken(token);
+
       loadUser();
+
     } else {
+
       setUser(false);
+
     }
+
   }, []);
 
   return (
+
     <Routes>
 
-      {/* Public */}
+      {/* =====================================================
+          PUBLIC
+      ===================================================== */}
+
       <Route
         path="/login"
-        element={<Login onLogin={loadUser} />}
+        element={
+          <Login
+            onLogin={loadUser}
+          />
+        }
       />
 
-      {/* Protected */}
+      {/* =====================================================
+          PROTECTED
+      ===================================================== */}
+
       <Route
         element={
           <ProtectedRoute user={user}>
+
             <DashboardLayout
               user={user}
               dark={dark}
               toggleTheme={toggleTheme}
               onLogout={logout}
             />
+
           </ProtectedRoute>
         }
       >
 
-        <Route index element={<SipDashboard />} />
-        <Route path="/dashboard" element={<SipDashboard />} />
+        {/* =====================================================
+            DASHBOARD
+        ===================================================== */}
+
+        <Route
+          index
+          element={
+            <SipDashboard
+              user={user}
+            />
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <SipDashboard
+              user={user}
+            />
+          }
+        />
+
+        {/* =====================================================
+            CALLS
+        ===================================================== */}
 
         <Route
           path="/calls"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN", "CLIENT"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+                "CLIENT",
+              ]}
             >
               <Calls />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            BILLING
+        ===================================================== */}
+
         <Route
           path="/billing"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["CLIENT", "COMPANY_ADMIN", "SUPER_ADMIN"]}
+              allowedRoles={[
+                "CLIENT",
+                "COMPANY_ADMIN",
+                "SUPER_ADMIN",
+              ]}
             >
               <Billing />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            SUPER ADMIN - COMPANIES
+        ===================================================== */}
+
         <Route
           path="/superadmin/companies"
           element={
-            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN"]}>
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+              ]}
+            >
               <Companies />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            SIP USERS
+        ===================================================== */}
+
         <Route
           path="/dashboard/sip-users"
           element={
-            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
               <SipUsers />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            ANALYTICS
+        ===================================================== */}
+
         <Route
           path="/analytics"
           element={
-            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
               <Analytics />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            ADMIN BILLING
+        ===================================================== */}
+
         <Route
           path="/dashboard/billing"
           element={
-            <ProtectedRoute user={user} allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}>
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
               <AdminBillingDashboard />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            RATES
+        ===================================================== */}
+
         <Route
           path="/rates"
           element={
@@ -201,121 +337,203 @@ export default function App() {
           }
         />
 
+        {/* =====================================================
+            FORCE PASSWORD CHANGE
+        ===================================================== */}
+
         <Route
           path="/force-change-password"
           element={
-            <ProtectedRoute user={user} allowedRoles={["CLIENT"]}>
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "CLIENT",
+              ]}
+            >
               <ForcePasswordChange />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            SETTINGS
+        ===================================================== */}
 
         <Route
           path="/settings"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN", "CLIENT"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+                "CLIENT",
+              ]}
             >
               <Settings />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            SUPER ADMIN - ADMIN USERS
+        ===================================================== */}
+
         <Route
           path="/superadmin/admin-users"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+              ]}
             >
               <AdminUsers />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            CLIENTS
+        ===================================================== */}
+
         <Route
           path="/dashboard/clients"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
             >
-              <Clients user={user} />
+              <Clients
+                user={user}
+              />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            NUMBER POOL
+        ===================================================== */}
 
         <Route
           path="/dashboard/number-pool"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
             >
-              <NumberPool user={user} />
+              <NumberPool
+                user={user}
+              />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            COUNTRIES
+        ===================================================== */}
 
         <Route
           path="/dashboard/countries"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+              ]}
             >
               <Countries />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            SIP ACCOUNTS
+        ===================================================== */}
+
         <Route
           path="/dashboard/sip-accounts"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
             >
-              <SIPAccounts user={user} />
+              <SIPAccounts
+                user={user}
+              />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            CDR
+        ===================================================== */}
 
         <Route
           path="/cdr"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
             >
               <CDRPage />
             </ProtectedRoute>
           }
         />
 
+        {/* =====================================================
+            PROVISION
+        ===================================================== */}
+
         <Route
           path="/provision"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
             >
               <ProvisionPage />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            TRUNKS
+        ===================================================== */}
+
         <Route
           path="/dashboard/trunks"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
             >
               <TrunkPage />
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            CARRIERS
+        ===================================================== */}
 
         <Route
           path="/dashboard/carriers"
@@ -332,6 +550,10 @@ export default function App() {
           }
         />
 
+        {/* =====================================================
+            ROUTING PLANS
+        ===================================================== */}
+
         <Route
           path="/dashboard/routing-plans"
           element={
@@ -346,6 +568,11 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            ROUTES
+        ===================================================== */}
+
         <Route
           path="/dashboard/routes"
           element={
@@ -360,17 +587,26 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* =====================================================
+            TERMINATIONS
+        ===================================================== */}
+
         <Route
           path="/dashboard/terminations"
           element={
             <ProtectedRoute
               user={user}
-              allowedRoles={["SUPER_ADMIN", "COMPANY_ADMIN"]}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
             >
               <TerminationList />
             </ProtectedRoute>
           }
         />
+
       </Route>
 
     </Routes>

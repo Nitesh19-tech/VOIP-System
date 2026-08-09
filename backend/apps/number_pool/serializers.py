@@ -1,14 +1,26 @@
 from rest_framework import serializers
 
 from .models import Country, NumberPool
+
 from django.contrib.auth import get_user_model
+
 from apps.clients.models import Client
 from apps.carriers.models import Carrier, Termination
+
+
+User = get_user_model()
+
+
+# =========================================================
+# COUNTRY SERIALIZER
+# =========================================================
 
 class CountrySerializer(serializers.ModelSerializer):
 
     class Meta:
+
         model = Country
+
         fields = "__all__"
 
         read_only_fields = (
@@ -18,6 +30,10 @@ class CountrySerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+
+# =========================================================
+# NUMBER POOL SERIALIZER
+# =========================================================
 
 class NumberPoolSerializer(serializers.ModelSerializer):
 
@@ -92,6 +108,7 @@ class NumberPoolSerializer(serializers.ModelSerializer):
 
         read_only_fields = (
             "id",
+
             "created_by",
             "created_at",
             "updated_at",
@@ -151,6 +168,10 @@ class NumberPoolSerializer(serializers.ModelSerializer):
             },
         }
 
+    # =====================================================
+    # DID VALIDATION
+    # =====================================================
+
     def validate_did_number(self, value):
 
         queryset = NumberPool.objects.filter(
@@ -158,16 +179,22 @@ class NumberPoolSerializer(serializers.ModelSerializer):
         )
 
         if self.instance:
+
             queryset = queryset.exclude(
                 pk=self.instance.pk
             )
 
         if queryset.exists():
+
             raise serializers.ValidationError(
                 "This DID number already exists."
             )
 
         return value
+
+    # =====================================================
+    # EXTENSION VALIDATION
+    # =====================================================
 
     def validate_extension(self, value):
 
@@ -176,11 +203,13 @@ class NumberPoolSerializer(serializers.ModelSerializer):
         )
 
         if self.instance:
+
             queryset = queryset.exclude(
                 pk=self.instance.pk
             )
 
         if queryset.exists():
+
             raise serializers.ValidationError(
                 "This extension already exists."
             )
@@ -188,25 +217,245 @@ class NumberPoolSerializer(serializers.ModelSerializer):
         return value
 
 
-
-User = get_user_model()
-
+# =========================================================
+# BULK ALLOCATION SERIALIZER
+# =========================================================
+#
+# Frontend payload:
+#
+# {
+#     "number_ids": [1, 2, 3],
+#     "client": 5
+# }
+#
+# =========================================================
 
 class BulkAllocationSerializer(serializers.Serializer):
 
+    number_ids = serializers.ListField(
+
+        child=serializers.IntegerField(
+            min_value=1
+        ),
+
+        allow_empty=False,
+    )
+
+    client = serializers.PrimaryKeyRelatedField(
+
+        queryset=Client.objects.filter(
+            is_active=True,
+        )
+    )
+
+    # =====================================================
+    # VALIDATE NUMBER IDS
+    # =====================================================
+
+    def validate_number_ids(self, value):
+
+        # -------------------------------------------------
+        # Remove duplicate IDs
+        # -------------------------------------------------
+
+        value = list(
+            dict.fromkeys(value)
+        )
+
+        # -------------------------------------------------
+        # Fetch selected numbers
+        # -------------------------------------------------
+
+        numbers = NumberPool.objects.filter(
+            id__in=value
+        )
+
+        # -------------------------------------------------
+        # Check missing IDs
+        # -------------------------------------------------
+
+        existing_ids = set(
+            numbers.values_list(
+                "id",
+                flat=True
+            )
+        )
+
+        missing_ids = [
+            number_id
+            for number_id in value
+            if number_id not in existing_ids
+        ]
+
+        if missing_ids:
+
+            raise serializers.ValidationError(
+                f"Number IDs not found: {missing_ids}"
+            )
+
+        # -------------------------------------------------
+        # Check availability
+        # -------------------------------------------------
+
+        unavailable_numbers = list(
+            numbers.exclude(
+                status="AVAILABLE"
+            ).values_list(
+                "did_number",
+                flat=True
+            )
+        )
+
+        if unavailable_numbers:
+
+            raise serializers.ValidationError(
+                {
+                    "number_ids":
+                    "These numbers are not available: "
+                    + ", ".join(
+                        unavailable_numbers
+                    )
+                }
+            )
+
+        return value
+
+
+# =========================================================
+# BULK UNALLOCATION SERIALIZER
+# =========================================================
+#
+# Frontend payload:
+#
+# {
+#     "number_ids": [1, 2, 3]
+# }
+#
+# =========================================================
+
+class BulkUnallocationSerializer(serializers.Serializer):
+
+    number_ids = serializers.ListField(
+
+        child=serializers.IntegerField(
+            min_value=1
+        ),
+
+        allow_empty=False,
+    )
+
+    # =====================================================
+    # VALIDATE NUMBER IDS
+    # =====================================================
+
+    def validate_number_ids(self, value):
+
+        # -------------------------------------------------
+        # Remove duplicate IDs
+        # -------------------------------------------------
+
+        value = list(
+            dict.fromkeys(value)
+        )
+
+        # -------------------------------------------------
+        # Check numbers exist
+        # -------------------------------------------------
+
+        existing_ids = set(
+            NumberPool.objects.filter(
+                id__in=value
+            ).values_list(
+                "id",
+                flat=True
+            )
+        )
+
+        missing_ids = [
+            number_id
+            for number_id in value
+            if number_id not in existing_ids
+        ]
+
+        if missing_ids:
+
+            raise serializers.ValidationError(
+                f"Number IDs not found: {missing_ids}"
+            )
+
+        # -------------------------------------------------
+        # Check assigned numbers
+        # -------------------------------------------------
+
+        assigned_ids = set(
+            NumberPool.objects.filter(
+                id__in=value,
+                status="ASSIGNED",
+            ).values_list(
+                "id",
+                flat=True
+            )
+        )
+
+        not_assigned = [
+            number_id
+            for number_id in value
+            if number_id not in assigned_ids
+        ]
+
+        if not_assigned:
+
+            raise serializers.ValidationError(
+                {
+                    "number_ids":
+                    "Some selected numbers are not assigned."
+                }
+            )
+
+        return value
+
+
+# =========================================================
+# AUTO ASSIGN SERIALIZER
+# =========================================================
+#
+# Used by separate Assign Numbers page.
+#
+# Frontend payload:
+#
+# {
+#     "carrier": 1,
+#     "termination": 5,
+#     "client": 10,
+#     "quantity": 20,
+#     "prefix": "",
+#     "payment_term": "Weekly"
+# }
+#
+# =========================================================
+
+class AutoAssignSerializer(serializers.Serializer):
+
     carrier = serializers.PrimaryKeyRelatedField(
+
         queryset=Carrier.objects.filter(
             is_active=True,
         )
     )
 
     termination = serializers.PrimaryKeyRelatedField(
+
         queryset=Termination.objects.filter(
             is_active=True,
-        )
+        ),
+
+        required=False,
+
+        allow_null=True,
     )
 
     client = serializers.PrimaryKeyRelatedField(
+
         queryset=Client.objects.filter(
             is_active=True,
         )
@@ -216,18 +465,116 @@ class BulkAllocationSerializer(serializers.Serializer):
         min_value=1,
     )
 
-    def validate(self, attrs):
+    prefix = serializers.CharField(
 
-        termination = attrs["termination"]
+        required=False,
+
+        allow_blank=True,
+
+        allow_null=True,
+    )
+
+    payment_term = serializers.ChoiceField(
+
+        choices=Termination.PAYMENT_TERMS,
+
+        required=False,
+
+        allow_blank=True,
+
+        allow_null=True,
+    )
+
+    # =====================================================
+    # VALIDATION
+    # =====================================================
+
+    def validate(self, attrs):
 
         carrier = attrs["carrier"]
 
-        if termination.carrier_id != carrier.id:
+        termination = attrs.get(
+            "termination"
+        )
+
+        payment_term = attrs.get(
+            "payment_term"
+        )
+
+        # -------------------------------------------------
+        # TERMINATION → CARRIER CHECK
+        # -------------------------------------------------
+
+        if termination:
+
+            if termination.carrier_id != carrier.id:
+
+                raise serializers.ValidationError(
+                    {
+                        "termination":
+                        "Selected termination does not "
+                        "belong to selected carrier."
+                    }
+                )
+
+        # -------------------------------------------------
+        # TERMINATION PAYMENT TERM
+        # -------------------------------------------------
+
+        if termination:
+
+            termination_payment_term = (
+                termination.payment_term
+            )
+
+            # If frontend did not send payment term,
+            # automatically use termination's payment term.
+
+            if not payment_term:
+
+                attrs["payment_term"] = (
+                    termination_payment_term
+                )
+
+            # If frontend sent a payment term,
+            # it must match the termination.
+
+            elif payment_term != termination_payment_term:
+
+                raise serializers.ValidationError(
+                    {
+                        "payment_term":
+                        "Selected payment term does not "
+                        "match the selected termination."
+                    }
+                )
+
+        # -------------------------------------------------
+        # PREFIX
+        # -------------------------------------------------
+
+        prefix = attrs.get(
+            "prefix"
+        )
+
+        if prefix:
+
+            attrs["prefix"] = prefix.strip()
+
+        # -------------------------------------------------
+        # QUANTITY
+        # -------------------------------------------------
+
+        quantity = attrs.get(
+            "quantity"
+        )
+
+        if quantity <= 0:
 
             raise serializers.ValidationError(
                 {
-                    "termination":
-                    "Selected termination does not belong to selected carrier."
+                    "quantity":
+                    "Quantity must be greater than zero."
                 }
             )
 

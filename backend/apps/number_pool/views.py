@@ -7,10 +7,17 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import (
     NumberPoolSerializer,
     BulkAllocationSerializer,
+    BulkUnallocationSerializer,
 )
+
 from .services import NumberPoolService
 from .import_service import NumberPoolImportService
 from .statistics import NumberPoolStatistics
+
+
+# =========================================================
+# NUMBER LIST + CREATE
+# =========================================================
 
 class NumberPoolListCreateAPIView(APIView):
 
@@ -21,7 +28,8 @@ class NumberPoolListCreateAPIView(APIView):
         numbers = NumberPoolService.get_all(
             request.user,
             request.query_params,
-)
+        )
+
         serializer = NumberPoolSerializer(
             numbers,
             many=True,
@@ -60,6 +68,10 @@ class NumberPoolListCreateAPIView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
+# =========================================================
+# NUMBER DETAIL
+# =========================================================
 
 class NumberPoolDetailAPIView(APIView):
 
@@ -160,6 +172,10 @@ class NumberPoolDetailAPIView(APIView):
             )
 
 
+# =========================================================
+# IMPORT NUMBERS
+# =========================================================
+
 class NumberPoolImportAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -178,7 +194,9 @@ class NumberPoolImportAPIView(APIView):
             return Response(
                 {
                     "success": False,
-                    "message": "Please select a CSV or Excel file.",
+                    "message": (
+                        "Please select a CSV or Excel file."
+                    ),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -195,20 +213,29 @@ class NumberPoolImportAPIView(APIView):
                 "data": result,
             }
         )
-    
+
+
+# =========================================================
+# STATISTICS
+# =========================================================
+
 class NumberPoolStatisticsAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
-        return Response({
+        return Response(
+            {
+                "success": True,
+                "data": NumberPoolStatistics.summary(),
+            }
+        )
 
-            "success": True,
 
-            "data": NumberPoolStatistics.summary(),
-
-        })
+# =========================================================
+# BULK ALLOCATION
+# =========================================================
 
 class BulkAllocationAPIView(APIView):
 
@@ -235,7 +262,10 @@ class BulkAllocationAPIView(APIView):
                 {
                     "success": True,
                     "allocated_count": allocated,
-                    "message": f"{allocated} numbers allocated successfully.",
+                    "message": (
+                        f"{allocated} numbers "
+                        "allocated successfully."
+                    ),
                 },
                 status=status.HTTP_200_OK,
             )
@@ -250,7 +280,75 @@ class BulkAllocationAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        except Exception:
+        except Exception as e:
+
+            print(
+                "Bulk Allocation Error:",
+                e,
+            )
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Internal server error.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+# =========================================================
+# BULK UNALLOCATION
+# =========================================================
+
+class BulkUnallocationAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = BulkUnallocationSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+
+            unallocated = NumberPoolService.bulk_unallocate(
+                serializer.validated_data,
+                request.user,
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "unallocated_count": unallocated,
+                    "message": (
+                        f"{unallocated} numbers "
+                        "unallocated successfully."
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+
+            print(
+                "Bulk Unallocation Error:",
+                e,
+            )
 
             return Response(
                 {

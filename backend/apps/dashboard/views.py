@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import IsSuperAdmin
+from apps.accounts.permissions import IsSuperAdminOrCompanyAdmin
 
 from .serializers import (
     ActiveCallSerializer,
@@ -9,16 +9,19 @@ from .serializers import (
     DeviceSerializer,
     ExtensionStatusSerializer,
 )
+
 from .services import DashboardService
 
 
 class DashboardOverviewAPIView(APIView):
 
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsSuperAdminOrCompanyAdmin]
 
     def get(self, request):
 
-        data = DashboardService.overview()
+        data = DashboardService.overview(
+            request.user
+        )
 
         serializer = DashboardOverviewSerializer(
             instance=data
@@ -29,11 +32,13 @@ class DashboardOverviewAPIView(APIView):
 
 class ExtensionStatusAPIView(APIView):
 
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsSuperAdminOrCompanyAdmin]
 
     def get(self, request):
 
-        data = DashboardService.extensions()
+        data = DashboardService.extensions(
+            request.user
+        )
 
         serializer = ExtensionStatusSerializer(
             instance=data,
@@ -45,11 +50,13 @@ class ExtensionStatusAPIView(APIView):
 
 class DeviceAPIView(APIView):
 
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsSuperAdminOrCompanyAdmin]
 
     def get(self, request):
 
-        data = DashboardService.devices()
+        data = DashboardService.devices(
+            request.user
+        )
 
         serializer = DeviceSerializer(
             instance=data,
@@ -61,11 +68,13 @@ class DeviceAPIView(APIView):
 
 class ActiveCallAPIView(APIView):
 
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsSuperAdminOrCompanyAdmin]
 
     def get(self, request):
 
-        data = DashboardService.active_calls()
+        data = DashboardService.active_calls(
+            request.user
+        )
 
         serializer = ActiveCallSerializer(
             instance=data,
