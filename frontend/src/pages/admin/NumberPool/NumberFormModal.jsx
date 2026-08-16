@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+
 import {
   X,
-  Phone,
   User,
   Globe,
   Building2,
@@ -25,6 +25,7 @@ import {
   getTerminations,
 } from "../../../services/terminationService";
 
+
 export default function NumberFormModal({
   open,
   onClose,
@@ -33,6 +34,10 @@ export default function NumberFormModal({
   user,
   saving = false,
 }) {
+
+  // =====================================================
+  // EMPTY FORM
+  // =====================================================
 
   const emptyForm = {
 
@@ -48,8 +53,6 @@ export default function NumberFormModal({
 
     did_number: "",
 
-    extension: "",
-
     purchase_price: 0,
 
     monthly_rental: 0,
@@ -57,6 +60,7 @@ export default function NumberFormModal({
     description: "",
 
   };
+
 
   const [form, setForm] = useState(emptyForm);
 
@@ -69,6 +73,11 @@ export default function NumberFormModal({
   const [carriers, setCarriers] = useState([]);
 
   const [terminations, setTerminations] = useState([]);
+
+
+  // =====================================================
+  // LOAD DATA
+  // =====================================================
 
   useEffect(() => {
 
@@ -88,6 +97,11 @@ export default function NumberFormModal({
 
     }
 
+
+    // ===================================================
+    // EDIT EXISTING NUMBER
+    // ===================================================
+
     if (number) {
 
       setForm({
@@ -104,8 +118,6 @@ export default function NumberFormModal({
 
         did_number: number.did_number || "",
 
-        extension: number.extension || "",
-
         purchase_price:
           number.purchase_price || 0,
 
@@ -119,26 +131,46 @@ export default function NumberFormModal({
 
     } else {
 
+      // =================================================
+      // CREATE NEW NUMBER
+      // =================================================
+
       setForm(emptyForm);
 
     }
 
   }, [open, number]);
-    const loadCountries = async () => {
+
+
+  // =====================================================
+  // COUNTRIES
+  // =====================================================
+
+  const loadCountries = async () => {
 
     try {
 
       const res = await getCountries();
 
-      setCountries(res.data.data || []);
+      setCountries(
+        res.data.data || []
+      );
 
     } catch (err) {
 
-      console.error(err);
+      console.error(
+        "Countries Error:",
+        err
+      );
 
     }
 
   };
+
+
+  // =====================================================
+  // CLIENTS
+  // =====================================================
 
   const loadClients = async () => {
 
@@ -147,15 +179,25 @@ export default function NumberFormModal({
       const res =
         await clientService.getClients();
 
-      setClients(res.data.data || []);
+      setClients(
+        res.data.data || []
+      );
 
     } catch (err) {
 
-      console.error(err);
+      console.error(
+        "Clients Error:",
+        err
+      );
 
     }
 
   };
+
+
+  // =====================================================
+  // ADMINS
+  // =====================================================
 
   const loadAdmins = async () => {
 
@@ -164,15 +206,25 @@ export default function NumberFormModal({
       const res =
         await userService.getUsers();
 
-      setAdmins(res.data.data || []);
+      setAdmins(
+        res.data.data || []
+      );
 
     } catch (err) {
 
-      console.error(err);
+      console.error(
+        "Admins Error:",
+        err
+      );
 
     }
 
   };
+
+
+  // =====================================================
+  // CARRIERS
+  // =====================================================
 
   const loadCarriers = async () => {
 
@@ -181,15 +233,25 @@ export default function NumberFormModal({
       const res =
         await getCarriers();
 
-      setCarriers(res.data.data || []);
+      setCarriers(
+        res.data.data || []
+      );
 
     } catch (err) {
 
-      console.error(err);
+      console.error(
+        "Carriers Error:",
+        err
+      );
 
     }
 
   };
+
+
+  // =====================================================
+  // TERMINATIONS
+  // =====================================================
 
   const loadTerminations = async () => {
 
@@ -198,19 +260,32 @@ export default function NumberFormModal({
       const res =
         await getTerminations();
 
-      setTerminations(res.data.data || []);
+      setTerminations(
+        res.data.data || []
+      );
 
     } catch (err) {
 
-      console.error(err);
+      console.error(
+        "Terminations Error:",
+        err
+      );
 
     }
 
   };
 
+
+  // =====================================================
+  // FORM CHANGE
+  // =====================================================
+
   const handleChange = (e) => {
 
-    const { name, value } = e.target;
+    const {
+      name,
+      value,
+    } = e.target;
 
     setForm((prev) => ({
 
@@ -222,17 +297,26 @@ export default function NumberFormModal({
 
   };
 
+
+  // =====================================================
+  // SUBMIT
+  // =====================================================
+
   const submit = (e) => {
 
     e.preventDefault();
 
     if (saving) return;
 
+    // IMPORTANT:
+
     onSave(form);
 
   };
 
+
   if (!open) return null;
+
 
   return (
 
@@ -273,7 +357,9 @@ export default function NumberFormModal({
         "
       >
 
-        {/* Header */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <div
           className="
@@ -308,8 +394,10 @@ export default function NumberFormModal({
 
           </div>
 
+
           <button
             onClick={onClose}
+            disabled={saving}
             className="
               h-11
               w-11
@@ -333,7 +421,10 @@ export default function NumberFormModal({
 
         </div>
 
-        {/* Form */}
+
+        {/* =================================================
+            FORM
+        ================================================= */}
 
         <form
           onSubmit={submit}
@@ -346,19 +437,31 @@ export default function NumberFormModal({
 
             p-8
           "
-        >          {/* ===========================
-                Admin
-          =========================== */}
+        >
+
+          {/* =================================================
+              ADMIN
+          ================================================= */}
 
           {user?.role === "SUPER_ADMIN" && (
 
             <div>
 
-              <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <label
+                className="
+                  mb-2
+                  block
+                  text-sm
+                  font-semibold
+                  text-slate-600
+                  dark:text-slate-300
+                "
+              >
 
                 Admin
 
               </label>
+
 
               <select
                 name="admin"
@@ -389,9 +492,7 @@ export default function NumberFormModal({
               >
 
                 <option value="">
-
                   Select Admin
-
                 </option>
 
                 {admins.map((admin) => (
@@ -401,7 +502,8 @@ export default function NumberFormModal({
                     value={admin.id}
                   >
 
-                    {admin.first_name} {admin.last_name}
+                    {admin.first_name}{" "}
+                    {admin.last_name}
 
                   </option>
 
@@ -413,17 +515,28 @@ export default function NumberFormModal({
 
           )}
 
-          {/* ===========================
-                Client
-          =========================== */}
+
+          {/* =================================================
+              CLIENT
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
 
               Client
 
             </label>
+
 
             <select
               name="client"
@@ -454,9 +567,7 @@ export default function NumberFormModal({
             >
 
               <option value="">
-
                 Select Client
-
               </option>
 
               {clients.map((client) => (
@@ -476,17 +587,28 @@ export default function NumberFormModal({
 
           </div>
 
-          {/* ===========================
-                Country
-          =========================== */}
+
+          {/* =================================================
+              COUNTRY
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
 
               Country
 
             </label>
+
 
             <select
               name="country"
@@ -518,9 +640,7 @@ export default function NumberFormModal({
             >
 
               <option value="">
-
                 Select Country
-
               </option>
 
               {countries.map((country) => (
@@ -540,17 +660,28 @@ export default function NumberFormModal({
 
           </div>
 
-          {/* ===========================
-                Carrier
-          =========================== */}
+
+          {/* =================================================
+              CARRIER
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
 
               Carrier
 
             </label>
+
 
             <select
               name="carrier"
@@ -581,9 +712,7 @@ export default function NumberFormModal({
             >
 
               <option value="">
-
                 Select Carrier
-
               </option>
 
               {carriers.map((carrier) => (
@@ -601,17 +730,30 @@ export default function NumberFormModal({
 
             </select>
 
-          </div>          {/* ===========================
-                Termination
-          =========================== */}
+          </div>
+
+
+          {/* =================================================
+              TERMINATION
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
 
               Termination
 
             </label>
+
 
             <select
               name="termination"
@@ -642,15 +784,15 @@ export default function NumberFormModal({
             >
 
               <option value="">
-
                 Select Termination
-
               </option>
 
               {terminations
                 .filter((item) => {
 
-                  if (!form.carrier) return true;
+                  if (!form.carrier) {
+                    return true;
+                  }
 
                   return (
                     Number(item.carrier) ===
@@ -675,17 +817,28 @@ export default function NumberFormModal({
 
           </div>
 
-          {/* ===========================
-                DID Number
-          =========================== */}
+
+          {/* =================================================
+              DID NUMBER
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
 
               DID Number
 
             </label>
+
 
             <input
               name="did_number"
@@ -719,61 +872,28 @@ export default function NumberFormModal({
 
           </div>
 
-          {/* ===========================
-                Extension
-          =========================== */}
+
+          {/* =================================================
+              PURCHASE PRICE
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
-
-              Extension
-
-            </label>
-
-            <input
-              name="extension"
-              value={form.extension}
-              onChange={handleChange}
-              placeholder="1001"
-              required
+            <label
               className="
-                w-full
-
-                rounded-xl
-
-                border
-                border-slate-300
-                dark:border-slate-700
-
-                bg-white
-                dark:bg-slate-950
-
-                px-4
-                py-3
-
-                outline-none
-
-                focus:ring-2
-                focus:ring-blue-500
-
-                transition
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
               "
-            />
-
-          </div>
-
-          {/* ===========================
-                Purchase Price
-          =========================== */}
-
-          <div>
-
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            >
 
               Purchase Price
 
             </label>
+
 
             <input
               type="number"
@@ -808,17 +928,28 @@ export default function NumberFormModal({
 
           </div>
 
-          {/* ===========================
-                Monthly Rental
-          =========================== */}
+
+          {/* =================================================
+              MONTHLY RENTAL
+          ================================================= */}
 
           <div>
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
 
               Monthly Rental
 
             </label>
+
 
             <input
               type="number"
@@ -851,17 +982,30 @@ export default function NumberFormModal({
               "
             />
 
-          </div>          {/* ===========================
-                Description
-          =========================== */}
+          </div>
+
+
+          {/* =================================================
+              DESCRIPTION
+          ================================================= */}
 
           <div className="md:col-span-2">
 
-            <label className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
 
               Description
 
             </label>
+
 
             <textarea
               name="description"
@@ -897,17 +1041,32 @@ export default function NumberFormModal({
 
           </div>
 
-          {/* ===========================
-                Footer
-          =========================== */}
+
+          {/* =================================================
+              FOOTER
+          ================================================= */}
 
           <div className="md:col-span-2 mt-4">
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800 pt-6">
+            <div
+              className="
+                flex
+                items-center
+                justify-end
+                gap-3
+
+                border-t
+                border-slate-200
+                dark:border-slate-800
+
+                pt-6
+              "
+            >
 
               <button
                 type="button"
                 onClick={onClose}
+                disabled={saving}
                 className="
                   rounded-xl
 
@@ -930,6 +1089,7 @@ export default function NumberFormModal({
                 Cancel
 
               </button>
+
 
               <button
                 type="submit"
@@ -975,7 +1135,8 @@ export default function NumberFormModal({
 
       </div>
 
-    </div>  
-    );
+    </div>
+
+  );
 
 }

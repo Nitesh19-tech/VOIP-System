@@ -1,6 +1,6 @@
 from django.conf import settings
 
-from apps.asterisk.services.ssh import AsteriskSSH
+from apps.asterisk.ssh import AsteriskSSH
 
 
 class InboundIncludeManager:
@@ -18,23 +18,63 @@ class InboundIncludeManager:
             port=settings.ASTERISK_PORT,
         )
 
-        output, error = ssh.execute(
-            f"cat {self.MAIN_FILE}"
-        )
+        try:
 
-        if error:
-            return False, error
+            output, error = ssh.execute(
+                f"cat {self.MAIN_FILE}"
+            )
 
-        if self.INCLUDE_LINE in output:
-            return True, "Already included"
+            if error:
+                return False, error
 
-        content = output.rstrip() + "\n\n" + self.INCLUDE_LINE + "\n"
+            # =============================================
+            # Already Included
+            # =============================================
 
-        ssh.upload_text(
-            self.MAIN_FILE,
-            content,
-        )
+            if self.INCLUDE_LINE in output:
 
-        ssh.reload_dialplan()
+                return True, "Already included"
 
-        return True, "Include added"
+            # =============================================
+            # Add Include
+            # =============================================
+
+            content = (
+                output.rstrip()
+                + "\n\n"
+                + self.INCLUDE_LINE
+                + "\n"
+            )
+
+            ssh.upload_text(
+                self.MAIN_FILE,
+                content,
+            )
+
+            # =============================================
+            # Reload Dialplan
+            # =============================================
+
+            reload_output, reload_error = (
+                ssh.reload_dialplan()
+            )
+
+            if reload_error:
+
+                return False, reload_error
+
+            return True, (
+                "Include added successfully. "
+                f"{reload_output}"
+            )
+
+        except Exception as e:
+
+            return False, str(e)
+
+        finally:
+
+            try:
+                ssh.close()
+            except Exception:
+                pass

@@ -1,24 +1,9 @@
 from django.db import models
 
-from apps.companies.models import Company
+from apps.carriers.models import Termination
 
 
 class InboundRoute(models.Model):
-
-    ACTIONS = [
-
-        ("extension", "Extension"),
-        ("ivr", "IVR"),
-        ("queue", "Queue"),
-        ("ringgroup", "Ring Group"),
-
-    ]
-
-    company = models.ForeignKey(
-        Company,
-        on_delete=models.CASCADE,
-        related_name="inbound_routes",
-    )
 
     did = models.CharField(
         max_length=50,
@@ -30,13 +15,18 @@ class InboundRoute(models.Model):
         blank=True,
     )
 
-    destination_type = models.CharField(
-        max_length=20,
-        choices=ACTIONS,
+    forward_number = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
     )
 
-    destination = models.CharField(
-        max_length=100,
+    termination = models.ForeignKey(
+        Termination,
+        on_delete=models.PROTECT,
+        related_name="inbound_routes",
+        null=True,
+        blank=True,
     )
 
     priority = models.IntegerField(

@@ -15,25 +15,25 @@ import Settings from "./pages/Settings";
 import Clients from "./pages/admin/Clients/Clients";
 import Analytics from "./pages/Analytics";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
-import SipUsers from "./pages/admin/SipUsers";
 import NumberPool from "./pages/admin/NumberPool/NumberPool";
 import AdminBillingDashboard from "./pages/admin/AdminBillingDashboard";
-import SIPAccounts from "./pages/admin/SIP/SIPAccounts";
 import CDRPage from "./pages/cdr/CDRPage";
 import ProvisionPage from "./pages/admin/Provision/ProvisionPage";
 import Countries from "./pages/admin/Countries/Countries";
 import RateManagement from "./pages/dashboard/rate/RateManagement";
-import TrunkPage from "./pages/admin/Trunks";
 import CarrierList from "./pages/admin/Carriers/CarrierList";
-import RoutingPlanList from "./pages/admin/RoutingPlans/RoutingPlanList";
-import RouteList from "./pages/admin/Routes/RouteList";
 import TerminationList from "./pages/admin/termination/TerminationList";
+
+// Incoming Routes
+import IncomingRoutes from "./pages/admin/IncomingRoutes/IncomingRoutes";
+
 
 export default function App() {
 
   // null = loading
   // false = not logged in
   // object = logged in
+
   const [user, setUser] = useState(null);
 
   const navigate = useNavigate();
@@ -47,6 +47,7 @@ export default function App() {
   );
 
   const toggleTheme = () => {
+
     const newTheme = !dark;
 
     setDark(newTheme);
@@ -60,12 +61,17 @@ export default function App() {
   useEffect(() => {
 
     if (dark) {
+
       document.documentElement.classList.add("dark");
+
     } else {
+
       document.documentElement.classList.remove("dark");
+
     }
 
   }, [dark]);
+
 
   // =====================================================
   // LOGOUT
@@ -84,6 +90,7 @@ export default function App() {
       replace: true,
     });
   };
+
 
   // =====================================================
   // LOAD USER
@@ -121,6 +128,7 @@ export default function App() {
     }
   };
 
+
   // =====================================================
   // CHECK TOKEN ON APP LOAD
   // =====================================================
@@ -144,6 +152,7 @@ export default function App() {
 
   }, []);
 
+
   return (
 
     <Routes>
@@ -160,6 +169,7 @@ export default function App() {
           />
         }
       />
+
 
       {/* =====================================================
           PROTECTED
@@ -202,6 +212,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             CALLS
         ===================================================== */}
@@ -221,6 +232,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
 
         {/* =====================================================
             BILLING
@@ -242,6 +254,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             SUPER ADMIN - COMPANIES
         ===================================================== */}
@@ -260,24 +273,6 @@ export default function App() {
           }
         />
 
-        {/* =====================================================
-            SIP USERS
-        ===================================================== */}
-
-        <Route
-          path="/dashboard/sip-users"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "COMPANY_ADMIN",
-              ]}
-            >
-              <SipUsers />
-            </ProtectedRoute>
-          }
-        />
 
         {/* =====================================================
             ANALYTICS
@@ -298,6 +293,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             ADMIN BILLING
         ===================================================== */}
@@ -316,6 +312,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
 
         {/* =====================================================
             RATES
@@ -337,6 +334,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             FORCE PASSWORD CHANGE
         ===================================================== */}
@@ -354,6 +352,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
 
         {/* =====================================================
             SETTINGS
@@ -375,6 +374,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             SUPER ADMIN - ADMIN USERS
         ===================================================== */}
@@ -392,6 +392,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
 
         {/* =====================================================
             CLIENTS
@@ -414,6 +415,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             NUMBER POOL
         ===================================================== */}
@@ -435,6 +437,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             COUNTRIES
         ===================================================== */}
@@ -453,26 +456,6 @@ export default function App() {
           }
         />
 
-        {/* =====================================================
-            SIP ACCOUNTS
-        ===================================================== */}
-
-        <Route
-          path="/dashboard/sip-accounts"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "COMPANY_ADMIN",
-              ]}
-            >
-              <SIPAccounts
-                user={user}
-              />
-            </ProtectedRoute>
-          }
-        />
 
         {/* =====================================================
             CDR
@@ -493,6 +476,7 @@ export default function App() {
           }
         />
 
+
         {/* =====================================================
             PROVISION
         ===================================================== */}
@@ -512,24 +496,6 @@ export default function App() {
           }
         />
 
-        {/* =====================================================
-            TRUNKS
-        ===================================================== */}
-
-        <Route
-          path="/dashboard/trunks"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "COMPANY_ADMIN",
-              ]}
-            >
-              <TrunkPage />
-            </ProtectedRoute>
-          }
-        />
 
         {/* =====================================================
             CARRIERS
@@ -550,43 +516,6 @@ export default function App() {
           }
         />
 
-        {/* =====================================================
-            ROUTING PLANS
-        ===================================================== */}
-
-        <Route
-          path="/dashboard/routing-plans"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "COMPANY_ADMIN",
-              ]}
-            >
-              <RoutingPlanList />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* =====================================================
-            ROUTES
-        ===================================================== */}
-
-        <Route
-          path="/dashboard/routes"
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={[
-                "SUPER_ADMIN",
-                "COMPANY_ADMIN",
-              ]}
-            >
-              <RouteList />
-            </ProtectedRoute>
-          }
-        />
 
         {/* =====================================================
             TERMINATIONS
@@ -603,6 +532,28 @@ export default function App() {
               ]}
             >
               <TerminationList />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* =====================================================
+            INCOMING ROUTES
+        ===================================================== */}
+
+        <Route
+          path="/dashboard/incoming-routes"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "SUPER_ADMIN",
+                "COMPANY_ADMIN",
+              ]}
+            >
+              <IncomingRoutes
+                user={user}
+              />
             </ProtectedRoute>
           }
         />

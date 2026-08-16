@@ -40,6 +40,10 @@ class NumberPool(BaseModel):
         ("DISABLED", "Disabled"),
     )
 
+    # =====================================================
+    # ADMIN
+    # =====================================================
+
     admin = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -49,6 +53,10 @@ class NumberPool(BaseModel):
         blank=True,
     )
 
+    # =====================================================
+    # CLIENT
+    # =====================================================
+
     client = models.ForeignKey(
         Client,
         on_delete=models.SET_NULL,
@@ -56,6 +64,10 @@ class NumberPool(BaseModel):
         blank=True,
         related_name="numbers",
     )
+
+    # =====================================================
+    # CARRIER
+    # =====================================================
 
     carrier = models.ForeignKey(
         Carrier,
@@ -65,6 +77,10 @@ class NumberPool(BaseModel):
         blank=True,
     )
 
+    # =====================================================
+    # TERMINATION
+    # =====================================================
+
     termination = models.ForeignKey(
         Termination,
         on_delete=models.PROTECT,
@@ -73,19 +89,117 @@ class NumberPool(BaseModel):
         blank=True,
     )
 
+    # =====================================================
+    # COUNTRY
+    # =====================================================
+
     country = models.ForeignKey(
         Country,
         on_delete=models.PROTECT,
         related_name="numbers",
     )
 
-    did_number = models.CharField(
-        max_length=30,
-        unique=True,
+    # =====================================================
+    # CSV DATA
+    # =====================================================
+
+    range_name = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        db_column="Range_Name",
     )
 
-    extension = models.CharField(
+    number = models.CharField(
+        max_length=30,
+        unique=True,
+        null=True,
+        blank=True,
+        db_column="Number",
+    )
+
+    qty = models.DecimalField(
+        max_digits=15,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        db_column="Qty",
+    )
+
+    currency = models.CharField(
         max_length=10,
+        blank=True,
+        default="",
+        db_column="Currency",
+    )
+
+    payterm = models.IntegerField(
+        default=30,
+        db_column="Payterm",
+    )
+
+    payout = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Payout",
+    )
+
+    daily = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Daily",
+    )
+
+    weekly = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Weekly",
+    )
+
+    weekly7 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Weekly7",
+    )
+
+    monthly30 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Monthly30",
+    )
+
+    monthly45 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Monthly45",
+    )
+
+    monthly60 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Monthly60",
+    )
+
+    prefix = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        db_column="Prefix",
+    )
+
+    # =====================================================
+    # SYSTEM FIELDS
+    # =====================================================
+
+    did_number = models.CharField(
+        max_length=30,
         unique=True,
     )
 
@@ -116,12 +230,22 @@ class NumberPool(BaseModel):
         blank=True,
     )
 
+    # =====================================================
+    # META
+    # =====================================================
+
     class Meta:
         db_table = "number_pool"
+
         ordering = [
             "country",
             "did_number",
         ]
 
+    # =====================================================
+    # STRING
+    # =====================================================
+
     def __str__(self):
         return self.did_number
+    

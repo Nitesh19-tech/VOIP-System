@@ -97,15 +97,11 @@ export default function NumberDeleteModal({
             <div>
 
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-
                 Delete DID Number
-
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-
                 This action is permanent.
-
               </p>
 
             </div>
@@ -161,98 +157,72 @@ export default function NumberDeleteModal({
             "
           >
 
+            {/* DID NUMBER */}
+
             <div className="flex justify-between">
 
               <span className="font-medium text-slate-500">
-
                 DID Number
-
               </span>
 
               <span className="font-semibold">
-
                 {number.did_number}
-
               </span>
 
             </div>
 
-            <div className="flex justify-between">
-
-              <span className="font-medium text-slate-500">
-
-                Extension
-
-              </span>
-
-              <span>
-
-                {number.extension || "-"}
-
-              </span>
-
-            </div>
+            {/* COUNTRY */}
 
             <div className="flex justify-between">
 
               <span className="font-medium text-slate-500">
-
                 Country
-
               </span>
 
               <span>
-
                 {number.country_name || "-"}
-
               </span>
 
             </div>
 
+            {/* CARRIER */}
+
             <div className="flex justify-between">
 
               <span className="font-medium text-slate-500">
-
                 Carrier
-
               </span>
 
               <span>
-
                 {number.carrier_name || "-"}
-
               </span>
 
             </div>
 
+            {/* TERMINATION */}
+
             <div className="flex justify-between">
 
               <span className="font-medium text-slate-500">
-
                 Termination
-
               </span>
 
               <span>
-
                 {number.termination_name || "-"}
-
               </span>
 
             </div>
 
+            {/* CLIENT */}
+
             <div className="flex justify-between">
 
               <span className="font-medium text-slate-500">
-
                 Client
-
               </span>
 
               <span>
-
                 {number.client_name || "-"}
-
               </span>
 
             </div>

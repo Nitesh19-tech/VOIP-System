@@ -178,14 +178,18 @@ class NumberPoolService:
     # =====================================================
     # GET ALL NUMBERS
     #
-    # SUPER_ADMIN
-    # COMPANY_ADMIN
+    # SUPER_ADMIN / COMPANY_ADMIN
+    # Supports server-side pagination:
     #
-    # Both admins can see ALL numbers.
+    # ?page=1&page_size=25
+    # ?page=2&page_size=50
+    # ?page=1&page_size=100
     # =====================================================
 
     @staticmethod
     def get_all(user, filters=None):
+
+        filters = filters or {}
 
         queryset = NumberPool.objects.select_related(
             "admin",
@@ -199,26 +203,19 @@ class NumberPoolService:
         # ACCESS
         # -------------------------------------------------
 
-        if user.role in [
+        if user.role not in [
             SUPER_ADMIN,
             COMPANY_ADMIN,
         ]:
-
-            pass
-
-        else:
-
-            return NumberPool.objects.none()
-
-        # -------------------------------------------------
-        # NO FILTERS
-        # -------------------------------------------------
-
-        if not filters:
-
-            return queryset.order_by(
-                "did_number"
-            )
+            return {
+                "results": NumberPool.objects.none(),
+                "count": 0,
+                "page": 1,
+                "page_size": 25,
+                "total_pages": 0,
+                "next": None,
+                "previous": None,
+            }
 
         # -------------------------------------------------
         # FILTER VALUES
@@ -236,42 +233,12 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if search:
-
             queryset = queryset.filter(
-
-                Q(
-                    did_number__icontains=search
-                )
-
-                |
-
-                Q(
-                    extension__icontains=search
-                )
-
-                |
-
-                Q(
-                    country__name__icontains=search
-                )
-
-                |
-
-                Q(
-                    carrier__name__icontains=search
-                )
-
-                |
-
-                Q(
-                    termination__name__icontains=search
-                )
-
-                |
-
-                Q(
-                    client__name__icontains=search
-                )
+                Q(did_number__icontains=search)
+                | Q(country__name__icontains=search)
+                | Q(carrier__name__icontains=search)
+                | Q(termination__name__icontains=search)
+                | Q(client__name__icontains=search)
             )
 
         # -------------------------------------------------
@@ -279,7 +246,6 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if country:
-
             queryset = queryset.filter(
                 country_id=country
             )
@@ -289,7 +255,6 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if carrier:
-
             queryset = queryset.filter(
                 carrier_id=carrier
             )
@@ -299,7 +264,6 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if termination:
-
             queryset = queryset.filter(
                 termination_id=termination
             )
@@ -309,7 +273,6 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if status:
-
             queryset = queryset.filter(
                 status=status
             )
@@ -319,18 +282,119 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if client:
-
             queryset = queryset.filter(
                 client_id=client
             )
 
         # -------------------------------------------------
-        # RESULT
+        # ORDER
         # -------------------------------------------------
 
-        return queryset.order_by(
+        queryset = queryset.order_by(
             "did_number"
         )
+
+        # =================================================
+        # PAGINATION
+        # =================================================
+
+        try:
+            page = int(
+                filters.get("page", 1)
+            )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            page = 1
+
+        try:
+            page_size = int(
+                filters.get("page_size", 25)
+            )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            page_size = 25
+
+        # Only these values are allowed by frontend.
+        allowed_page_sizes = {
+            25,
+            50,
+            100,
+        }
+
+        if page_size not in allowed_page_sizes:
+            page_size = 25
+
+        if page < 1:
+            page = 1
+
+        # -------------------------------------------------
+        # TOTAL COUNT
+        # -------------------------------------------------
+
+        total_count = queryset.count()
+
+        # -------------------------------------------------
+        # TOTAL PAGES
+        # -------------------------------------------------
+
+        total_pages = (
+            (total_count + page_size - 1) // page_size
+            if total_count
+            else 0
+        )
+
+        # -------------------------------------------------
+        # KEEP PAGE IN VALID RANGE
+        # -------------------------------------------------
+
+        if total_pages and page > total_pages:
+            page = total_pages
+
+        # -------------------------------------------------
+        # SLICE
+        # -------------------------------------------------
+
+        start = (
+            (page - 1) * page_size
+        )
+
+        end = start + page_size
+
+        results = queryset[start:end]
+
+        # -------------------------------------------------
+        # NEXT / PREVIOUS
+        # -------------------------------------------------
+
+        next_page = (
+            page + 1
+            if total_pages and page < total_pages
+            else None
+        )
+
+        previous_page = (
+            page - 1
+            if page > 1
+            else None
+        )
+
+        # -------------------------------------------------
+        # RESPONSE
+        # -------------------------------------------------
+
+        return {
+            "results": results,
+            "count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "next": next_page,
+            "previous": previous_page,
+        }
 
     # =====================================================
     # GET NUMBER BY ID
@@ -993,9 +1057,9 @@ class NumberPoolService:
                         number.did_number
                     ),
 
-                    "extension": (
-                        number.extension
-                    ),
+                
+                
+                
 
                     "termination_id": (
                         number.termination_id

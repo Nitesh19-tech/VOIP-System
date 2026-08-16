@@ -91,7 +91,7 @@ class NumberPoolSerializer(serializers.ModelSerializer):
             "dial_code",
 
             "did_number",
-            "extension",
+            
 
             "purchase_price",
             "monthly_rental",
@@ -192,30 +192,7 @@ class NumberPoolSerializer(serializers.ModelSerializer):
 
         return value
 
-    # =====================================================
-    # EXTENSION VALIDATION
-    # =====================================================
-
-    def validate_extension(self, value):
-
-        queryset = NumberPool.objects.filter(
-            extension=value
-        )
-
-        if self.instance:
-
-            queryset = queryset.exclude(
-                pk=self.instance.pk
-            )
-
-        if queryset.exists():
-
-            raise serializers.ValidationError(
-                "This extension already exists."
-            )
-
-        return value
-
+    
 
 # =========================================================
 # BULK ALLOCATION SERIALIZER

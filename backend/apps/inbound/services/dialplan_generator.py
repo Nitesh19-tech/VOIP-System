@@ -3,62 +3,100 @@ from apps.inbound.models import InboundRoute
 
 class InboundDialplanGenerator:
 
-    CONTEXT = "company-inbound"
+    CONTEXT = "from-carrier"
 
-    def generate(self):
+    @staticmethod
+    def generate():
 
         lines = [
             "; =========================================",
-            "; AUTO GENERATED - DO NOT EDIT",
+            "; AUTO GENERATED - INBOUND ROUTES",
+            "; DO NOT EDIT MANUALLY",
             "; =========================================",
             "",
-            f"[{self.CONTEXT}]",
+            f"[{InboundDialplanGenerator.CONTEXT}]",
             "",
         ]
 
         routes = (
             InboundRoute.objects
-            .filter(enabled=True)
-            .order_by("priority")
+            .filter(
+                enabled=True,
+                termination__is_active=True,
+                termination__carrier__is_active=True,
+            )
+            .select_related(
+                "termination",
+                "termination__carrier",
+            )
+            .order_by(
+                "priority",
+                "did",
+            )
         )
 
         for route in routes:
 
-            did = route.did
+            did = route.did.strip()
+            forward_number = route.forward_number.strip()
 
-            action = route.destination_type
+            termination = route.termination
+            carrier = termination.carrier
 
-            destination = route.destination
+            carrier_name = carrier.name.strip()
+            termination_name = termination.name.strip()
+
+            if not did or not forward_number:
+                continue
+
+            lines.append(
+                f"; -----------------------------------------"
+            )
+
+            lines.append(
+                f"; DID         : {did}"
+            )
+
+            lines.append(
+                f"; Forward     : {forward_number}"
+            )
+
+            lines.append(
+                f"; Termination : {termination_name}"
+            )
+
+            lines.append(
+                f"; Carrier     : {carrier_name}"
+            )
+
+            lines.append(
+                f"; -----------------------------------------"
+            )
 
             lines.append(
                 f"exten => {did},1,NoOp(Inbound DID {did})"
             )
 
-            if action == "extension":
+            lines.append(
+                f" same => n,NoOp(Forwarding to {forward_number})"
+            )
 
-                lines.append(
-                    f" same => n,Dial(PJSIP/{destination},30)"
-                )
+            lines.append(
+                f" same => n,NoOp(Termination: {termination_name})"
+            )
 
-            elif action == "queue":
+            lines.append(
+                f" same => n,NoOp(Carrier: {carrier_name})"
+            )
 
-                lines.append(
-                    f" same => n,Queue({destination})"
-                )
+            lines.append(
+                f" same => n,Dial(PJSIP/{forward_number}@{carrier_name},60)"
+            )
 
-            elif action == "ivr":
+            lines.append(
+                " same => n,Hangup()"
+            )
 
-                lines.append(
-                    f" same => n,Goto({destination},s,1)"
-                )
-
-            elif action == "ringgroup":
-
-                lines.append(
-                    f" same => n,Dial({destination},30)"
-                )
-
-            lines.append(" same => n,Hangup()")
             lines.append("")
 
         return "\n".join(lines)

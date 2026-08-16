@@ -25,10 +25,13 @@ class NumberPoolListCreateAPIView(APIView):
 
     def get(self, request):
 
-        numbers = NumberPoolService.get_all(
+        result = NumberPoolService.get_all(
             request.user,
             request.query_params,
         )
+
+        # Service already performs pagination
+        numbers = result["results"]
 
         serializer = NumberPoolSerializer(
             numbers,
@@ -39,6 +42,15 @@ class NumberPoolListCreateAPIView(APIView):
             {
                 "success": True,
                 "data": serializer.data,
+
+                "pagination": {
+                    "count": result["count"],
+                    "page": result["page"],
+                    "page_size": result["page_size"],
+                    "total_pages": result["total_pages"],
+                    "next": result["next"],
+                    "previous": result["previous"],
+                },
             }
         )
 
@@ -161,7 +173,12 @@ class NumberPoolDetailAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        except Exception:
+        except Exception as e:
+
+            print(
+                "Delete Number Error:",
+                e,
+            )
 
             return Response(
                 {
@@ -201,18 +218,36 @@ class NumberPoolImportAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        result = NumberPoolImportService.import_file(
-            file=file,
-            user=request.user,
-        )
+        try:
 
-        return Response(
-            {
-                "success": True,
-                "message": "Import completed successfully.",
-                "data": result,
-            }
-        )
+            result = NumberPoolImportService.import_file(
+                file=file,
+                user=request.user,
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Import completed successfully.",
+                    "data": result,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+
+            print(
+                "Number Import Error:",
+                e,
+            )
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 # =========================================================

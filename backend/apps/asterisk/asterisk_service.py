@@ -1,7 +1,6 @@
 from decouple import config
 
 from .carrier_generator import CarrierGenerator
-from .extensions_generator import ExtensionsGenerator
 from .generators import PJSIPGenerator
 from .routing_generator import RoutingGenerator
 from .ssh import AsteriskSSH
@@ -82,28 +81,6 @@ class AsteriskService:
             ssh.close()
 
     # =====================================================
-    # Upload Extensions
-    # =====================================================
-
-    @staticmethod
-    def upload_extensions():
-
-        config_data = ExtensionsGenerator.generate_all()
-
-        ssh = AsteriskService.ssh()
-
-        try:
-
-            ssh.upload_text(
-                "/etc/asterisk/extensions_voip_backend.conf",
-                config_data,
-            )
-
-        finally:
-
-            ssh.close()
-
-    # =====================================================
     # Upload Routing
     # =====================================================
 
@@ -151,18 +128,20 @@ class AsteriskService:
         )
 
     # =====================================================
-    # Full Sync
+    # Legacy / Full Sync
     # =====================================================
 
     @staticmethod
     def sync():
 
         AsteriskService.upload_pjsip()
+
         AsteriskService.upload_carriers()
-        AsteriskService.upload_extensions()
+
         AsteriskService.upload_routing()
 
         AsteriskService.reload_pjsip()
+
         AsteriskService.reload_dialplan()
 
     # =====================================================

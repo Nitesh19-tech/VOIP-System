@@ -8,7 +8,6 @@ class NumberPoolAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "did_number",
-        "extension",
         "admin",
         "client",
         "status",
@@ -22,7 +21,6 @@ class NumberPoolAdmin(admin.ModelAdmin):
 
     search_fields = (
         "did_number",
-        "extension",
     )
 
     ordering = (

@@ -8,20 +8,23 @@ import {
   Globe,
   Trash2,
   Undo2,
+  Truck,
 } from "lucide-react";
 
 import numberPoolService from "../../../services/numberPoolService";
 import { getCountries } from "../../../services/countryService";
+import { getCarriers } from "../../../services/carrierService";
 
 import NumberTable from "./NumberTable";
 import NumberFormModal from "./NumberFormModal";
 import NumberDeleteModal from "./NumberDeleteModal";
 import BulkAllocationModal from "./BulkAllocationModal";
 
+
 export default function NumberPool({ user }) {
 
   // =====================================================
-  // STATE
+  // STATISTICS
   // =====================================================
 
   const [stats, setStats] = useState({
@@ -32,9 +35,21 @@ export default function NumberPool({ user }) {
     disabled: 0,
   });
 
+
+  // =====================================================
+  // DATA
+  // =====================================================
+
   const [numbers, setNumbers] = useState([]);
 
   const [countries, setCountries] = useState([]);
+
+  const [carriers, setCarriers] = useState([]);
+
+
+  // =====================================================
+  // UI STATE
+  // =====================================================
 
   const [loading, setLoading] = useState(true);
 
@@ -45,17 +60,45 @@ export default function NumberPool({ user }) {
   const [showAllocation, setShowAllocation] =
     useState(false);
 
+
   const [selectedNumber, setSelectedNumber] =
     useState(null);
+
 
   const [selectedNumbers, setSelectedNumbers] =
     useState([]);
 
+
   const [saving, setSaving] =
     useState(false);
 
+
   const [deleting, setDeleting] =
     useState(false);
+
+
+  // =====================================================
+  // PAGINATION
+  // =====================================================
+
+  const [currentPage, setCurrentPage] =
+    useState(1);
+
+
+  const [pageSize, setPageSize] =
+    useState(25);
+
+
+  const [pagination, setPagination] =
+    useState({
+      count: 0,
+      page: 1,
+      page_size: 25,
+      total_pages: 1,
+      next: null,
+      previous: null,
+    });
+
 
   // =====================================================
   // FILTERS
@@ -64,14 +107,18 @@ export default function NumberPool({ user }) {
   const [search, setSearch] =
     useState("");
 
+
   const [country, setCountry] =
     useState("");
+
+
+  const [carrier, setCarrier] =
+    useState("");
+
 
   const [status, setStatus] =
     useState("");
 
-  const [provider, setProvider] =
-    useState("");
 
   // =====================================================
   // LOAD STATISTICS
@@ -83,6 +130,7 @@ export default function NumberPool({ user }) {
 
       const res =
         await numberPoolService.getStatistics();
+
 
       setStats(
         res.data?.data || {
@@ -102,7 +150,9 @@ export default function NumberPool({ user }) {
       );
 
     }
+
   };
+
 
   // =====================================================
   // LOAD COUNTRIES
@@ -115,6 +165,7 @@ export default function NumberPool({ user }) {
       const res =
         await getCountries();
 
+
       setCountries(
         res.data?.data || []
       );
@@ -126,10 +177,48 @@ export default function NumberPool({ user }) {
         err
       );
 
+
       setCountries([]);
 
     }
+
   };
+
+
+  // =====================================================
+  // LOAD CARRIERS
+  // =====================================================
+
+  const loadCarriers = async () => {
+
+    try {
+
+      const res =
+        await getCarriers();
+
+
+      const data =
+        res.data?.data ||
+        res.data?.results ||
+        [];
+
+
+      setCarriers(data);
+
+    } catch (err) {
+
+      console.error(
+        "Carriers Error:",
+        err
+      );
+
+
+      setCarriers([]);
+
+    }
+
+  };
+
 
   // =====================================================
   // LOAD NUMBERS
@@ -141,45 +230,134 @@ export default function NumberPool({ user }) {
 
       setLoading(true);
 
-      const params = {};
+
+      const params = {
+
+        page: currentPage,
+
+        page_size: pageSize,
+
+      };
+
+
+      // SEARCH
 
       if (search.trim()) {
+
         params.search =
           search.trim();
+
       }
+
+
+      // COUNTRY
 
       if (country) {
+
         params.country =
           country;
+
       }
+
+
+      // CARRIER
+
+      if (carrier) {
+
+        params.carrier =
+          carrier;
+
+      }
+
+
+      // STATUS
 
       if (status) {
+
         params.status =
           status;
+
       }
 
-      if (provider.trim()) {
-        params.provider =
-          provider.trim();
-      }
 
       console.log(
         "Number Pool Params:",
         params
       );
 
+
       const res =
         await numberPoolService.getNumbers(
           params
         );
+
 
       console.log(
         "Number Pool Response:",
         res.data
       );
 
+
+      const loadedNumbers =
+        res.data?.data || [];
+
+
+      const serverPagination =
+        res.data?.pagination;
+
+
       setNumbers(
-        res.data?.data || []
+        loadedNumbers
+      );
+
+
+      setPagination(
+        serverPagination || {
+          count: loadedNumbers.length,
+          page: currentPage,
+          page_size: pageSize,
+          total_pages: 1,
+          next: null,
+          previous: null,
+        }
+      );
+
+
+      // If current page becomes invalid
+      // after delete/filter/import
+
+      const totalPages =
+        serverPagination?.total_pages || 1;
+
+
+      if (
+        currentPage > totalPages
+      ) {
+
+        setCurrentPage(
+          totalPages
+        );
+
+      }
+
+
+      // Remove selections that
+      // are no longer on current page
+
+      const currentIds =
+        new Set(
+          loadedNumbers.map(
+            (item) => item.id
+          )
+        );
+
+
+      setSelectedNumbers(
+        (prev) =>
+          prev.filter(
+            (id) =>
+              currentIds.has(id)
+          )
       );
 
     } catch (err) {
@@ -189,19 +367,33 @@ export default function NumberPool({ user }) {
         err
       );
 
+
       console.error(
         "Number API Error:",
         err.response?.data
       );
 
+
       setNumbers([]);
+
+
+      setPagination({
+        count: 0,
+        page: 1,
+        page_size: pageSize,
+        total_pages: 1,
+        next: null,
+        previous: null,
+      });
 
     } finally {
 
       setLoading(false);
 
     }
+
   };
+
 
   // =====================================================
   // INITIAL LOAD
@@ -213,10 +405,33 @@ export default function NumberPool({ user }) {
 
     loadCountries();
 
+    loadCarriers();
+
   }, []);
 
+
   // =====================================================
-  // FILTER LOAD
+  // FILTER CHANGE
+  // =====================================================
+
+  useEffect(() => {
+
+    if (currentPage !== 1) {
+
+      setCurrentPage(1);
+
+    }
+
+  }, [
+    search,
+    country,
+    carrier,
+    status,
+  ]);
+
+
+  // =====================================================
+  // LOAD NUMBERS
   // =====================================================
 
   useEffect(() => {
@@ -224,11 +439,14 @@ export default function NumberPool({ user }) {
     loadNumbers();
 
   }, [
+    currentPage,
+    pageSize,
     search,
     country,
+    carrier,
     status,
-    provider,
   ]);
+
 
   // =====================================================
   // IMPORT
@@ -239,9 +457,13 @@ export default function NumberPool({ user }) {
     const file =
       e.target.files?.[0];
 
+
     if (!file) {
+
       return;
+
     }
+
 
     try {
 
@@ -250,8 +472,10 @@ export default function NumberPool({ user }) {
           file
         );
 
+
       const result =
         res.data?.data || {};
+
 
       alert(
         `Import Completed
@@ -261,7 +485,12 @@ Duplicate : ${result.duplicates || 0}
 Invalid : ${result.invalid || 0}`
       );
 
+
       setSelectedNumbers([]);
+
+
+      setCurrentPage(1);
+
 
       await loadNumbers();
 
@@ -274,6 +503,7 @@ Invalid : ${result.invalid || 0}`
         err
       );
 
+
       alert(
         err.response?.data?.message ||
         "Import failed."
@@ -284,7 +514,9 @@ Invalid : ${result.invalid || 0}`
       e.target.value = "";
 
     }
+
   };
+
 
   // =====================================================
   // CREATE
@@ -298,6 +530,7 @@ Invalid : ${result.invalid || 0}`
 
   };
 
+
   // =====================================================
   // EDIT
   // =====================================================
@@ -310,6 +543,7 @@ Invalid : ${result.invalid || 0}`
 
   };
 
+
   // =====================================================
   // DELETE MODAL
   // =====================================================
@@ -321,6 +555,7 @@ Invalid : ${result.invalid || 0}`
     setShowDelete(true);
 
   };
+
 
   // =====================================================
   // ALLOCATION MODAL
@@ -337,11 +572,14 @@ Invalid : ${result.invalid || 0}`
       );
 
       return;
+
     }
+
 
     setShowAllocation(true);
 
   };
+
 
   // =====================================================
   // SAVE NUMBER
@@ -352,6 +590,7 @@ Invalid : ${result.invalid || 0}`
     try {
 
       setSaving(true);
+
 
       if (selectedNumber) {
 
@@ -368,9 +607,11 @@ Invalid : ${result.invalid || 0}`
 
       }
 
+
       setShowForm(false);
 
       setSelectedNumber(null);
+
 
       await loadNumbers();
 
@@ -383,6 +624,7 @@ Invalid : ${result.invalid || 0}`
         err
       );
 
+
       alert(
         err.response?.data?.message ||
         "Unable to save number."
@@ -393,7 +635,9 @@ Invalid : ${result.invalid || 0}`
       setSaving(false);
 
     }
+
   };
+
 
   // =====================================================
   // BULK DELETE
@@ -410,7 +654,9 @@ Invalid : ${result.invalid || 0}`
       );
 
       return;
+
     }
+
 
     if (
       !window.confirm(
@@ -419,26 +665,55 @@ Invalid : ${result.invalid || 0}`
     ) {
 
       return;
+
     }
+
 
     try {
 
       setDeleting(true);
 
+
       await Promise.all(
+
         selectedNumbers.map(
           (id) =>
             numberPoolService.deleteNumber(
               id
             )
         )
+
       );
+
 
       setSelectedNumbers([]);
 
-      await loadNumbers();
+
+      // If last item of current page
+      // was deleted, go back one page.
+
+      if (
+        numbers.length === 1 &&
+        currentPage > 1
+      ) {
+
+        setCurrentPage(
+          (page) =>
+            Math.max(
+              1,
+              page - 1
+            )
+        );
+
+      } else {
+
+        await loadNumbers();
+
+      }
+
 
       await loadStatistics();
+
 
       alert(
         "Selected numbers deleted successfully."
@@ -451,6 +726,7 @@ Invalid : ${result.invalid || 0}`
         err
       );
 
+
       alert(
         err.response?.data?.message ||
         "Unable to delete selected numbers."
@@ -461,7 +737,9 @@ Invalid : ${result.invalid || 0}`
       setDeleting(false);
 
     }
+
   };
+
 
   // =====================================================
   // BULK UNALLOCATION
@@ -478,7 +756,9 @@ Invalid : ${result.invalid || 0}`
       );
 
       return;
+
     }
+
 
     if (
       !window.confirm(
@@ -487,26 +767,33 @@ Invalid : ${result.invalid || 0}`
     ) {
 
       return;
+
     }
+
 
     try {
 
       setDeleting(true);
+
 
       const res =
         await numberPoolService.bulkUnallocate(
           selectedNumbers
         );
 
+
       const count =
         res.data?.unallocated_count ||
         0;
 
+
       setSelectedNumbers([]);
+
 
       await loadNumbers();
 
       await loadStatistics();
+
 
       alert(
         `${count} numbers unallocated successfully.`
@@ -519,6 +806,7 @@ Invalid : ${result.invalid || 0}`
         err
       );
 
+
       alert(
         err.response?.data?.message ||
         "Unable to unallocate selected numbers."
@@ -529,7 +817,9 @@ Invalid : ${result.invalid || 0}`
       setDeleting(false);
 
     }
+
   };
+
 
   // =====================================================
   // SINGLE DELETE
@@ -541,13 +831,16 @@ Invalid : ${result.invalid || 0}`
 
       setDeleting(true);
 
+
       await numberPoolService.deleteNumber(
         id
       );
 
+
       setShowDelete(false);
 
       setSelectedNumber(null);
+
 
       setSelectedNumbers(
         (prev) =>
@@ -557,7 +850,29 @@ Invalid : ${result.invalid || 0}`
           )
       );
 
-      await loadNumbers();
+
+      // If deleting the only record
+      // on a page other than page 1
+
+      if (
+        numbers.length === 1 &&
+        currentPage > 1
+      ) {
+
+        setCurrentPage(
+          (page) =>
+            Math.max(
+              1,
+              page - 1
+            )
+        );
+
+      } else {
+
+        await loadNumbers();
+
+      }
+
 
       await loadStatistics();
 
@@ -567,6 +882,7 @@ Invalid : ${result.invalid || 0}`
         "Delete Number Error:",
         err
       );
+
 
       alert(
         err.response?.data?.message ||
@@ -578,7 +894,9 @@ Invalid : ${result.invalid || 0}`
       setDeleting(false);
 
     }
+
   };
+
 
   // =====================================================
   // CLEAR FILTERS
@@ -590,31 +908,84 @@ Invalid : ${result.invalid || 0}`
 
     setCountry("");
 
+    setCarrier("");
+
     setStatus("");
 
-    setProvider("");
+    setCurrentPage(1);
 
     setSelectedNumbers([]);
 
   };
 
+
+  // =====================================================
+  // PAGE SIZE CHANGE
+  // =====================================================
+
+  const handlePageSizeChange = (e) => {
+
+    const newSize =
+      Number(
+        e.target.value
+      );
+
+
+    setPageSize(
+      newSize
+    );
+
+
+    setCurrentPage(1);
+
+  };
+
+
+  // =====================================================
+  // PREVIOUS PAGE
+  // =====================================================
+
+  const goPrevious = () => {
+
+    if (
+      pagination.previous !== null &&
+      currentPage > 1
+    ) {
+
+      setCurrentPage(
+        (page) =>
+          page - 1
+      );
+
+    }
+
+  };
+
+
+  // =====================================================
+  // NEXT PAGE
+  // =====================================================
+
+  const goNext = () => {
+
+    if (
+      pagination.next !== null &&
+      currentPage <
+        pagination.total_pages
+    ) {
+
+      setCurrentPage(
+        (page) =>
+          page + 1
+      );
+
+    }
+
+  };
+
+
   // =====================================================
   // ALLOCATION SUCCESS
-  // =====================================================
-  //
-  // IMPORTANT:
-  // Selected IDs are intentionally NOT cleared.
-  //
-  // So after allocation:
-  //
-  // AVAILABLE
-  //     ↓
-  // ASSIGNED
-  //     ↓
-  // still selected
-  //     ↓
-  // UNALLOCATE button available
-  //
   // =====================================================
 
   const handleAllocationSuccess =
@@ -622,14 +993,50 @@ Invalid : ${result.invalid || 0}`
 
       setShowAllocation(false);
 
-      // DO NOT:
-      // setSelectedNumbers([]);
+
+      // Keep selection intentionally.
+      // This allows unallocation after allocation.
 
       await loadNumbers();
 
       await loadStatistics();
 
     };
+
+
+  // =====================================================
+  // PAGINATION DISPLAY
+  // =====================================================
+
+  const totalCount =
+    pagination.count || 0;
+
+
+  const totalPages =
+    Math.max(
+      1,
+      pagination.total_pages || 1
+    );
+
+
+  const startNumber =
+    totalCount === 0
+      ? 0
+      : (
+          (currentPage - 1) *
+            pageSize
+        ) + 1;
+
+
+  const endNumber =
+    totalCount === 0
+      ? 0
+      : Math.min(
+          currentPage *
+            pageSize,
+          totalCount
+        );
+
 
   // =====================================================
   // UI
@@ -639,44 +1046,51 @@ Invalid : ${result.invalid || 0}`
 
     <div className="space-y-8">
 
+
       {/* =================================================
           TOOLBAR
       ================================================= */}
 
       <div className="flex justify-end mb-6">
 
-        <div className="
-          flex
-          flex-wrap
-          items-center
-          justify-end
-          gap-3
-        ">
+        <div
+          className="
+            flex
+            flex-wrap
+            items-center
+            justify-end
+            gap-3
+          "
+        >
+
 
           {/* IMPORT */}
 
-          <label className="
-            flex
-            items-center
-            gap-2
-            px-5
-            py-3
-            rounded-xl
-            bg-emerald-600
-            hover:bg-emerald-700
-            text-white
-            font-medium
-            shadow-md
-            hover:shadow-lg
-            cursor-pointer
-            transition-all
-          ">
+          <label
+            className="
+              flex
+              items-center
+              gap-2
+              px-5
+              py-3
+              rounded-xl
+              bg-emerald-600
+              hover:bg-emerald-700
+              text-white
+              font-medium
+              shadow-md
+              hover:shadow-lg
+              cursor-pointer
+              transition-all
+            "
+          >
 
             <Upload size={18} />
 
             <span>
               Import Numbers
             </span>
+
 
             <input
               hidden
@@ -688,6 +1102,7 @@ Invalid : ${result.invalid || 0}`
             />
 
           </label>
+
 
           {/* ADD */}
 
@@ -717,6 +1132,7 @@ Invalid : ${result.invalid || 0}`
             Add Number
 
           </button>
+
 
           {/* REFRESH */}
 
@@ -755,10 +1171,13 @@ Invalid : ${result.invalid || 0}`
 
           </button>
 
+
           {/* ALLOCATE */}
 
           <button
-            onClick={openAllocation}
+            onClick={
+              openAllocation
+            }
             disabled={
               selectedNumbers.length === 0 ||
               deleting
@@ -789,6 +1208,7 @@ Invalid : ${result.invalid || 0}`
               ` (${selectedNumbers.length})`}
 
           </button>
+
 
           {/* UNALLOCATE */}
 
@@ -826,6 +1246,7 @@ Invalid : ${result.invalid || 0}`
               ` (${selectedNumbers.length})`}
 
           </button>
+
 
           {/* DELETE */}
 
@@ -868,171 +1289,214 @@ Invalid : ${result.invalid || 0}`
 
       </div>
 
+
       {/* =================================================
           STATISTICS
       ================================================= */}
 
-      <div className="
-        grid
-        grid-cols-1
-        sm:grid-cols-2
-        xl:grid-cols-5
-        gap-5
-      ">
+      <div
+        className="
+          grid
+          grid-cols-1
+          sm:grid-cols-2
+          xl:grid-cols-5
+          gap-5
+        "
+      >
+
 
         {/* TOTAL */}
 
-        <div className="
-          rounded-2xl
-          border
-          border-slate-200
-          dark:border-slate-800
-          bg-white
-          dark:bg-slate-900
-          p-5
-          shadow-sm
-        ">
+        <div
+          className="
+            rounded-2xl
+            border
+            border-slate-200
+            dark:border-slate-800
+            bg-white
+            dark:bg-slate-900
+            p-5
+            shadow-sm
+          "
+        >
 
-          <p className="
-            text-xs
-            uppercase
-            tracking-[0.2em]
-            text-slate-500
-          ">
+          <p
+            className="
+              text-xs
+              uppercase
+              tracking-[0.2em]
+              text-slate-500
+            "
+          >
             Total Numbers
           </p>
 
-          <h2 className="
-            mt-3
-            text-4xl
-            font-bold
-            text-slate-900
-            dark:text-white
-          ">
+
+          <h2
+            className="
+              mt-3
+              text-4xl
+              font-bold
+              text-slate-900
+              dark:text-white
+            "
+          >
             {stats.total || 0}
           </h2>
 
         </div>
 
+
         {/* AVAILABLE */}
 
-        <div className="
-          rounded-2xl
-          bg-emerald-500/10
-          border
-          border-emerald-500/20
-          p-5
-          shadow-sm
-        ">
+        <div
+          className="
+            rounded-2xl
+            bg-emerald-500/10
+            border
+            border-emerald-500/20
+            p-5
+            shadow-sm
+          "
+        >
 
-          <p className="
-            text-xs
-            uppercase
-            tracking-[0.2em]
-            text-emerald-600
-          ">
+          <p
+            className="
+              text-xs
+              uppercase
+              tracking-[0.2em]
+              text-emerald-600
+            "
+          >
             Available
           </p>
 
-          <h2 className="
-            mt-3
-            text-4xl
-            font-bold
-            text-emerald-600
-          ">
+
+          <h2
+            className="
+              mt-3
+              text-4xl
+              font-bold
+              text-emerald-600
+            "
+          >
             {stats.available || 0}
           </h2>
 
         </div>
 
+
         {/* ASSIGNED */}
 
-        <div className="
-          rounded-2xl
-          bg-blue-500/10
-          border
-          border-blue-500/20
-          p-5
-          shadow-sm
-        ">
+        <div
+          className="
+            rounded-2xl
+            bg-blue-500/10
+            border
+            border-blue-500/20
+            p-5
+            shadow-sm
+          "
+        >
 
-          <p className="
-            text-xs
-            uppercase
-            tracking-[0.2em]
-            text-blue-600
-          ">
+          <p
+            className="
+              text-xs
+              uppercase
+              tracking-[0.2em]
+              text-blue-600
+            "
+          >
             Assigned
           </p>
 
-          <h2 className="
-            mt-3
-            text-4xl
-            font-bold
-            text-blue-600
-          ">
+
+          <h2
+            className="
+              mt-3
+              text-4xl
+              font-bold
+              text-blue-600
+            "
+          >
             {stats.assigned || 0}
           </h2>
 
         </div>
 
+
         {/* RESERVED */}
 
-        <div className="
-          rounded-2xl
-          bg-yellow-500/10
-          border
-          border-yellow-500/20
-          p-5
-          shadow-sm
-        ">
+        <div
+          className="
+            rounded-2xl
+            bg-yellow-500/10
+            border
+            border-yellow-500/20
+            p-5
+            shadow-sm
+          "
+        >
 
-          <p className="
-            text-xs
-            uppercase
-            tracking-[0.2em]
-            text-yellow-600
-          ">
+          <p
+            className="
+              text-xs
+              uppercase
+              tracking-[0.2em]
+              text-yellow-600
+            "
+          >
             Reserved
           </p>
 
-          <h2 className="
-            mt-3
-            text-4xl
-            font-bold
-            text-yellow-600
-          ">
+
+          <h2
+            className="
+              mt-3
+              text-4xl
+              font-bold
+              text-yellow-600
+            "
+          >
             {stats.reserved || 0}
           </h2>
 
         </div>
 
+
         {/* DISABLED */}
 
-        <div className="
-          rounded-2xl
-          bg-red-500/10
-          border
-          border-red-500/20
-          p-5
-          shadow-sm
-        ">
+        <div
+          className="
+            rounded-2xl
+            bg-red-500/10
+            border
+            border-red-500/20
+            p-5
+            shadow-sm
+          "
+        >
 
-          <p className="
-            text-xs
-            uppercase
-            tracking-[0.2em]
-            text-red-600
-          ">
+          <p
+            className="
+              text-xs
+              uppercase
+              tracking-[0.2em]
+              text-red-600
+            "
+          >
             Disabled
           </p>
 
-          <h2 className="
-            mt-3
-            text-4xl
-            font-bold
-            text-red-600
-          ">
+
+          <h2
+            className="
+              mt-3
+              text-4xl
+              font-bold
+              text-red-600
+            "
+          >
             {stats.disabled || 0}
           </h2>
 
@@ -1040,35 +1504,43 @@ Invalid : ${result.invalid || 0}`
 
       </div>
 
+
       {/* =================================================
           FILTERS
       ================================================= */}
 
-      <div className="
-        rounded-2xl
-        border
-        border-slate-200
-        dark:border-slate-800
-        bg-white
-        dark:bg-slate-900
-        shadow-sm
-        p-6
-      ">
+      <div
+        className="
+          rounded-2xl
+          border
+          border-slate-200
+          dark:border-slate-800
+          bg-white
+          dark:bg-slate-900
+          shadow-sm
+          p-6
+        "
+      >
 
-        <div className="
-          grid
-          grid-cols-1
-          md:grid-cols-2
-          xl:grid-cols-5
-          gap-4
-        ">
+        <div
+          className="
+            grid
+            grid-cols-1
+            md:grid-cols-2
+            xl:grid-cols-5
+            gap-4
+          "
+        >
+
 
           {/* SEARCH */}
 
-          <div className="
-            relative
-            xl:col-span-2
-          ">
+          <div
+            className="
+              relative
+              xl:col-span-2
+            "
+          >
 
             <Search
               size={18}
@@ -1081,9 +1553,10 @@ Invalid : ${result.invalid || 0}`
               "
             />
 
+
             <input
               type="text"
-              placeholder="Search DID, Client, Extension..."
+              placeholder="Search DID, Client..."
               value={search}
               onChange={(e) =>
                 setSearch(
@@ -1112,9 +1585,12 @@ Invalid : ${result.invalid || 0}`
 
           </div>
 
+
           {/* COUNTRY */}
 
-          <div className="relative">
+          <div
+            className="relative"
+          >
 
             <Globe
               size={18}
@@ -1126,6 +1602,7 @@ Invalid : ${result.invalid || 0}`
                 text-slate-400
               "
             />
+
 
             <select
               value={country}
@@ -1156,6 +1633,7 @@ Invalid : ${result.invalid || 0}`
                 All Countries
               </option>
 
+
               {countries.map(
                 (item) => (
 
@@ -1172,6 +1650,73 @@ Invalid : ${result.invalid || 0}`
             </select>
 
           </div>
+
+
+          {/* CARRIER */}
+
+          <div
+            className="relative"
+          >
+
+            <Truck
+              size={18}
+              className="
+                absolute
+                left-4
+                top-1/2
+                -translate-y-1/2
+                text-slate-400
+              "
+            />
+
+
+            <select
+              value={carrier}
+              onChange={(e) =>
+                setCarrier(
+                  e.target.value
+                )
+              }
+              className="
+                w-full
+                pl-11
+                pr-4
+                py-3
+                rounded-xl
+                border
+                border-slate-300
+                dark:border-slate-700
+                bg-slate-50
+                dark:bg-slate-950
+                text-slate-900
+                dark:text-white
+                outline-none
+                focus:border-blue-500
+              "
+            >
+
+              <option value="">
+                All Carriers
+              </option>
+
+
+              {carriers.map(
+                (item) => (
+
+                  <option
+                    key={item.id}
+                    value={item.id}
+                  >
+                    {item.name}
+                  </option>
+
+                )
+              )}
+
+            </select>
+
+          </div>
+
 
           {/* STATUS */}
 
@@ -1203,17 +1748,21 @@ Invalid : ${result.invalid || 0}`
               All Status
             </option>
 
+
             <option value="AVAILABLE">
               🟢 Available
             </option>
+
 
             <option value="ASSIGNED">
               🔵 Assigned
             </option>
 
+
             <option value="RESERVED">
               🟡 Reserved
             </option>
+
 
             <option value="DISABLED">
               🔴 Disabled
@@ -1221,75 +1770,59 @@ Invalid : ${result.invalid || 0}`
 
           </select>
 
-          {/* PROVIDER */}
-
-          <input
-            type="text"
-            placeholder="Provider"
-            value={provider}
-            onChange={(e) =>
-              setProvider(
-                e.target.value
-              )
-            }
-            className="
-              w-full
-              px-4
-              py-3
-              rounded-xl
-              border
-              border-slate-300
-              dark:border-slate-700
-              bg-slate-50
-              dark:bg-slate-950
-              text-slate-900
-              dark:text-white
-              outline-none
-              focus:border-blue-500
-            "
-          />
-
         </div>
+
 
         {/* FILTER FOOTER */}
 
-        <div className="
-          mt-6
-          flex
-          flex-col
-          md:flex-row
-          md:items-center
-          md:justify-between
-          gap-4
-        ">
+        <div
+          className="
+            mt-6
+            flex
+            flex-col
+            md:flex-row
+            md:items-center
+            md:justify-between
+            gap-4
+          "
+        >
 
-          <div className="
-            text-sm
-            text-slate-500
-            dark:text-slate-400
-          ">
+          <div
+            className="
+              text-sm
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
 
             Showing
 
-            <span className="
-              mx-2
-              font-bold
-              text-slate-900
-              dark:text-white
-            ">
-              {numbers.length}
+            <span
+              className="
+                mx-2
+                font-bold
+                text-slate-900
+                dark:text-white
+              "
+            >
+              {startNumber}
+              {" - "}
+              {endNumber}
             </span>
 
-            Numbers
+            of {totalCount} Numbers
+
 
             {selectedNumbers.length > 0 && (
 
-              <span className="
-                ml-4
-                font-semibold
-                text-blue-600
-                dark:text-blue-400
-              ">
+              <span
+                className="
+                  ml-4
+                  font-semibold
+                  text-blue-600
+                  dark:text-blue-400
+                "
+              >
                 {selectedNumbers.length}
                 {" "}
                 Selected
@@ -1299,8 +1832,11 @@ Invalid : ${result.invalid || 0}`
 
           </div>
 
+
           <button
-            onClick={clearFilters}
+            onClick={
+              clearFilters
+            }
             className="
               px-5
               py-3
@@ -1318,80 +1854,171 @@ Invalid : ${result.invalid || 0}`
 
       </div>
 
+
       {/* =================================================
           INVENTORY
       ================================================= */}
 
-      <div className="
-        rounded-2xl
-        border
-        border-slate-200
-        dark:border-slate-800
-        bg-white
-        dark:bg-slate-900
-        shadow-sm
-        overflow-hidden
-      ">
-
-        <div className="
-          flex
-          flex-col
-          lg:flex-row
-          lg:items-center
-          lg:justify-between
-          gap-5
-          px-6
-          py-5
-          border-b
+      <div
+        className="
+          rounded-2xl
+          border
           border-slate-200
           dark:border-slate-800
-        ">
+          bg-white
+          dark:bg-slate-900
+          shadow-sm
+          overflow-hidden
+        "
+      >
+
+
+        {/* HEADER */}
+
+        <div
+          className="
+            flex
+            flex-col
+            lg:flex-row
+            lg:items-center
+            lg:justify-between
+            gap-5
+            px-6
+            py-5
+            border-b
+            border-slate-200
+            dark:border-slate-800
+          "
+        >
 
           <div>
 
-            <h3 className="
-              text-xl
-              font-bold
-              text-slate-900
-              dark:text-white
-            ">
+            <h3
+              className="
+                text-xl
+                font-bold
+                text-slate-900
+                dark:text-white
+              "
+            >
               DID Inventory
             </h3>
 
-            <p className="
-              mt-2
-              text-sm
-              text-slate-500
-              dark:text-slate-400
-            ">
+
+            <p
+              className="
+                mt-2
+                text-sm
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
               Manage assigned and available phone numbers
             </p>
 
           </div>
 
-          <div className="
-            rounded-xl
-            border
-            border-blue-200
-            dark:border-blue-500/20
-            bg-blue-50
-            dark:bg-blue-500/10
-            px-4
-            py-2
-          ">
 
-            <span className="
-              text-sm
-              font-medium
-              text-blue-700
-              dark:text-blue-300
-            ">
-              {numbers.length} Numbers
+          {/* PAGE SIZE */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              border
+              border-slate-200
+              dark:border-slate-700
+              bg-slate-50
+              dark:bg-slate-950
+              px-4
+              py-2
+            "
+          >
+
+            <span
+              className="
+                text-sm
+                font-medium
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
+              Rows per page
+            </span>
+
+
+            <select
+              value={pageSize}
+              onChange={
+                handlePageSizeChange
+              }
+              className="
+                rounded-lg
+                border
+                border-slate-300
+                dark:border-slate-700
+                bg-white
+                dark:bg-slate-900
+                px-3
+                py-2
+                text-sm
+                font-semibold
+                text-slate-900
+                dark:text-white
+                outline-none
+                focus:border-blue-500
+              "
+            >
+
+              <option value={25}>
+                25
+              </option>
+
+              <option value={50}>
+                50
+              </option>
+
+              <option value={100}>
+                100
+              </option>
+
+            </select>
+
+          </div>
+
+
+          {/* TOTAL */}
+
+          <div
+            className="
+              rounded-xl
+              border
+              border-blue-200
+              dark:border-blue-500/20
+              bg-blue-50
+              dark:bg-blue-500/10
+              px-4
+              py-2
+            "
+          >
+
+            <span
+              className="
+                text-sm
+                font-medium
+                text-blue-700
+                dark:text-blue-300
+              "
+            >
+              {totalCount} Numbers
             </span>
 
           </div>
 
         </div>
+
 
         {/* TABLE */}
 
@@ -1413,7 +2040,184 @@ Invalid : ${result.invalid || 0}`
 
         </div>
 
+
+        {/* =================================================
+            SERVER SIDE PAGINATION
+        ================================================= */}
+
+        {!loading &&
+          totalCount > 0 && (
+
+            <div
+              className="
+                flex
+                flex-col
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
+                gap-4
+                px-6
+                py-4
+                border-t
+                border-slate-200
+                dark:border-slate-800
+              "
+            >
+
+
+              {/* INFO */}
+
+              <div
+                className="
+                  text-sm
+                  text-slate-500
+                  dark:text-slate-400
+                "
+              >
+
+                Showing
+
+                <span
+                  className="
+                    mx-1
+                    font-semibold
+                    text-slate-900
+                    dark:text-white
+                  "
+                >
+                  {startNumber}
+                </span>
+
+                -
+
+                <span
+                  className="
+                    mx-1
+                    font-semibold
+                    text-slate-900
+                    dark:text-white
+                  "
+                >
+                  {endNumber}
+                </span>
+
+                of
+
+                <span
+                  className="
+                    mx-1
+                    font-semibold
+                    text-slate-900
+                    dark:text-white
+                  "
+                >
+                  {totalCount}
+                </span>
+
+              </div>
+
+
+              {/* CONTROLS */}
+
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+
+
+                {/* PREVIOUS */}
+
+                <button
+                  type="button"
+                  onClick={
+                    goPrevious
+                  }
+                  disabled={
+                    currentPage <= 1 ||
+                    pagination.previous === null
+                  }
+                  className="
+                    px-3
+                    py-2
+                    rounded-lg
+                    border
+                    border-slate-300
+                    dark:border-slate-700
+                    bg-white
+                    dark:bg-slate-900
+                    text-sm
+                    font-medium
+                    disabled:opacity-40
+                    disabled:cursor-not-allowed
+                    hover:bg-slate-100
+                    dark:hover:bg-slate-800
+                  "
+                >
+                  ‹ Previous
+                </button>
+
+
+                {/* PAGE */}
+
+                <span
+                  className="
+                    min-w-[110px]
+                    text-center
+                    text-sm
+                    font-semibold
+                    text-slate-700
+                    dark:text-slate-200
+                  "
+                >
+                  Page {currentPage}
+                  {" / "}
+                  {totalPages}
+                </span>
+
+
+                {/* NEXT */}
+
+                <button
+                  type="button"
+                  onClick={
+                    goNext
+                  }
+                  disabled={
+                    currentPage >= totalPages ||
+                    pagination.next === null
+                  }
+                  className="
+                    px-3
+                    py-2
+                    rounded-lg
+                    border
+                    border-slate-300
+                    dark:border-slate-700
+                    bg-white
+                    dark:bg-slate-900
+                    text-sm
+                    font-medium
+                    disabled:opacity-40
+                    disabled:cursor-not-allowed
+                    hover:bg-slate-100
+                    dark:hover:bg-slate-800
+                  "
+                >
+                  Next ›
+                </button>
+
+              </div>
+
+            </div>
+
+          )}
+
+
       </div>
+
 
       {/* =================================================
           NUMBER FORM
@@ -1434,6 +2238,7 @@ Invalid : ${result.invalid || 0}`
         saving={saving}
       />
 
+
       {/* =================================================
           DELETE MODAL
       ================================================= */}
@@ -1451,6 +2256,7 @@ Invalid : ${result.invalid || 0}`
         number={selectedNumber}
         deleting={deleting}
       />
+
 
       {/* =================================================
           BULK ALLOCATION MODAL
@@ -1472,5 +2278,7 @@ Invalid : ${result.invalid || 0}`
       />
 
     </div>
+
   );
+
 }

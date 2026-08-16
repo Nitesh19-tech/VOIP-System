@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import {
     Plus,
     Search,
@@ -13,7 +14,12 @@ import NumberFormModal from "./NumberFormModal";
 import NumberDeleteModal from "./NumberDeleteModal";
 import BulkAllocationModal from "./BulkAllocationModal";
 
+
 export default function NumberPoolList({ user }) {
+
+    // =====================================================
+    // STATE
+    // =====================================================
 
     const [numbers, setNumbers] = useState([]);
 
@@ -31,13 +37,15 @@ export default function NumberPoolList({ user }) {
 
     const [showDelete, setShowDelete] = useState(false);
 
-    const [selectedNumber, setSelectedNumber] =
-        useState(null);
+    const [selectedNumber, setSelectedNumber] = useState(null);
+
     const [showBulkAllocation, setShowBulkAllocation] =
         useState(false);
-    // ==========================================
-    // Load Numbers
-    // ==========================================
+
+
+    // =====================================================
+    // LOAD NUMBERS
+    // =====================================================
 
     const loadNumbers = async () => {
 
@@ -48,13 +56,20 @@ export default function NumberPoolList({ user }) {
             const res =
                 await numberPoolService.getNumbers();
 
-            setNumbers(res.data.data || []);
+            setNumbers(
+                res?.data?.data || []
+            );
 
         } catch (err) {
 
-            console.error(err);
+            console.error(
+                "Load Numbers Error:",
+                err
+            );
 
-            alert("Unable to load numbers.");
+            alert(
+                "Unable to load numbers."
+            );
 
         } finally {
 
@@ -64,9 +79,10 @@ export default function NumberPoolList({ user }) {
 
     };
 
-    // ==========================================
-    // Load Statistics
-    // ==========================================
+
+    // =====================================================
+    // LOAD STATISTICS
+    // =====================================================
 
     const loadStatistics = async () => {
 
@@ -75,15 +91,25 @@ export default function NumberPoolList({ user }) {
             const res =
                 await numberPoolService.getStatistics();
 
-            setStatistics(res.data.data || {});
+            setStatistics(
+                res?.data?.data || {}
+            );
 
         } catch (err) {
 
-            console.error(err);
+            console.error(
+                "Load Statistics Error:",
+                err
+            );
 
         }
 
     };
+
+
+    // =====================================================
+    // INITIAL LOAD
+    // =====================================================
 
     useEffect(() => {
 
@@ -93,9 +119,10 @@ export default function NumberPoolList({ user }) {
 
     }, []);
 
-    // ==========================================
-    // Save
-    // ==========================================
+
+    // =====================================================
+    // SAVE NUMBER
+    // =====================================================
 
     const saveNumber = async (data) => {
 
@@ -128,9 +155,17 @@ export default function NumberPoolList({ user }) {
 
         } catch (err) {
 
-            console.error(err);
+            console.error(
+                "Save Number Error:",
+                err
+            );
 
-            alert("Unable to save number.");
+            const message =
+                err?.response?.data?.message ||
+                err?.response?.data?.detail ||
+                "Unable to save number.";
+
+            alert(message);
 
         } finally {
 
@@ -140,9 +175,10 @@ export default function NumberPoolList({ user }) {
 
     };
 
-    // ==========================================
-    // Delete
-    // ==========================================
+
+    // =====================================================
+    // DELETE NUMBER
+    // =====================================================
 
     const removeNumber = async (id) => {
 
@@ -150,7 +186,9 @@ export default function NumberPoolList({ user }) {
 
             setDeleting(true);
 
-            await numberPoolService.deleteNumber(id);
+            await numberPoolService.deleteNumber(
+                id
+            );
 
             setShowDelete(false);
 
@@ -162,9 +200,17 @@ export default function NumberPoolList({ user }) {
 
         } catch (err) {
 
-            console.error(err);
+            console.error(
+                "Delete Number Error:",
+                err
+            );
 
-            alert("Unable to delete number.");
+            const message =
+                err?.response?.data?.message ||
+                err?.response?.data?.detail ||
+                "Unable to delete number.";
+
+            alert(message);
 
         } finally {
 
@@ -174,81 +220,309 @@ export default function NumberPoolList({ user }) {
 
     };
 
-    // ==========================================
-    // Search
-    // ==========================================
+
+    // =====================================================
+    // SEARCH
+    // =====================================================
 
     const filteredNumbers = useMemo(() => {
 
         const keyword =
-            search.toLowerCase();
+            search
+                .trim()
+                .toLowerCase();
 
-        return numbers.filter((item) =>
+        // No search
+        if (!keyword) {
 
-            (item.did_number || "")
-                .toLowerCase()
-                .includes(keyword)
+            return numbers;
 
-            ||
+        }
 
-            (item.extension || "")
-                .toLowerCase()
-                .includes(keyword)
+        return numbers.filter((item) => {
 
-            ||
+            return (
 
-            (item.country_name || "")
-                .toLowerCase()
-                .includes(keyword)
+                // DID NUMBER
+                (item.did_number || "")
+                    .toLowerCase()
+                    .includes(keyword)
 
-            ||
+                ||
 
-            (item.client_name || "")
-                .toLowerCase()
-                .includes(keyword)
+                // COUNTRY
+                (item.country_name || "")
+                    .toLowerCase()
+                    .includes(keyword)
 
-            ||
+                ||
 
-            (item.carrier_name || "")
-                .toLowerCase()
-                .includes(keyword)
+                // CLIENT
+                (item.client_name || "")
+                    .toLowerCase()
+                    .includes(keyword)
 
-            ||
+                ||
 
-            (item.termination_name || "")
-                .toLowerCase()
-                .includes(keyword)
+                // CARRIER
+                (item.carrier_name || "")
+                    .toLowerCase()
+                    .includes(keyword)
 
-        );
+                ||
+
+                // TERMINATION
+                (item.termination_name || "")
+                    .toLowerCase()
+                    .includes(keyword)
+
+                ||
+
+                // RANGE
+                (item.range_name || "")
+                    .toLowerCase()
+                    .includes(keyword)
+
+                ||
+
+                // PREFIX
+                (item.prefix || "")
+                    .toLowerCase()
+                    .includes(keyword)
+
+                ||
+
+                // CURRENCY
+                (item.currency || "")
+                    .toLowerCase()
+                    .includes(keyword)
+
+                ||
+
+                // STATUS
+                (item.status || "")
+                    .toLowerCase()
+                    .includes(keyword)
+
+            );
+
+        });
 
     }, [numbers, search]);
+
+
+    // =====================================================
+    // IMPORT NUMBERS
+    // =====================================================
+
+    const handleImport = async (e) => {
+
+        const file =
+            e.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+
+            setLoading(true);
+
+            await numberPoolService.importNumbers(
+                file
+            );
+
+            await loadNumbers();
+
+            await loadStatistics();
+
+            alert(
+                "Numbers Imported Successfully."
+            );
+
+        } catch (err) {
+
+            console.error(
+                "Import Error:",
+                err
+            );
+
+            const message =
+                err?.response?.data?.message ||
+                err?.response?.data?.detail ||
+                "Import Failed.";
+
+            alert(message);
+
+        } finally {
+
+            setLoading(false);
+
+            // Allow same file to be selected again
+            e.target.value = "";
+
+        }
+
+    };
+
+
+    // =====================================================
+    // OPEN ADD FORM
+    // =====================================================
+
+    const handleAddNumber = () => {
+
+        setSelectedNumber(null);
+
+        setShowForm(true);
+
+    };
+
+
+    // =====================================================
+    // OPEN EDIT FORM
+    // =====================================================
+
+    const handleEditNumber = (number) => {
+
+        setSelectedNumber(number);
+
+        setShowForm(true);
+
+    };
+
+
+    // =====================================================
+    // OPEN DELETE MODAL
+    // =====================================================
+
+    const handleDeleteNumber = (number) => {
+
+        setSelectedNumber(number);
+
+        setShowDelete(true);
+
+    };
+
+
+    // =====================================================
+    // CLOSE FORM
+    // =====================================================
+
+    const closeForm = () => {
+
+        if (saving) {
+            return;
+        }
+
+        setShowForm(false);
+
+        setSelectedNumber(null);
+
+    };
+
+
+    // =====================================================
+    // CLOSE DELETE
+    // =====================================================
+
+    const closeDelete = () => {
+
+        if (deleting) {
+            return;
+        }
+
+        setShowDelete(false);
+
+        setSelectedNumber(null);
+
+    };
+
+
+    // =====================================================
+    // BULK ALLOCATION SUCCESS
+    // =====================================================
+
+    const handleBulkAllocationSuccess = async () => {
+
+        setShowBulkAllocation(false);
+
+        await loadNumbers();
+
+        await loadStatistics();
+
+    };
+
+
+    // =====================================================
+    // UI
+    // =====================================================
+
     return (
+
         <div className="space-y-6">
 
-            {/* Header */}
 
-            <div className="flex items-center justify-between">
+            {/* =================================================
+                HEADER
+            ================================================= */}
+
+            <div className="
+                flex
+                items-center
+                justify-between
+                gap-4
+                flex-wrap
+            ">
 
                 <div>
 
-                    <h1 className="text-3xl font-bold">
+                    <h1 className="
+                        text-3xl
+                        font-bold
+                        text-slate-900
+                        dark:text-white
+                    ">
                         Number Pool
                     </h1>
 
-                    <p className="text-slate-500">
+                    <p className="
+                        mt-1
+                        text-slate-500
+                        dark:text-slate-400
+                    ">
                         Manage DID Numbers
                     </p>
 
                 </div>
 
-                <div className="flex gap-3">
 
-                    <label className="cursor-pointer rounded-xl bg-green-600 px-5 py-3 text-white hover:bg-green-700">
+                <div className="
+                    flex
+                    gap-3
+                    flex-wrap
+                ">
 
-                        <Upload
-                            size={18}
-                            className="mr-2 inline"
-                        />
+
+                    {/* =========================================
+                        IMPORT
+                    ========================================= */}
+
+                    <label className="
+                        cursor-pointer
+                        rounded-xl
+                        bg-green-600
+                        px-5
+                        py-3
+                        text-white
+                        transition
+                        hover:bg-green-700
+                        flex
+                        items-center
+                        gap-2
+                    ">
+
+                        <Upload size={18} />
 
                         Import
 
@@ -256,49 +530,31 @@ export default function NumberPoolList({ user }) {
                             type="file"
                             hidden
                             accept=".csv,.xlsx,.xls"
-                            onChange={async (e) => {
-
-                                const file =
-                                    e.target.files?.[0];
-
-                                if (!file) return;
-
-                                try {
-
-                                    await numberPoolService.importNumbers(
-                                        file
-                                    );
-
-                                    await loadNumbers();
-
-                                    await loadStatistics();
-
-                                    alert(
-                                        "Numbers Imported Successfully."
-                                    );
-
-                                } catch (err) {
-
-                                    console.error(err);
-
-                                    alert("Import Failed.");
-
-                                }
-
-                            }}
+                            onChange={handleImport}
                         />
 
                     </label>
 
+
+                    {/* =========================================
+                        ADD NUMBER
+                    ========================================= */}
+
                     <button
-                        onClick={() => {
-
-                            setSelectedNumber(null);
-
-                            setShowForm(true);
-
-                        }}
-                        className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-white hover:bg-blue-700"
+                        type="button"
+                        onClick={handleAddNumber}
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                            rounded-xl
+                            bg-blue-600
+                            px-5
+                            py-3
+                            text-white
+                            transition
+                            hover:bg-blue-700
+                        "
                     >
 
                         <Plus size={18} />
@@ -306,20 +562,48 @@ export default function NumberPoolList({ user }) {
                         Add Number
 
                     </button>
+
+
+                    {/* =========================================
+                        BULK ALLOCATION
+                    ========================================= */}
+
                     <button
-                        onClick={() => setShowBulkAllocation(true)}
-                        className="rounded-xl bg-emerald-600 px-5 py-3 text-white hover:bg-emerald-700"
+                        type="button"
+                        onClick={() =>
+                            setShowBulkAllocation(true)
+                        }
+                        className="
+                            rounded-xl
+                            bg-emerald-600
+                            px-5
+                            py-3
+                            text-white
+                            transition
+                            hover:bg-emerald-700
+                        "
                     >
+
                         Bulk Allocation
+
                     </button>
 
                 </div>
 
             </div>
 
-            {/* Statistics */}
 
-            <div className="grid grid-cols-5 gap-4">
+            {/* =================================================
+                STATISTICS
+            ================================================= */}
+
+            <div className="
+                grid
+                grid-cols-2
+                gap-4
+                md:grid-cols-3
+                lg:grid-cols-5
+            ">
 
                 <StatCard
                     title="Total"
@@ -348,96 +632,170 @@ export default function NumberPoolList({ user }) {
 
             </div>
 
-            {/* Search */}
 
-            <div className="relative max-w-md">
+            {/* =================================================
+                SEARCH
+            ================================================= */}
+
+            <div className="
+                relative
+                w-full
+                max-w-md
+            ">
 
                 <Search
                     size={18}
-                    className="absolute left-3 top-3.5 text-slate-400"
+                    className="
+                        absolute
+                        left-3
+                        top-3.5
+                        text-slate-400
+                    "
                 />
 
                 <input
                     type="text"
-                    placeholder="Search Number..."
+                    placeholder="Search Number, Country, Client..."
                     value={search}
                     onChange={(e) =>
                         setSearch(e.target.value)
                     }
-                    className="w-full rounded-xl border py-3 pl-10 pr-4"
+                    className="
+                        w-full
+                        rounded-xl
+                        border
+                        border-slate-200
+                        bg-white
+                        py-3
+                        pl-10
+                        pr-4
+                        text-slate-900
+                        outline-none
+                        transition
+                        focus:border-blue-500
+                        focus:ring-2
+                        focus:ring-blue-500/20
+                        dark:border-slate-700
+                        dark:bg-slate-900
+                        dark:text-white
+                    "
                 />
 
             </div>
 
-            {/* Table */}
+
+            {/* =================================================
+                RESULT COUNT
+            ================================================= */}
+
+            <div className="
+                flex
+                items-center
+                justify-between
+                text-sm
+                text-slate-500
+            ">
+
+                <span>
+
+                    Showing{" "}
+                    <strong className="
+                        text-slate-700
+                        dark:text-slate-300
+                    ">
+                        {filteredNumbers.length}
+                    </strong>{" "}
+                    of{" "}
+                    <strong className="
+                        text-slate-700
+                        dark:text-slate-300
+                    ">
+                        {numbers.length}
+                    </strong>{" "}
+                    numbers
+
+                </span>
+
+            </div>
+
+
+            {/* =================================================
+                TABLE
+            ================================================= */}
 
             <NumberTable
                 numbers={filteredNumbers}
                 loading={loading}
                 user={user}
-                onEdit={(number) => {
 
-                    setSelectedNumber(number);
+                onEdit={handleEditNumber}
 
-                    setShowForm(true);
-
-                }}
-                onDelete={(number) => {
-
-                    setSelectedNumber(number);
-
-                    setShowDelete(true);
-
-                }}
+                onDelete={handleDeleteNumber}
             />
 
-            {/* Form */}
+
+            {/* =================================================
+                FORM MODAL
+            ================================================= */}
 
             <NumberFormModal
                 open={showForm}
-                onClose={() => {
 
-                    setShowForm(false);
+                onClose={closeForm}
 
-                    setSelectedNumber(null);
-
-                }}
                 onSave={saveNumber}
+
                 number={selectedNumber}
+
                 saving={saving}
+
                 user={user}
             />
 
-            {/* Delete */}
+
+            {/* =================================================
+                DELETE MODAL
+            ================================================= */}
 
             <NumberDeleteModal
                 open={showDelete}
+
                 number={selectedNumber}
+
                 deleting={deleting}
+
                 onConfirm={removeNumber}
-                onClose={() => {
 
-                    setShowDelete(false);
-
-                    setSelectedNumber(null);
-
-                }}
+                onClose={closeDelete}
             />
+
+
+            {/* =================================================
+                BULK ALLOCATION MODAL
+            ================================================= */}
 
             <BulkAllocationModal
                 open={showBulkAllocation}
-                onClose={() => setShowBulkAllocation(false)}
-                onSuccess={async () => {
-                    setShowBulkAllocation(false);
-                    await loadNumbers();
-                    await loadStatistics();
-                }}
+
+                onClose={() =>
+                    setShowBulkAllocation(false)
+                }
+
+                onSuccess={
+                    handleBulkAllocationSuccess
+                }
             />
 
         </div>
+
     );
 
 }
+
+
+// =========================================================
+// STAT CARD
+// =========================================================
 
 function StatCard({
     title,
@@ -446,27 +804,46 @@ function StatCard({
 
     return (
 
-        <div className="rounded-xl border bg-white p-5 shadow">
+        <div className="
+            rounded-xl
+            border
+            border-slate-200
+            bg-white
+            p-5
+            shadow
+            dark:border-slate-800
+            dark:bg-slate-900
+        ">
 
-            <div className="mb-2 flex items-center gap-2">
+            <div className="
+                mb-2
+                flex
+                items-center
+                gap-2
+            ">
 
                 <BarChart3
                     size={18}
                     className="text-blue-600"
                 />
 
-                <span className="text-sm text-slate-500">
-
+                <span className="
+                    text-sm
+                    text-slate-500
+                    dark:text-slate-400
+                ">
                     {title}
-
                 </span>
 
             </div>
 
-            <div className="text-3xl font-bold">
-
+            <div className="
+                text-3xl
+                font-bold
+                text-slate-900
+                dark:text-white
+            ">
                 {value}
-
             </div>
 
         </div>

@@ -33,7 +33,6 @@ export default function NumberTable({
   // =====================================================
 
   if (loading) {
-
     return (
       <div className="
         rounded-2xl
@@ -69,7 +68,6 @@ export default function NumberTable({
   // =====================================================
 
   if (!numbers.length) {
-
     return (
       <div className="
         rounded-2xl
@@ -110,12 +108,11 @@ export default function NumberTable({
   }
 
   // =====================================================
-  // SELECT ALL
+  // SELECTABLE NUMBERS
   // =====================================================
 
   const selectableNumbers = numbers.filter(
-    (number) =>
-      number.status !== "RESERVED"
+    (number) => number.status !== "RESERVED"
   );
 
   const allSelected =
@@ -124,6 +121,10 @@ export default function NumberTable({
       (number) =>
         selectedNumbers.includes(number.id)
     );
+
+  // =====================================================
+  // SELECT ALL
+  // =====================================================
 
   const handleSelectAll = (checked) => {
 
@@ -151,9 +152,7 @@ export default function NumberTable({
     checked
   ) => {
 
-    if (
-      number.status === "RESERVED"
-    ) {
+    if (number.status === "RESERVED") {
       return;
     }
 
@@ -175,10 +174,10 @@ export default function NumberTable({
 
       setSelectedNumbers((prev) =>
         prev.filter(
-          (id) =>
-            id !== number.id
+          (id) => id !== number.id
         )
       );
+
     }
   };
 
@@ -187,7 +186,6 @@ export default function NumberTable({
   // =====================================================
 
   return (
-
     <div className="
       overflow-hidden
       rounded-2xl
@@ -271,20 +269,9 @@ export default function NumberTable({
                 DID Number
               </th>
 
-              {/* EXTENSION */}
-
-              <th className="
-                px-6
-                py-4
-                text-left
-              ">
-                Extension
-              </th>
-
               {/* ADMIN */}
 
               {user?.role === "SUPER_ADMIN" && (
-
                 <th className="
                   px-6
                   py-4
@@ -292,7 +279,6 @@ export default function NumberTable({
                 ">
                   Admin
                 </th>
-
               )}
 
               {/* CLIENT */}
@@ -433,6 +419,7 @@ export default function NumberTable({
                           h-4
                           w-4
                           rounded
+
                           ${
                             isReserved
                               ? "cursor-not-allowed opacity-50"
@@ -466,21 +453,9 @@ export default function NumberTable({
                       {number.did_number}
                     </td>
 
-                    {/* EXTENSION */}
-
-                    <td className="
-                      px-6
-                      py-4
-                      text-slate-700
-                      dark:text-slate-300
-                    ">
-                      {number.extension || "-"}
-                    </td>
-
                     {/* ADMIN */}
 
                     {user?.role === "SUPER_ADMIN" && (
-
                       <td className="
                         px-6
                         py-4
@@ -489,7 +464,6 @@ export default function NumberTable({
                       ">
                         {number.admin_name || "-"}
                       </td>
-
                     )}
 
                     {/* CLIENT */}
@@ -618,9 +592,7 @@ export default function NumberTable({
                             hover:bg-amber-600
                           "
                         >
-
                           <Pencil size={16} />
-
                         </button>
 
                         {/* DELETE */}
@@ -640,9 +612,7 @@ export default function NumberTable({
                             hover:bg-red-700
                           "
                         >
-
                           <Trash2 size={16} />
-
                         </button>
 
                       </div>

@@ -4,26 +4,48 @@ from apps.common.models import BaseModel
 
 
 class Company(BaseModel):
-    name = models.CharField(max_length=255, unique=True)
 
-    code = models.CharField(max_length=50, unique=True)
+    name = models.CharField(
+        max_length=255,
+        unique=True,
+    )
 
-    email = models.EmailField(unique=True)
+    code = models.CharField(
+        max_length=50,
+        unique=True,
+    )
 
-    phone = models.CharField(max_length=20)
+    email = models.EmailField(
+        unique=True,
+    )
 
-    address = models.TextField(blank=True)
+    phone = models.CharField(
+        max_length=20,
+    )
 
-    city = models.CharField(max_length=100, blank=True)
+    address = models.TextField(
+        blank=True,
+    )
 
-    state = models.CharField(max_length=100, blank=True)
+    city = models.CharField(
+        max_length=100,
+        blank=True,
+    )
 
-    country = models.CharField(max_length=100, default="India")
+    state = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    country = models.CharField(
+        max_length=100,
+        default="India",
+    )
 
     logo = models.ImageField(
         upload_to="company_logos/",
         blank=True,
-        null=True
+        null=True,
     )
 
     class Meta:
