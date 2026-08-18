@@ -3,6 +3,8 @@ from apps.number_pool.models import NumberPool
 
 class NumberPoolGenerator:
 
+    CONTEXT = "from-carrier"
+
     # =====================================================
     # GENERATE SINGLE NUMBER MAPPING
     # =====================================================
@@ -14,14 +16,14 @@ class NumberPoolGenerator:
             return ""
 
         # -------------------------------------------------
-        # NUMBER STATUS
+        # ONLY ASSIGNED NUMBERS
         # -------------------------------------------------
 
         if number.status != "ASSIGNED":
             return ""
 
         # -------------------------------------------------
-        # REQUIRED DATA
+        # DID
         # -------------------------------------------------
 
         did = (
@@ -31,6 +33,10 @@ class NumberPoolGenerator:
         if not did:
             return ""
 
+        # -------------------------------------------------
+        # CARRIER
+        # -------------------------------------------------
+
         carrier = number.carrier
 
         if not carrier:
@@ -38,6 +44,10 @@ class NumberPoolGenerator:
 
         if not carrier.is_active:
             return ""
+
+        # -------------------------------------------------
+        # TERMINATION
+        # -------------------------------------------------
 
         termination = number.termination
 
@@ -62,16 +72,18 @@ class NumberPoolGenerator:
         # -------------------------------------------------
 
         ips = list(
-            carrier.ips.filter(
+            carrier.ips
+            .filter(
                 is_active=True
-            ).order_by("id")
+            )
+            .order_by("id")
         )
 
         if not ips:
             return ""
 
         # -------------------------------------------------
-        # GENERATE MAPPING
+        # GENERATE MAPPING INFORMATION
         # -------------------------------------------------
 
         lines = []
@@ -112,36 +124,155 @@ class NumberPoolGenerator:
 
         lines.append("")
 
+        return "\n".join(lines)
+
+    # =====================================================
+    # GENERATE SINGLE INBOUND DID DIALPLAN
+    # =====================================================
+
+    @staticmethod
+    def generate_dialplan(number):
+
+        if not number:
+            return ""
+
         # -------------------------------------------------
-        # DID MAPPING
+        # ONLY ASSIGNED NUMBERS
         # -------------------------------------------------
 
-        lines.append(
-            f"; DID {did} -> Carrier {carrier.name}"
+        if number.status != "ASSIGNED":
+            return ""
+
+        # -------------------------------------------------
+        # DID
+        # -------------------------------------------------
+
+        did = (
+            number.did_number or ""
+        ).strip()
+
+        if not did:
+            return ""
+
+        # -------------------------------------------------
+        # CARRIER
+        # -------------------------------------------------
+
+        carrier = number.carrier
+
+        if not carrier:
+            return ""
+
+        if not carrier.is_active:
+            return ""
+
+        # -------------------------------------------------
+        # TERMINATION
+        # -------------------------------------------------
+
+        termination = number.termination
+
+        if not termination:
+            return ""
+
+        if not termination.is_active:
+            return ""
+
+        # -------------------------------------------------
+        # CLIENT
+        # -------------------------------------------------
+
+        client_name = (
+            number.client.name
+            if number.client
+            else "N/A"
         )
 
-        lines.append(
-            f"; DID {did} -> Termination {termination.name}"
-        )
+        # -------------------------------------------------
+        # CARRIER IPS
+        # -------------------------------------------------
 
-        for ip in ips:
-
-            lines.append(
-                f"; DID {did} -> Carrier IP {ip.ip_address}"
+        ips = list(
+            carrier.ips
+            .filter(
+                is_active=True
             )
+            .order_by("id")
+        )
+
+        if not ips:
+            return ""
+
+        # -------------------------------------------------
+        # ACTUAL ASTERISK DIALPLAN
+        # -------------------------------------------------
+
+        lines = []
+
+        lines.append(
+            "; =================================================="
+        )
+
+        lines.append(
+            f"; DID         : {did}"
+        )
+
+        lines.append(
+            f"; Client      : {client_name}"
+        )
+
+        lines.append(
+            f"; Carrier     : {carrier.name}"
+        )
+
+        lines.append(
+            f"; Termination : {termination.name}"
+        )
+
+        lines.append(
+            "; =================================================="
+        )
+
+        lines.append(
+            f"exten => {did},1,NoOp(Incoming DID {did})"
+        )
+
+        lines.append(
+            f" same => n,NoOp(Client: {client_name})"
+        )
+
+        lines.append(
+            f" same => n,NoOp(Carrier: {carrier.name})"
+        )
+
+        lines.append(
+            f" same => n,NoOp(Termination: {termination.name})"
+        )
+
+        # -------------------------------------------------
+        # TEMPORARY TEST HANDLER
+        # -------------------------------------------------
+        # अभी destination define नहीं है.
+        # इसलिए call को safely hangup करेंगे.
+        # बाद में actual destination logic यहाँ आएगा.
+
+        lines.append(
+            " same => n,Hangup()"
+        )
 
         lines.append("")
 
         return "\n".join(lines)
 
     # =====================================================
-    # GENERATE ALL
+    # GENERATE ALL MAPPINGS
     # =====================================================
 
     @staticmethod
     def generate_all():
 
         config = [
+
             "; ==================================================",
             "; AUTO GENERATED NUMBER POOL MAPPING",
             "; DO NOT EDIT MANUALLY",
@@ -173,6 +304,60 @@ class NumberPoolGenerator:
 
             generated = (
                 NumberPoolGenerator.generate(
+                    number
+                )
+            )
+
+            if generated:
+
+                config.append(
+                    generated
+                )
+
+        return "\n".join(config)
+
+    # =====================================================
+    # GENERATE ALL INBOUND DIALPLAN
+    # =====================================================
+
+    @staticmethod
+    def generate_all_dialplan():
+
+        config = [
+
+            "; ==================================================",
+            "; AUTO GENERATED INBOUND DID DIALPLAN",
+            "; DO NOT EDIT MANUALLY",
+            "; ==================================================",
+            "",
+            f"[{NumberPoolGenerator.CONTEXT}]",
+            "",
+        ]
+
+        numbers = (
+            NumberPool.objects
+            .filter(
+                status="ASSIGNED",
+                carrier__is_active=True,
+                termination__is_active=True,
+            )
+            .select_related(
+                "client",
+                "carrier",
+                "termination",
+            )
+            .prefetch_related(
+                "carrier__ips",
+            )
+            .order_by(
+                "did_number"
+            )
+        )
+
+        for number in numbers:
+
+            generated = (
+                NumberPoolGenerator.generate_dialplan(
                     number
                 )
             )

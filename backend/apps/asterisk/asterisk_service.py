@@ -3,10 +3,15 @@ from decouple import config
 from .carrier_generator import CarrierGenerator
 from .generators import PJSIPGenerator
 from .routing_generator import RoutingGenerator
+from .number_pool_generator import NumberPoolGenerator
 from .ssh import AsteriskSSH
 
 
 class AsteriskService:
+
+    # =====================================================
+    # SSH
+    # =====================================================
 
     @staticmethod
     def ssh():
@@ -15,8 +20,15 @@ class AsteriskService:
             host=config("ASTERISK_HOST"),
             username=config("ASTERISK_USERNAME"),
             password=config("ASTERISK_PASSWORD"),
-            port=config("ASTERISK_PORT", cast=int),
+            port=config(
+                "ASTERISK_PORT",
+                cast=int,
+            ),
         )
+
+    # =====================================================
+    # EXECUTE COMMAND
+    # =====================================================
 
     @staticmethod
     def execute(command):
@@ -25,10 +37,15 @@ class AsteriskService:
 
         try:
 
-            output, error = ssh.execute(command)
+            output, error = ssh.execute(
+                command
+            )
 
             if error:
-                raise Exception(error)
+
+                raise Exception(
+                    error
+                )
 
             return output
 
@@ -37,13 +54,15 @@ class AsteriskService:
             ssh.close()
 
     # =====================================================
-    # Upload PJSIP
+    # UPLOAD PJSIP
     # =====================================================
 
     @staticmethod
     def upload_pjsip():
 
-        config_data = PJSIPGenerator.generate_all()
+        config_data = (
+            PJSIPGenerator.generate_all()
+        )
 
         ssh = AsteriskService.ssh()
 
@@ -59,13 +78,15 @@ class AsteriskService:
             ssh.close()
 
     # =====================================================
-    # Upload Carriers
+    # UPLOAD CARRIERS
     # =====================================================
 
     @staticmethod
     def upload_carriers():
 
-        config_data = CarrierGenerator.generate_all()
+        config_data = (
+            CarrierGenerator.generate_all()
+        )
 
         ssh = AsteriskService.ssh()
 
@@ -81,13 +102,15 @@ class AsteriskService:
             ssh.close()
 
     # =====================================================
-    # Upload Routing
+    # UPLOAD ROUTING
     # =====================================================
 
     @staticmethod
     def upload_routing():
 
-        config_data = RoutingGenerator.generate_all()
+        config_data = (
+            RoutingGenerator.generate_all()
+        )
 
         ssh = AsteriskService.ssh()
 
@@ -103,7 +126,31 @@ class AsteriskService:
             ssh.close()
 
     # =====================================================
-    # Reload
+    # UPLOAD INBOUND NUMBER POOL
+    # =====================================================
+
+    @staticmethod
+    def upload_inbound():
+
+        config_data = (
+            NumberPoolGenerator.generate_all_dialplan()
+        )
+
+        ssh = AsteriskService.ssh()
+
+        try:
+
+            ssh.upload_text(
+                "/etc/asterisk/voip_backend_inbound.conf",
+                config_data,
+            )
+
+        finally:
+
+            ssh.close()
+
+    # =====================================================
+    # RELOAD PJSIP
     # =====================================================
 
     @staticmethod
@@ -113,12 +160,20 @@ class AsteriskService:
             'asterisk -rx "pjsip reload"'
         )
 
+    # =====================================================
+    # RELOAD DIALPLAN
+    # =====================================================
+
     @staticmethod
     def reload_dialplan():
 
         return AsteriskService.execute(
             'asterisk -rx "dialplan reload"'
         )
+
+    # =====================================================
+    # CORE RELOAD
+    # =====================================================
 
     @staticmethod
     def core_reload():
@@ -128,24 +183,32 @@ class AsteriskService:
         )
 
     # =====================================================
-    # Legacy / Full Sync
+    # FULL SYNC
     # =====================================================
 
     @staticmethod
     def sync():
 
+        # PJSIP
         AsteriskService.upload_pjsip()
 
+        # Carrier → IP
         AsteriskService.upload_carriers()
 
+        # Outbound routing
         AsteriskService.upload_routing()
 
+        # NumberPool → Incoming DID
+        AsteriskService.upload_inbound()
+
+        # Reload PJSIP
         AsteriskService.reload_pjsip()
 
+        # Reload Dialplan
         AsteriskService.reload_dialplan()
 
     # =====================================================
-    # Monitoring
+    # MONITORING
     # =====================================================
 
     @staticmethod
