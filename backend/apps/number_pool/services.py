@@ -13,6 +13,8 @@ from .models import (
     Country,
 )
 
+from apps.asterisk.asterisk_service import AsteriskService
+
 
 # =========================================================
 # COUNTRY SERVICE
@@ -128,6 +130,22 @@ class CountryService:
 class NumberPoolService:
 
     # =====================================================
+    # ASTERISK INBOUND SYNC
+    # =====================================================
+
+    @staticmethod
+    def sync_asterisk_inbound():
+        try:
+            AsteriskService.upload_inbound()
+            AsteriskService.reload_dialplan()
+        except Exception as e:
+            # Do not break the already-committed number assignment
+            # if Asterisk provisioning fails.
+            print(
+                f"Asterisk inbound provisioning failed: {e}"
+            )
+
+    # =====================================================
     # CREATE NUMBER
     # =====================================================
 
@@ -170,10 +188,17 @@ class NumberPoolService:
         # CREATE
         # -------------------------------------------------
 
-        return NumberPool.objects.create(
+        number = NumberPool.objects.create(
             created_by=user,
             **data,
         )
+
+        if number.status == "ASSIGNED":
+            transaction.on_commit(
+                NumberPoolService.sync_asterisk_inbound
+            )
+
+        return number
 
     # =====================================================
     # GET ALL NUMBERS
@@ -554,6 +579,10 @@ class NumberPoolService:
 
         number.save()
 
+        transaction.on_commit(
+            NumberPoolService.sync_asterisk_inbound
+        )
+
         return number
 
     # =====================================================
@@ -743,6 +772,10 @@ class NumberPoolService:
             ],
         )
 
+        transaction.on_commit(
+            NumberPoolService.sync_asterisk_inbound
+        )
+
         # -------------------------------------------------
         # RESPONSE
         # -------------------------------------------------
@@ -874,6 +907,10 @@ class NumberPoolService:
                 "status",
                 "assigned_at",
             ],
+        )
+
+        transaction.on_commit(
+            NumberPoolService.sync_asterisk_inbound
         )
 
         return len(assigned_numbers)
@@ -1092,6 +1129,10 @@ class NumberPoolService:
                 "status",
                 "assigned_at",
             ],
+        )
+
+        transaction.on_commit(
+            NumberPoolService.sync_asterisk_inbound
         )
 
         # -------------------------------------------------
