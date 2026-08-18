@@ -340,7 +340,7 @@ export default function NumberFormModal({
       <div
         className="
           w-full
-          max-w-5xl
+          max-w-6xl max-h-[92vh] flex flex-col
 
           rounded-3xl
 
@@ -368,7 +368,7 @@ export default function NumberFormModal({
             justify-between
 
             px-8
-            py-6
+            py-5
 
             border-b
             border-slate-200
@@ -436,6 +436,7 @@ export default function NumberFormModal({
             gap-5
 
             p-8
+            overflow-y-auto
           "
         >
 
@@ -480,7 +481,7 @@ export default function NumberFormModal({
                   dark:bg-slate-950
 
                   px-4
-                  py-3
+                  py-3.5
 
                   outline-none
 
@@ -555,7 +556,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -628,7 +629,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -700,7 +701,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -772,7 +773,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -859,7 +860,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -915,7 +916,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -971,7 +972,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -1009,7 +1010,7 @@ export default function NumberFormModal({
 
             <textarea
               name="description"
-              rows={4}
+              rows={3}
               value={form.description}
               onChange={handleChange}
               placeholder="Enter description..."
@@ -1026,7 +1027,7 @@ export default function NumberFormModal({
                 dark:bg-slate-950
 
                 px-4
-                py-3
+                py-3.5.5
 
                 outline-none
 
@@ -1046,7 +1047,7 @@ export default function NumberFormModal({
               FOOTER
           ================================================= */}
 
-          <div className="md:col-span-2 mt-4">
+          <div className="md:col-span-2 mt-2 sticky bottom-0 bg-white dark:bg-slate-900 pt-4 pb-1">
 
             <div
               className="
