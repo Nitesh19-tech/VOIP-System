@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import SIPAccount
 
 
@@ -19,8 +20,10 @@ class SIPAccountSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    # SIP extension is now the SIP username.
+    # NumberPool no longer contains an extension field.
     extension = serializers.CharField(
-        source="number.extension",
+        source="username",
         read_only=True,
     )
 
@@ -180,7 +183,10 @@ class SIPAccountSerializer(serializers.ModelSerializer):
             ) if self.instance else None,
         )
 
-        # DID Validation
+        # =====================================================
+        # DID VALIDATION
+        # =====================================================
+
         if number:
 
             queryset = SIPAccount.objects.filter(
@@ -202,21 +208,44 @@ class SIPAccountSerializer(serializers.ModelSerializer):
 
                 })
 
-            # Auto Generate Credentials
+            # =================================================
+            # AUTO GENERATE SIP CREDENTIALS
+            # =================================================
 
-            attrs["username"] = number.extension
+            did_number = str(
+                number.did_number or ""
+            ).strip()
 
-            attrs["auth_id"] = number.extension
+            username = "".join(
+                char
+                for char in did_number
+                if char.isdigit()
+            )
 
-            attrs["caller_id"] = number.did_number
+            if not username:
+
+                raise serializers.ValidationError({
+
+                    "number":
+                    "The selected DID does not contain a valid number."
+
+                })
+
+            attrs["username"] = username
+
+            attrs["auth_id"] = username
+
+            attrs["caller_id"] = did_number
 
             if not attrs.get("password"):
 
-                attrs["password"] = number.extension
+                attrs["password"] = username
 
         else:
 
-            # Manual SIP Account
+            # =================================================
+            # MANUAL SIP ACCOUNT
+            # =================================================
 
             if not attrs.get("username"):
 
@@ -229,13 +258,19 @@ class SIPAccountSerializer(serializers.ModelSerializer):
 
             if not attrs.get("auth_id"):
 
-                attrs["auth_id"] = attrs["username"]
+                attrs["auth_id"] = (
+                    attrs["username"]
+                )
 
             if not attrs.get("caller_id"):
 
-                attrs["caller_id"] = attrs["username"]
+                attrs["caller_id"] = (
+                    attrs["username"]
+                )
 
-        # Default Values
+        # =====================================================
+        # DEFAULT VALUES
+        # =====================================================
 
         attrs.setdefault(
             "domain",
@@ -274,7 +309,10 @@ class SIPAccountSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    def create(self, validated_data):
+    def create(
+        self,
+        validated_data,
+    ):
 
         return SIPAccount.objects.create(
             **validated_data,

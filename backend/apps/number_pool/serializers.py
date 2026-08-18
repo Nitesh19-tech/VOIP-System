@@ -74,33 +74,42 @@ class NumberPoolSerializer(serializers.ModelSerializer):
         fields = [
             "id",
 
+            # ADMIN
             "admin",
             "admin_name",
 
+            # CLIENT
             "client",
             "client_name",
 
+            # CARRIER
             "carrier",
             "carrier_name",
 
+            # TERMINATION
             "termination",
             "termination_name",
 
+            # COUNTRY
             "country",
             "country_name",
             "dial_code",
 
+            # NUMBER
             "did_number",
-            
 
+            # PRICING
             "purchase_price",
             "monthly_rental",
 
+            # STATUS
             "status",
             "assigned_at",
 
+            # DESCRIPTION
             "description",
 
+            # SYSTEM
             "created_by",
             "created_at",
             "updated_at",
@@ -192,7 +201,67 @@ class NumberPoolSerializer(serializers.ModelSerializer):
 
         return value
 
-    
+    # =====================================================
+    # CARRIER → TERMINATION VALIDATION
+    # =====================================================
+
+    def validate(self, attrs):
+
+        carrier = attrs.get(
+            "carrier",
+            getattr(
+                self.instance,
+                "carrier",
+                None,
+            ),
+        )
+
+        termination = attrs.get(
+            "termination",
+            getattr(
+                self.instance,
+                "termination",
+                None,
+            ),
+        )
+
+        if termination and carrier:
+
+            if termination.carrier_id != carrier.id:
+
+                raise serializers.ValidationError(
+                    {
+                        "termination":
+                        "Selected termination does not "
+                        "belong to selected carrier."
+                    }
+                )
+
+        elif termination and not carrier:
+
+            existing_carrier = getattr(
+                self.instance,
+                "carrier",
+                None,
+            )
+
+            if existing_carrier:
+
+                if (
+                    termination.carrier_id
+                    != existing_carrier.id
+                ):
+
+                    raise serializers.ValidationError(
+                        {
+                            "termination":
+                            "Selected termination does not "
+                            "belong to the number's carrier."
+                        }
+                    )
+
+        return attrs
+
 
 # =========================================================
 # BULK ALLOCATION SERIALIZER
@@ -202,7 +271,9 @@ class NumberPoolSerializer(serializers.ModelSerializer):
 #
 # {
 #     "number_ids": [1, 2, 3],
-#     "client": 5
+#     "carrier": 1,
+#     "termination": 5,
+#     "client": 10
 # }
 #
 # =========================================================
@@ -216,6 +287,20 @@ class BulkAllocationSerializer(serializers.Serializer):
         ),
 
         allow_empty=False,
+    )
+
+    carrier = serializers.PrimaryKeyRelatedField(
+
+        queryset=Carrier.objects.filter(
+            is_active=True,
+        )
+    )
+
+    termination = serializers.PrimaryKeyRelatedField(
+
+        queryset=Termination.objects.filter(
+            is_active=True,
+        )
     )
 
     client = serializers.PrimaryKeyRelatedField(
@@ -232,7 +317,7 @@ class BulkAllocationSerializer(serializers.Serializer):
     def validate_number_ids(self, value):
 
         # -------------------------------------------------
-        # Remove duplicate IDs
+        # REMOVE DUPLICATES
         # -------------------------------------------------
 
         value = list(
@@ -240,7 +325,7 @@ class BulkAllocationSerializer(serializers.Serializer):
         )
 
         # -------------------------------------------------
-        # Fetch selected numbers
+        # FETCH SELECTED NUMBERS
         # -------------------------------------------------
 
         numbers = NumberPool.objects.filter(
@@ -248,7 +333,7 @@ class BulkAllocationSerializer(serializers.Serializer):
         )
 
         # -------------------------------------------------
-        # Check missing IDs
+        # CHECK MISSING IDS
         # -------------------------------------------------
 
         existing_ids = set(
@@ -259,9 +344,13 @@ class BulkAllocationSerializer(serializers.Serializer):
         )
 
         missing_ids = [
+
             number_id
+
             for number_id in value
+
             if number_id not in existing_ids
+
         ]
 
         if missing_ids:
@@ -271,16 +360,20 @@ class BulkAllocationSerializer(serializers.Serializer):
             )
 
         # -------------------------------------------------
-        # Check availability
+        # CHECK AVAILABILITY
         # -------------------------------------------------
 
         unavailable_numbers = list(
-            numbers.exclude(
+
+            numbers
+            .exclude(
                 status="AVAILABLE"
-            ).values_list(
+            )
+            .values_list(
                 "did_number",
                 flat=True
             )
+
         )
 
         if unavailable_numbers:
@@ -296,6 +389,32 @@ class BulkAllocationSerializer(serializers.Serializer):
             )
 
         return value
+
+    # =====================================================
+    # VALIDATE CARRIER + TERMINATION
+    # =====================================================
+
+    def validate(self, attrs):
+
+        carrier = attrs["carrier"]
+
+        termination = attrs["termination"]
+
+        # -------------------------------------------------
+        # TERMINATION MUST BELONG TO CARRIER
+        # -------------------------------------------------
+
+        if termination.carrier_id != carrier.id:
+
+            raise serializers.ValidationError(
+                {
+                    "termination":
+                    "Selected termination does not "
+                    "belong to selected carrier."
+                }
+            )
+
+        return attrs
 
 
 # =========================================================
@@ -328,7 +447,7 @@ class BulkUnallocationSerializer(serializers.Serializer):
     def validate_number_ids(self, value):
 
         # -------------------------------------------------
-        # Remove duplicate IDs
+        # REMOVE DUPLICATES
         # -------------------------------------------------
 
         value = list(
@@ -336,22 +455,30 @@ class BulkUnallocationSerializer(serializers.Serializer):
         )
 
         # -------------------------------------------------
-        # Check numbers exist
+        # CHECK NUMBERS EXIST
         # -------------------------------------------------
 
         existing_ids = set(
-            NumberPool.objects.filter(
+
+            NumberPool.objects
+            .filter(
                 id__in=value
-            ).values_list(
+            )
+            .values_list(
                 "id",
                 flat=True
             )
+
         )
 
         missing_ids = [
+
             number_id
+
             for number_id in value
+
             if number_id not in existing_ids
+
         ]
 
         if missing_ids:
@@ -361,23 +488,31 @@ class BulkUnallocationSerializer(serializers.Serializer):
             )
 
         # -------------------------------------------------
-        # Check assigned numbers
+        # CHECK ASSIGNED NUMBERS
         # -------------------------------------------------
 
         assigned_ids = set(
-            NumberPool.objects.filter(
+
+            NumberPool.objects
+            .filter(
                 id__in=value,
                 status="ASSIGNED",
-            ).values_list(
+            )
+            .values_list(
                 "id",
                 flat=True
             )
+
         )
 
         not_assigned = [
+
             number_id
+
             for number_id in value
+
             if number_id not in assigned_ids
+
         ]
 
         if not_assigned:

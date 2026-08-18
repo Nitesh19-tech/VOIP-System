@@ -11,15 +11,15 @@ class RatingService:
         """
         Longest Prefix Match
 
-        Example
+        Example:
 
         447700123456
 
-        Match
+        Match:
 
         447
 
-        before
+        before:
 
         44
         """
@@ -63,9 +63,10 @@ class RatingService:
         connection_charge=0,
     ):
 
-        minutes = Decimal(
-            billable_seconds
-        ) / Decimal(60)
+        minutes = (
+            Decimal(billable_seconds)
+            / Decimal(60)
+        )
 
         amount = (
             minutes
@@ -79,8 +80,8 @@ class RatingService:
         return amount.quantize(
             Decimal("0.000001")
         )
-    
-        @staticmethod
+
+    @staticmethod
     def rate_call(cdr):
         """
         Rate a completed CDR.
@@ -92,7 +93,10 @@ class RatingService:
             return cdr
 
         # Remove +
-        phone_number = phone_number.replace("+", "")
+        phone_number = phone_number.replace(
+            "+",
+            "",
+        )
 
         # Find Rate
         rate = RatingService.find_rate(
@@ -122,25 +126,15 @@ class RatingService:
         # Update CDR
         cdr.country = rate.country
 
-        cdr.destination = (
-            rate.destination
-        )
+        cdr.destination = rate.destination
 
-        cdr.prefix = (
-            rate.prefix
-        )
+        cdr.prefix = rate.prefix
 
-        cdr.provider = (
-            rate.provider
-        )
+        cdr.provider = rate.provider
 
-        cdr.buy_rate = (
-            rate.buy_rate
-        )
+        cdr.buy_rate = rate.buy_rate
 
-        cdr.sell_rate = (
-            rate.sell_rate
-        )
+        cdr.sell_rate = rate.sell_rate
 
         cdr.billing_block = (
             rate.billing_block

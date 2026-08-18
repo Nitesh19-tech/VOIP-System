@@ -1,4 +1,5 @@
 from apps.inbound.models import InboundRoute
+from apps.number_pool.models import NumberPool
 
 
 class InboundDialplanGenerator:
@@ -38,19 +39,91 @@ class InboundDialplanGenerator:
         for route in routes:
 
             did = route.did.strip()
-            forward_number = route.forward_number.strip()
+
+            forward_number = (
+                route.forward_number.strip()
+            )
 
             termination = route.termination
+
+            if not termination:
+                continue
+
             carrier = termination.carrier
 
-            carrier_name = carrier.name.strip()
-            termination_name = termination.name.strip()
+            if not carrier:
+                continue
+
+            # =================================================
+            # NUMBER POOL VALIDATION
+            # =================================================
+
+            number = (
+                NumberPool.objects
+                .select_related(
+                    "carrier",
+                    "termination",
+                )
+                .filter(
+                    did_number=did,
+                )
+                .first()
+            )
+
+            # DID must exist in Number Pool
+            if not number:
+                continue
+
+            # DID must be assigned
+            if number.status != "ASSIGNED":
+                continue
+
+            # DID must have carrier
+            if not number.carrier:
+                continue
+
+            # DID must have termination
+            if not number.termination:
+                continue
+
+            # Route termination must match NumberPool
+            if (
+                number.termination_id
+                != termination.id
+            ):
+                continue
+
+            # Route carrier must match NumberPool
+            if (
+                number.carrier_id
+                != carrier.id
+            ):
+                continue
+
+            # =================================================
+            # BASIC VALIDATION
+            # =================================================
 
             if not did or not forward_number:
                 continue
 
+            carrier_name = (
+                carrier.name.strip()
+            )
+
+            termination_name = (
+                termination.name.strip()
+            )
+
+            if not carrier_name:
+                continue
+
+            # =================================================
+            # COMMENTS
+            # =================================================
+
             lines.append(
-                f"; -----------------------------------------"
+                "; -----------------------------------------"
             )
 
             lines.append(
@@ -70,27 +143,37 @@ class InboundDialplanGenerator:
             )
 
             lines.append(
-                f"; -----------------------------------------"
+                "; -----------------------------------------"
+            )
+
+            # =================================================
+            # DIALPLAN
+            # =================================================
+
+            lines.append(
+                f"exten => {did},1,"
+                f"NoOp(Inbound DID {did})"
             )
 
             lines.append(
-                f"exten => {did},1,NoOp(Inbound DID {did})"
+                f" same => n,"
+                f"NoOp(Forwarding to {forward_number})"
             )
 
             lines.append(
-                f" same => n,NoOp(Forwarding to {forward_number})"
+                f" same => n,"
+                f"NoOp(Termination: {termination_name})"
             )
 
             lines.append(
-                f" same => n,NoOp(Termination: {termination_name})"
+                f" same => n,"
+                f"NoOp(Carrier: {carrier_name})"
             )
 
             lines.append(
-                f" same => n,NoOp(Carrier: {carrier_name})"
-            )
-
-            lines.append(
-                f" same => n,Dial(PJSIP/{forward_number}@{carrier_name},60)"
+                f" same => n,"
+                f"Dial(PJSIP/{forward_number}"
+                f"@{carrier_name},60)"
             )
 
             lines.append(

@@ -8,6 +8,7 @@ from .serializers import (
     NumberPoolSerializer,
     BulkAllocationSerializer,
     BulkUnallocationSerializer,
+    AutoAssignSerializer,
 )
 
 from .services import NumberPoolService
@@ -382,6 +383,69 @@ class BulkUnallocationAPIView(APIView):
 
             print(
                 "Bulk Unallocation Error:",
+                e,
+            )
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Internal server error.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+# =========================================================
+# AUTO ASSIGN NUMBERS
+# =========================================================
+
+class AutoAssignAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = AutoAssignSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+
+            result = NumberPoolService.auto_assign(
+                serializer.validated_data,
+                request.user,
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": (
+                        f"{result['allocated']} numbers "
+                        "assigned successfully."
+                    ),
+                    "data": result,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+
+            print(
+                "Auto Assign Error:",
                 e,
             )
 

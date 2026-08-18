@@ -62,14 +62,17 @@ export default function IncomingRouteFormModal({
   }, [route, open]);
 
   // =====================================================
-  // LOAD NUMBERS
+  // LOAD ASSIGNED NUMBERS
   // =====================================================
 
   const loadNumbers = async () => {
     try {
       setLoadingData(true);
 
-      const response = await numberPoolService.getNumbers();
+      const response = await numberPoolService.getNumbers({
+        status: "ASSIGNED",
+        page_size: 100,
+      });
 
       const data = Array.isArray(response?.data?.data)
         ? response.data.data
@@ -80,12 +83,12 @@ export default function IncomingRouteFormModal({
       setNumbers(data);
     } catch (error) {
       console.error(
-        "Unable to load Number Pool:",
+        "Unable to load assigned numbers:",
         error
       );
 
       alert(
-        "Unable to load numbers from Number Pool."
+        "Unable to load assigned numbers from Number Pool."
       );
     } finally {
       setLoadingData(false);
@@ -169,11 +172,30 @@ export default function IncomingRouteFormModal({
     }
 
     // =================================================
-    // FORWARD NUMBER
+    // GET SELECTED NUMBER
     // =================================================
 
-    if (!form.forward_number.trim()) {
-      alert("Please enter forward number.");
+    const selectedNumber =
+      getSelectedNumber(form.did);
+
+    if (!selectedNumber) {
+      alert(
+        "Selected DID could not be found in Number Pool."
+      );
+      return;
+    }
+
+    // =================================================
+    // STATUS
+    // =================================================
+
+    if (
+      selectedNumber.status !== "ASSIGNED" &&
+      selectedNumber.did_number !== form.did
+    ) {
+      alert(
+        "Only assigned DIDs can be used for an inbound route."
+      );
       return;
     }
 
@@ -181,9 +203,25 @@ export default function IncomingRouteFormModal({
     // TERMINATION
     // =================================================
 
-    if (!form.termination) {
+    const terminationId =
+      selectedNumber?.termination ||
+      selectedNumber?.termination_id ||
+      form.termination;
+
+    if (!terminationId) {
       alert(
         "Selected DID does not have a termination."
+      );
+      return;
+    }
+
+    // =================================================
+    // FORWARD NUMBER
+    // =================================================
+
+    if (!form.forward_number.trim()) {
+      alert(
+        "Please enter forward number."
       );
       return;
     }
@@ -199,7 +237,7 @@ export default function IncomingRouteFormModal({
         form.forward_number.trim(),
 
       termination:
-        Number(form.termination),
+        Number(terminationId),
 
       description:
         form.description.trim(),
@@ -241,10 +279,32 @@ export default function IncomingRouteFormModal({
   const selectedNumber =
     getSelectedNumber(form.did);
 
+  // =====================================================
+  // SELECTED CLIENT
+  // =====================================================
+
   const selectedClientName =
     selectedNumber?.client_name ||
     selectedNumber?.client?.name ||
     "";
+
+  // =====================================================
+  // SELECTED CARRIER
+  // =====================================================
+
+  const selectedCarrierName =
+    selectedNumber?.carrier_name ||
+    selectedNumber?.carrier?.name ||
+    "";
+
+  // =====================================================
+  // SELECTED TERMINATION
+  // =====================================================
+
+  const selectedTerminationName =
+    selectedNumber?.termination_name ||
+    selectedNumber?.termination?.name ||
+    "Termination from Number Pool";
 
   return (
     <div
@@ -292,6 +352,7 @@ export default function IncomingRouteFormModal({
           "
         >
           <div>
+
             <h2
               className="
                 text-2xl
@@ -313,6 +374,7 @@ export default function IncomingRouteFormModal({
             >
               Configure incoming DID forwarding.
             </p>
+
           </div>
 
           <button
@@ -330,6 +392,7 @@ export default function IncomingRouteFormModal({
           >
             ×
           </button>
+
         </div>
 
         {/* =================================================
@@ -350,6 +413,7 @@ export default function IncomingRouteFormModal({
           ================================================= */}
 
           <div>
+
             <label
               className="
                 mb-2
@@ -393,19 +457,18 @@ export default function IncomingRouteFormModal({
                 disabled:opacity-50
               "
             >
+
               <option value="">
                 {loadingData
-                  ? "Loading DIDs..."
+                  ? "Loading assigned DIDs..."
                   : "Select DID"}
               </option>
 
               {numbers
                 .filter(
                   (number) =>
-                    number.status ===
-                      "AVAILABLE" ||
-                    number.did_number ===
-                      form.did
+                    number.status === "ASSIGNED" ||
+                    number.did_number === form.did
                 )
                 .map((number) => (
                   <option
@@ -415,6 +478,7 @@ export default function IncomingRouteFormModal({
                     {number.did_number}
                   </option>
                 ))}
+
             </select>
 
             <p
@@ -424,9 +488,50 @@ export default function IncomingRouteFormModal({
                 text-slate-500
               "
             >
-              Select a DID from Number Pool.
+              Only assigned DIDs from Number Pool
+              can be used for incoming routes.
             </p>
+
           </div>
+
+          {/* =================================================
+              CARRIER
+          ================================================= */}
+
+          {selectedCarrierName && (
+            <div
+              className="
+                mt-4
+                rounded-xl
+                border
+                border-slate-700
+                bg-slate-800/60
+                px-4
+                py-3
+              "
+            >
+
+              <p
+                className="
+                  text-xs
+                  text-slate-500
+                "
+              >
+                Carrier
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  font-medium
+                  text-white
+                "
+              >
+                {selectedCarrierName}
+              </p>
+
+            </div>
+          )}
 
           {/* =================================================
               SELECTED CLIENT
@@ -444,6 +549,7 @@ export default function IncomingRouteFormModal({
                 py-3
               "
             >
+
               <p
                 className="
                   text-xs
@@ -462,6 +568,7 @@ export default function IncomingRouteFormModal({
               >
                 {selectedClientName}
               </p>
+
             </div>
           )}
 
@@ -470,6 +577,7 @@ export default function IncomingRouteFormModal({
           ================================================= */}
 
           <div className="mt-5">
+
             <label
               className="
                 mb-2
@@ -520,6 +628,7 @@ export default function IncomingRouteFormModal({
             >
               Enter the destination number.
             </p>
+
           </div>
 
           {/* =================================================
@@ -527,6 +636,7 @@ export default function IncomingRouteFormModal({
           ================================================= */}
 
           <div className="mt-5">
+
             <label
               className="
                 mb-2
@@ -541,10 +651,7 @@ export default function IncomingRouteFormModal({
 
             <input
               type="text"
-              value={
-                selectedNumber?.termination_name ||
-                "Termination from Number Pool"
-              }
+              value={selectedTerminationName}
               readOnly
               className="
                 w-full
@@ -566,9 +673,10 @@ export default function IncomingRouteFormModal({
                 text-slate-500
               "
             >
-              Termination is taken from the
-              selected Number Pool number.
+              Termination is automatically taken
+              from the selected Number Pool DID.
             </p>
+
           </div>
 
           {/* =================================================
@@ -576,6 +684,7 @@ export default function IncomingRouteFormModal({
           ================================================= */}
 
           <div className="mt-5">
+
             <label
               className="
                 mb-2
@@ -610,6 +719,7 @@ export default function IncomingRouteFormModal({
                 focus:ring-blue-500/10
               "
             />
+
           </div>
 
           {/* =================================================
@@ -617,6 +727,7 @@ export default function IncomingRouteFormModal({
           ================================================= */}
 
           <div className="mt-5">
+
             <label
               className="
                 mb-2
@@ -651,6 +762,7 @@ export default function IncomingRouteFormModal({
                 focus:ring-blue-500/10
               "
             />
+
           </div>
 
           {/* =================================================
@@ -671,6 +783,7 @@ export default function IncomingRouteFormModal({
               py-3
             "
           >
+
             <input
               type="checkbox"
               name="enabled"
@@ -688,6 +801,7 @@ export default function IncomingRouteFormModal({
             />
 
             <div>
+
               <label
                 className="
                   cursor-pointer
@@ -705,10 +819,12 @@ export default function IncomingRouteFormModal({
                   text-slate-500
                 "
               >
-                Disabled routes will not be
-                included in the active dialplan.
+                Disabled routes will not be included
+                in the active dialplan.
               </p>
+
             </div>
+
           </div>
 
           {/* =================================================
@@ -726,6 +842,7 @@ export default function IncomingRouteFormModal({
               pt-6
             "
           >
+
             <button
               type="button"
               onClick={handleClose}
@@ -779,9 +896,11 @@ export default function IncomingRouteFormModal({
                   ? "Update Route"
                   : "Create Route"}
             </button>
+
           </div>
 
         </form>
+
       </div>
     </div>
   );

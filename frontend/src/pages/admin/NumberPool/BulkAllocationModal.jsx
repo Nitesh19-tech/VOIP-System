@@ -3,12 +3,17 @@ import { useEffect, useState } from "react";
 import clientService from "../../../services/clientService";
 import numberPoolService from "../../../services/numberPoolService";
 
+import { getCarriers } from "../../../services/carrierService";
+import { getTerminations } from "../../../services/terminationService";
+
+
 export default function BulkAllocationModal({
   open,
   onClose,
   onSuccess,
   selectedNumbers = [],
 }) {
+
   // =====================================================
   // STATE
   // =====================================================
@@ -17,39 +22,68 @@ export default function BulkAllocationModal({
 
   const [clients, setClients] = useState([]);
 
+  const [carriers, setCarriers] = useState([]);
+
+  const [terminations, setTerminations] = useState([]);
+
   const [form, setForm] = useState({
+    carrier: "",
+    termination: "",
     client: "",
   });
+
 
   // =====================================================
   // RESET FORM
   // =====================================================
 
   const resetForm = () => {
+
     setForm({
+      carrier: "",
+      termination: "",
       client: "",
     });
+
+    setTerminations([]);
   };
 
+
   // =====================================================
-  // LOAD CLIENTS
+  // LOAD FORM DATA
   // =====================================================
 
   useEffect(() => {
+
     if (!open) {
       return;
     }
 
     resetForm();
+
     loadClients();
+    loadCarriers();
+
   }, [open]);
 
-  const loadClients = async () => {
-    try {
-      const res = await clientService.getClients();
 
-      setClients(res.data?.data || []);
+  // =====================================================
+  // LOAD CLIENTS
+  // =====================================================
+
+  const loadClients = async () => {
+
+    try {
+
+      const res =
+        await clientService.getClients();
+
+      setClients(
+        res.data?.data || []
+      );
+
     } catch (err) {
+
       console.error(
         "Load Clients Error:",
         err
@@ -59,12 +93,128 @@ export default function BulkAllocationModal({
     }
   };
 
+
+  // =====================================================
+  // LOAD CARRIERS
+  // =====================================================
+
+  const loadCarriers = async () => {
+
+    try {
+
+      const res =
+        await getCarriers();
+
+      setCarriers(
+        res.data?.data || []
+      );
+
+    } catch (err) {
+
+      console.error(
+        "Load Carriers Error:",
+        err
+      );
+
+      setCarriers([]);
+    }
+  };
+
+
+  // =====================================================
+  // LOAD TERMINATIONS
+  // =====================================================
+
+  const loadTerminations = async (
+    carrierId
+  ) => {
+
+    if (!carrierId) {
+
+      setTerminations([]);
+
+      return;
+    }
+
+    try {
+
+      const res =
+        await getTerminations({
+          is_active: true,
+          carrier: carrierId,
+        });
+
+      const data =
+        Array.isArray(
+          res.data?.data
+        )
+          ? res.data.data
+          : Array.isArray(
+              res.data
+            )
+            ? res.data
+            : [];
+
+      // Safety filter
+      const filtered =
+        data.filter(
+          (termination) =>
+            Number(
+              termination.carrier
+            ) === Number(carrierId)
+        );
+
+      setTerminations(
+        filtered
+      );
+
+    } catch (err) {
+
+      console.error(
+        "Load Terminations Error:",
+        err
+      );
+
+      setTerminations([]);
+    }
+  };
+
+
   // =====================================================
   // FORM CHANGE
   // =====================================================
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = async (e) => {
+
+    const {
+      name,
+      value,
+    } = e.target;
+
+
+    // -------------------------------------------------
+    // CARRIER
+    // -------------------------------------------------
+
+    if (name === "carrier") {
+
+      setForm((prev) => ({
+        ...prev,
+        carrier: value,
+        termination: "",
+      }));
+
+      await loadTerminations(
+        value
+      );
+
+      return;
+    }
+
+
+    // -------------------------------------------------
+    // OTHER FIELDS
+    // -------------------------------------------------
 
     setForm((prev) => ({
       ...prev,
@@ -72,22 +222,27 @@ export default function BulkAllocationModal({
     }));
   };
 
+
   // =====================================================
   // ALLOCATE SELECTED NUMBERS
   // =====================================================
 
   const allocate = async (e) => {
+
     e.preventDefault();
+
 
     if (loading) {
       return;
     }
 
+
     // -------------------------------------------------
-    // CHECK SELECTED NUMBERS
+    // SELECTED NUMBERS
     // -------------------------------------------------
 
     if (!selectedNumbers.length) {
+
       alert(
         "Please select at least one number."
       );
@@ -95,11 +250,41 @@ export default function BulkAllocationModal({
       return;
     }
 
+
     // -------------------------------------------------
-    // CHECK CLIENT
+    // CARRIER
+    // -------------------------------------------------
+
+    if (!form.carrier) {
+
+      alert(
+        "Please select a carrier."
+      );
+
+      return;
+    }
+
+
+    // -------------------------------------------------
+    // TERMINATION
+    // -------------------------------------------------
+
+    if (!form.termination) {
+
+      alert(
+        "Please select a termination."
+      );
+
+      return;
+    }
+
+
+    // -------------------------------------------------
+    // CLIENT
     // -------------------------------------------------
 
     if (!form.client) {
+
       alert(
         "Please select a client."
       );
@@ -107,25 +292,45 @@ export default function BulkAllocationModal({
       return;
     }
 
+
     try {
+
       setLoading(true);
+
 
       // -------------------------------------------------
       // PAYLOAD
       // -------------------------------------------------
 
       const payload = {
-        number_ids: selectedNumbers.map(
-          (id) => Number(id)
-        ),
 
-        client: Number(form.client),
+        number_ids:
+          selectedNumbers.map(
+            (id) => Number(id)
+          ),
+
+        carrier:
+          Number(
+            form.carrier
+          ),
+
+        termination:
+          Number(
+            form.termination
+          ),
+
+        client:
+          Number(
+            form.client
+          ),
       };
+
 
       console.log(
         "Bulk Allocation Payload:",
         payload
       );
+
 
       // -------------------------------------------------
       // API
@@ -136,19 +341,23 @@ export default function BulkAllocationModal({
           payload
         );
 
+
       const allocated =
         res.data?.allocated_count ||
         selectedNumbers.length;
 
+
       alert(
         `${allocated} numbers allocated successfully.`
       );
+
 
       resetForm();
 
       onSuccess();
 
     } catch (err) {
+
       console.error(
         "Bulk Allocation Error:",
         err
@@ -159,9 +368,11 @@ export default function BulkAllocationModal({
         err.response?.data
       );
 
+
       const backendMessage =
         err.response?.data?.message ||
         err.response?.data?.detail;
+
 
       alert(
         backendMessage ||
@@ -169,15 +380,18 @@ export default function BulkAllocationModal({
       );
 
     } finally {
+
       setLoading(false);
     }
   };
+
 
   // =====================================================
   // CLOSE
   // =====================================================
 
   const handleClose = () => {
+
     if (loading) {
       return;
     }
@@ -187,6 +401,7 @@ export default function BulkAllocationModal({
     onClose();
   };
 
+
   // =====================================================
   // HIDDEN
   // =====================================================
@@ -195,11 +410,13 @@ export default function BulkAllocationModal({
     return null;
   }
 
+
   // =====================================================
   // UI
   // =====================================================
 
   return (
+
     <div
       className="
         fixed
@@ -212,6 +429,7 @@ export default function BulkAllocationModal({
         p-4
       "
     >
+
       <div
         className="
           w-full
@@ -252,13 +470,15 @@ export default function BulkAllocationModal({
               dark:text-slate-400
             "
           >
-            Allocate selected numbers to a client.
+            Allocate selected numbers to a
+            carrier, termination and client.
           </p>
 
         </div>
 
+
         {/* =================================================
-            SELECTED NUMBERS SUMMARY
+            SELECTED NUMBERS
         ================================================= */}
 
         <div
@@ -273,6 +493,7 @@ export default function BulkAllocationModal({
             dark:bg-blue-950/30
           "
         >
+
           <div
             className="
               flex
@@ -322,6 +543,7 @@ export default function BulkAllocationModal({
 
         </div>
 
+
         {/* =================================================
             FORM
         ================================================= */}
@@ -330,6 +552,144 @@ export default function BulkAllocationModal({
           onSubmit={allocate}
           className="space-y-5"
         >
+
+
+          {/* =================================================
+              CARRIER
+          ================================================= */}
+
+          <div>
+
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-700
+                dark:text-slate-300
+              "
+            >
+              Carrier
+            </label>
+
+            <select
+              name="carrier"
+              value={form.carrier}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              className="
+                w-full
+                rounded-xl
+                border
+                border-slate-300
+                bg-white
+                p-3
+                text-slate-900
+                outline-none
+                focus:border-blue-500
+                focus:ring-2
+                focus:ring-blue-500/20
+                disabled:opacity-50
+                dark:border-slate-700
+                dark:bg-slate-950
+                dark:text-white
+              "
+            >
+
+              <option value="">
+                Select Carrier
+              </option>
+
+              {carriers.map(
+                (carrier) => (
+
+                  <option
+                    key={carrier.id}
+                    value={carrier.id}
+                  >
+                    {carrier.name}
+                  </option>
+
+                )
+              )}
+
+            </select>
+
+          </div>
+
+
+          {/* =================================================
+              TERMINATION
+          ================================================= */}
+
+          <div>
+
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-semibold
+                text-slate-700
+                dark:text-slate-300
+              "
+            >
+              Termination
+            </label>
+
+            <select
+              name="termination"
+              value={form.termination}
+              onChange={handleChange}
+              required
+              disabled={
+                loading ||
+                !form.carrier
+              }
+              className="
+                w-full
+                rounded-xl
+                border
+                border-slate-300
+                bg-white
+                p-3
+                text-slate-900
+                outline-none
+                focus:border-blue-500
+                focus:ring-2
+                focus:ring-blue-500/20
+                disabled:opacity-50
+                dark:border-slate-700
+                dark:bg-slate-950
+                dark:text-white
+              "
+            >
+
+              <option value="">
+                {form.carrier
+                  ? "Select Termination"
+                  : "Select Carrier First"}
+              </option>
+
+              {terminations.map(
+                (termination) => (
+
+                  <option
+                    key={termination.id}
+                    value={termination.id}
+                  >
+                    {termination.name}
+                  </option>
+
+                )
+              )}
+
+            </select>
+
+          </div>
+
 
           {/* =================================================
               CLIENT
@@ -379,18 +739,23 @@ export default function BulkAllocationModal({
                 Select Client
               </option>
 
-              {clients.map((client) => (
-                <option
-                  key={client.id}
-                  value={client.id}
-                >
-                  {client.name}
-                </option>
-              ))}
+              {clients.map(
+                (client) => (
+
+                  <option
+                    key={client.id}
+                    value={client.id}
+                  >
+                    {client.name}
+                  </option>
+
+                )
+              )}
 
             </select>
 
           </div>
+
 
           {/* =================================================
               FOOTER
@@ -429,6 +794,7 @@ export default function BulkAllocationModal({
               Cancel
             </button>
 
+
             <button
               type="submit"
               disabled={
@@ -457,6 +823,7 @@ export default function BulkAllocationModal({
         </form>
 
       </div>
+
     </div>
   );
 }

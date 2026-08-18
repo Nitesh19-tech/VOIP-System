@@ -7,7 +7,7 @@ class ExtensionsGenerator:
     def generate(account):
 
         return f"""
-exten => {account.number.extension},1,NoOp(Call from {account.username})
+exten => {account.username},1,NoOp(Call from {account.username})
  same => n,Dial(PJSIP/{account.username},30)
  same => n,Hangup()
 
@@ -21,13 +21,18 @@ exten => {account.number.extension},1,NoOp(Call from {account.username})
 
 """
 
-        accounts = SIPAccount.objects.filter(
-            status="ACTIVE"
-        ).select_related(
-            "number",
+        accounts = (
+            SIPAccount.objects
+            .filter(status="ACTIVE")
+            .select_related("number")
         )
 
         for account in accounts:
-            dialplan += ExtensionsGenerator.generate(account)
+
+            dialplan += (
+                ExtensionsGenerator.generate(
+                    account
+                )
+            )
 
         return dialplan

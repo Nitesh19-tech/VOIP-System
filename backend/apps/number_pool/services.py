@@ -179,11 +179,13 @@ class NumberPoolService:
     # GET ALL NUMBERS
     #
     # SUPER_ADMIN / COMPANY_ADMIN
-    # Supports server-side pagination:
+    #
+    # Supports:
     #
     # ?page=1&page_size=25
     # ?page=2&page_size=50
     # ?page=1&page_size=100
+    #
     # =====================================================
 
     @staticmethod
@@ -207,6 +209,7 @@ class NumberPoolService:
             SUPER_ADMIN,
             COMPANY_ADMIN,
         ]:
+
             return {
                 "results": NumberPool.objects.none(),
                 "count": 0,
@@ -233,6 +236,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if search:
+
             queryset = queryset.filter(
                 Q(did_number__icontains=search)
                 | Q(country__name__icontains=search)
@@ -246,6 +250,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if country:
+
             queryset = queryset.filter(
                 country_id=country
             )
@@ -255,6 +260,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if carrier:
+
             queryset = queryset.filter(
                 carrier_id=carrier
             )
@@ -264,6 +270,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if termination:
+
             queryset = queryset.filter(
                 termination_id=termination
             )
@@ -273,6 +280,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if status:
+
             queryset = queryset.filter(
                 status=status
             )
@@ -282,6 +290,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if client:
+
             queryset = queryset.filter(
                 client_id=client
             )
@@ -299,26 +308,39 @@ class NumberPoolService:
         # =================================================
 
         try:
+
             page = int(
-                filters.get("page", 1)
+                filters.get(
+                    "page",
+                    1,
+                )
             )
+
         except (
             TypeError,
             ValueError,
         ):
+
             page = 1
 
         try:
+
             page_size = int(
-                filters.get("page_size", 25)
+                filters.get(
+                    "page_size",
+                    25,
+                )
             )
+
         except (
             TypeError,
             ValueError,
         ):
+
             page_size = 25
 
         # Only these values are allowed by frontend.
+
         allowed_page_sizes = {
             25,
             50,
@@ -326,9 +348,11 @@ class NumberPoolService:
         }
 
         if page_size not in allowed_page_sizes:
+
             page_size = 25
 
         if page < 1:
+
             page = 1
 
         # -------------------------------------------------
@@ -342,7 +366,8 @@ class NumberPoolService:
         # -------------------------------------------------
 
         total_pages = (
-            (total_count + page_size - 1) // page_size
+            (total_count + page_size - 1)
+            // page_size
             if total_count
             else 0
         )
@@ -352,6 +377,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         if total_pages and page > total_pages:
+
             page = total_pages
 
         # -------------------------------------------------
@@ -359,7 +385,8 @@ class NumberPoolService:
         # -------------------------------------------------
 
         start = (
-            (page - 1) * page_size
+            (page - 1)
+            * page_size
         )
 
         end = start + page_size
@@ -371,14 +398,21 @@ class NumberPoolService:
         # -------------------------------------------------
 
         next_page = (
+
             page + 1
-            if total_pages and page < total_pages
+
+            if total_pages
+            and page < total_pages
+
             else None
         )
 
         previous_page = (
+
             page - 1
+
             if page > 1
+
             else None
         )
 
@@ -400,6 +434,7 @@ class NumberPoolService:
     # GET NUMBER BY ID
     #
     # Both admins can access any number.
+    #
     # =====================================================
 
     @staticmethod
@@ -433,7 +468,11 @@ class NumberPoolService:
     # =====================================================
 
     @staticmethod
-    def update_number(number, data, user):
+    def update_number(
+        number,
+        data,
+        user,
+    ):
 
         # -------------------------------------------------
         # COMPANY ADMIN
@@ -445,6 +484,36 @@ class NumberPoolService:
                 "admin",
                 None,
             )
+
+        # -------------------------------------------------
+        # CARRIER / TERMINATION VALIDATION
+        # -------------------------------------------------
+
+        carrier = data.get(
+            "carrier",
+            number.carrier,
+        )
+
+        termination = data.get(
+            "termination",
+            number.termination,
+        )
+
+        if termination:
+
+            if not carrier:
+
+                raise ValueError(
+                    "A carrier is required when "
+                    "a termination is selected."
+                )
+
+            if termination.carrier_id != carrier.id:
+
+                raise ValueError(
+                    "Selected termination does not "
+                    "belong to selected carrier."
+                )
 
         # -------------------------------------------------
         # CLIENT ASSIGNMENT
@@ -463,6 +532,13 @@ class NumberPoolService:
                 data["status"] = "AVAILABLE"
 
                 data["assigned_at"] = None
+
+                # Clear routing information when
+                # number is completely unassigned.
+
+                data["carrier"] = None
+
+                data["termination"] = None
 
         # -------------------------------------------------
         # UPDATE
@@ -519,6 +595,8 @@ class NumberPoolService:
     #
     # {
     #     "number_ids": [1, 2, 3],
+    #     "carrier": 1,
+    #     "termination": 5,
     #     "client": 5
     # }
     #
@@ -526,9 +604,16 @@ class NumberPoolService:
 
     @staticmethod
     @transaction.atomic
-    def bulk_allocate(data, user):
+    def bulk_allocate(
+        data,
+        user,
+    ):
 
         number_ids = data["number_ids"]
+
+        carrier = data["carrier"]
+
+        termination = data["termination"]
 
         client = data["client"]
 
@@ -544,6 +629,17 @@ class NumberPoolService:
             raise ValueError(
                 "You do not have permission "
                 "to allocate numbers."
+            )
+
+        # -------------------------------------------------
+        # CARRIER / TERMINATION VALIDATION
+        # -------------------------------------------------
+
+        if termination.carrier_id != carrier.id:
+
+            raise ValueError(
+                "Selected termination does not "
+                "belong to selected carrier."
             )
 
         # -------------------------------------------------
@@ -569,7 +665,7 @@ class NumberPoolService:
             )
 
         # -------------------------------------------------
-        # CHECK MISSING IDs
+        # CHECK MISSING IDS
         # -------------------------------------------------
 
         found_ids = {
@@ -622,6 +718,10 @@ class NumberPoolService:
 
         for number in numbers:
 
+            number.carrier = carrier
+
+            number.termination = termination
+
             number.client = client
 
             number.status = "ASSIGNED"
@@ -635,11 +735,17 @@ class NumberPoolService:
         NumberPool.objects.bulk_update(
             numbers,
             [
+                "carrier",
+                "termination",
                 "client",
                 "status",
                 "assigned_at",
             ],
         )
+
+        # -------------------------------------------------
+        # RESPONSE
+        # -------------------------------------------------
 
         return len(numbers)
 
@@ -656,7 +762,10 @@ class NumberPoolService:
 
     @staticmethod
     @transaction.atomic
-    def bulk_unallocate(data, user):
+    def bulk_unallocate(
+        data,
+        user,
+    ):
 
         number_ids = data["number_ids"]
 
@@ -697,7 +806,7 @@ class NumberPoolService:
             )
 
         # -------------------------------------------------
-        # CHECK MISSING IDs
+        # CHECK MISSING IDS
         # -------------------------------------------------
 
         found_ids = {
@@ -744,6 +853,10 @@ class NumberPoolService:
 
             number.client = None
 
+            number.carrier = None
+
+            number.termination = None
+
             number.status = "AVAILABLE"
 
             number.assigned_at = None
@@ -756,6 +869,8 @@ class NumberPoolService:
             assigned_numbers,
             [
                 "client",
+                "carrier",
+                "termination",
                 "status",
                 "assigned_at",
             ],
@@ -783,7 +898,10 @@ class NumberPoolService:
 
     @staticmethod
     @transaction.atomic
-    def auto_assign(data, user):
+    def auto_assign(
+        data,
+        user,
+    ):
 
         # -------------------------------------------------
         # ACCESS CONTROL
@@ -869,7 +987,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         # If frontend did not provide a prefix,
-        # use the selected termination prefix.
+        # use selected termination prefix.
 
         if termination and not prefix:
 
@@ -882,25 +1000,24 @@ class NumberPoolService:
         # BASE QUERY
         # -------------------------------------------------
 
+        # Imported numbers can initially have:
+        #
+        # carrier     = NULL
+        # termination = NULL
+        # client      = NULL
+        # status      = AVAILABLE
+        #
+        # Therefore carrier / termination are NOT
+        # availability filters here.
+
         queryset = (
             NumberPool.objects
             .select_for_update()
             .filter(
-                carrier=carrier,
                 status="AVAILABLE",
                 client__isnull=True,
             )
         )
-
-        # -------------------------------------------------
-        # TERMINATION FILTER
-        # -------------------------------------------------
-
-        if termination:
-
-            queryset = queryset.filter(
-                termination=termination
-            )
 
         # -------------------------------------------------
         # PREFIX FILTER
@@ -934,7 +1051,9 @@ class NumberPoolService:
 
         if len(numbers) < quantity:
 
-            available_count = len(numbers)
+            available_count = len(
+                numbers
+            )
 
             raise ValueError(
                 f"Only {available_count} matching "
@@ -950,6 +1069,10 @@ class NumberPoolService:
 
         for number in numbers:
 
+            number.carrier = carrier
+
+            number.termination = termination
+
             number.client = client
 
             number.status = "ASSIGNED"
@@ -963,6 +1086,8 @@ class NumberPoolService:
         NumberPool.objects.bulk_update(
             numbers,
             [
+                "carrier",
+                "termination",
                 "client",
                 "status",
                 "assigned_at",
@@ -1018,6 +1143,7 @@ class NumberPoolService:
         # -------------------------------------------------
 
         return {
+
             "requested": quantity,
 
             "allocated": len(numbers),
@@ -1053,17 +1179,12 @@ class NumberPoolService:
                 {
                     "id": number.id,
 
-                    "did_number": (
-                        number.did_number
-                    ),
+                    "did_number": number.did_number,
 
-                
-                
-                
+                    "carrier_id": number.carrier_id,
 
-                    "termination_id": (
-                        number.termination_id
-                    ),
+                    "termination_id":
+                        number.termination_id,
                 }
 
                 for number in numbers

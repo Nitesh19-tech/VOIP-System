@@ -52,6 +52,7 @@ class InboundRouteSerializer(serializers.ModelSerializer):
         value = value.strip()
 
         if not value:
+
             raise serializers.ValidationError(
                 "DID is required."
             )
@@ -70,11 +71,17 @@ class InboundRouteSerializer(serializers.ModelSerializer):
         )
 
         if not number:
+
             raise serializers.ValidationError(
                 "This DID does not exist in Number Pool."
             )
 
+        # -------------------------------------------------
+        # DISABLED
+        # -------------------------------------------------
+
         if number.status == "DISABLED":
+
             raise serializers.ValidationError(
                 "This DID is disabled in Number Pool."
             )
@@ -90,19 +97,26 @@ class InboundRouteSerializer(serializers.ModelSerializer):
         value = value.strip()
 
         if not value:
+
             raise serializers.ValidationError(
                 "Forward number is required."
             )
 
-        normalized = value.replace("+", "", 1)
+        normalized = value.replace(
+            "+",
+            "",
+            1,
+        )
 
         if not normalized.isdigit():
+
             raise serializers.ValidationError(
                 "Forward number must contain only digits "
                 "and may start with '+'."
             )
 
         if len(normalized) < 7 or len(normalized) > 15:
+
             raise serializers.ValidationError(
                 "Forward number must contain between "
                 "7 and 15 digits."
@@ -116,6 +130,10 @@ class InboundRouteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
 
+        # -------------------------------------------------
+        # GET TERMINATION
+        # -------------------------------------------------
+
         termination = attrs.get(
             "termination",
             getattr(
@@ -126,30 +144,47 @@ class InboundRouteSerializer(serializers.ModelSerializer):
         )
 
         if termination is None:
-            raise serializers.ValidationError({
-                "termination": (
-                    "Termination is required "
-                    "for an inbound route."
-                )
-            })
 
-        if not termination.is_active:
-            raise serializers.ValidationError({
-                "termination": (
-                    "Selected termination is inactive."
-                )
-            })
-
-        if not termination.carrier.is_active:
-            raise serializers.ValidationError({
-                "termination": (
-                    "Selected termination's carrier "
-                    "is inactive."
-                )
-            })
+            raise serializers.ValidationError(
+                {
+                    "termination": (
+                        "Termination is required "
+                        "for an inbound route."
+                    )
+                }
+            )
 
         # -------------------------------------------------
-        # DID → Number Pool consistency
+        # TERMINATION ACTIVE
+        # -------------------------------------------------
+
+        if not termination.is_active:
+
+            raise serializers.ValidationError(
+                {
+                    "termination": (
+                        "Selected termination is inactive."
+                    )
+                }
+            )
+
+        # -------------------------------------------------
+        # CARRIER ACTIVE
+        # -------------------------------------------------
+
+        if not termination.carrier.is_active:
+
+            raise serializers.ValidationError(
+                {
+                    "termination": (
+                        "Selected termination's carrier "
+                        "is inactive."
+                    )
+                }
+            )
+
+        # -------------------------------------------------
+        # GET DID
         # -------------------------------------------------
 
         did = attrs.get(
@@ -161,35 +196,124 @@ class InboundRouteSerializer(serializers.ModelSerializer):
             ),
         )
 
-        if did:
+        if not did:
 
-            number = (
-                NumberPool.objects
-                .select_related(
-                    "carrier",
-                    "termination",
-                    "client",
-                )
-                .filter(
-                    did_number=did,
-                )
-                .first()
+            raise serializers.ValidationError(
+                {
+                    "did": (
+                        "DID is required."
+                    )
+                }
             )
 
-            if not number:
-                raise serializers.ValidationError({
+        # -------------------------------------------------
+        # NUMBER POOL LOOKUP
+        # -------------------------------------------------
+
+        number = (
+            NumberPool.objects
+            .select_related(
+                "carrier",
+                "termination",
+                "client",
+            )
+            .filter(
+                did_number=did,
+            )
+            .first()
+        )
+
+        if not number:
+
+            raise serializers.ValidationError(
+                {
                     "did": (
                         "Selected DID does not exist "
                         "in Number Pool."
                     )
-                })
+                }
+            )
 
-            if number.status == "DISABLED":
-                raise serializers.ValidationError({
+        # -------------------------------------------------
+        # DISABLED DID
+        # -------------------------------------------------
+
+        if number.status == "DISABLED":
+
+            raise serializers.ValidationError(
+                {
                     "did": (
                         "Selected DID is disabled "
                         "in Number Pool."
                     )
-                })
+                }
+            )
+
+        # -------------------------------------------------
+        # DID MUST BE ASSIGNED
+        # -------------------------------------------------
+
+        if number.status != "ASSIGNED":
+
+            raise serializers.ValidationError(
+                {
+                    "did": (
+                        "Selected DID must be assigned "
+                        "before creating an inbound route."
+                    )
+                }
+            )
+
+        # -------------------------------------------------
+        # DID MUST HAVE TERMINATION
+        # -------------------------------------------------
+
+        if not number.termination:
+
+            raise serializers.ValidationError(
+                {
+                    "did": (
+                        "Selected DID does not have "
+                        "a termination assigned."
+                    )
+                }
+            )
+
+        # -------------------------------------------------
+        # DID → TERMINATION CONSISTENCY
+        # -------------------------------------------------
+
+        if number.termination_id != termination.id:
+
+            raise serializers.ValidationError(
+                {
+                    "termination": (
+                        "Selected termination does not "
+                        "match the termination assigned "
+                        "to this DID."
+                    )
+                }
+            )
+
+        # -------------------------------------------------
+        # DID → CARRIER CONSISTENCY
+        # -------------------------------------------------
+
+        if number.carrier_id:
+
+            if (
+                termination.carrier_id
+                != number.carrier_id
+            ):
+
+                raise serializers.ValidationError(
+                    {
+                        "termination": (
+                            "Selected termination belongs "
+                            "to a different carrier than "
+                            "the DID."
+                        )
+                    }
+                )
 
         return attrs

@@ -124,6 +124,18 @@ const numberPoolService = {
         );
     },
 
+    // =====================================================
+    // AUTO ASSIGN NUMBERS
+    // =====================================================
+
+    autoAssign(data) {
+
+        return API.post(
+            "numbers/auto-assign/",
+            data
+        );
+    },
+
 };
 
 export default numberPoolService;

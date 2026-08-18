@@ -4,6 +4,7 @@ import clientService from "../../../services/clientService";
 import sipService from "../../../services/sipService";
 import userService from "../../../services/userService";
 
+
 export default function SIPFormModal({
   open,
   onClose,
@@ -36,6 +37,7 @@ export default function SIPFormModal({
     status: "ACTIVE",
   };
 
+
   const [form, setForm] = useState(emptyForm);
 
   const [clients, setClients] = useState([]);
@@ -44,6 +46,7 @@ export default function SIPFormModal({
 
   const [selectedNumber, setSelectedNumber] =
     useState(null);
+
 
   useEffect(() => {
 
@@ -56,6 +59,7 @@ export default function SIPFormModal({
     if (user?.role === "SUPER_ADMIN") {
       loadAdmins();
     }
+
 
     if (account) {
 
@@ -101,6 +105,7 @@ export default function SIPFormModal({
 
   }, [open, account]);
 
+
   const loadClients = async () => {
 
     try {
@@ -117,6 +122,7 @@ export default function SIPFormModal({
     }
 
   };
+
 
   const loadAdmins = async () => {
 
@@ -135,6 +141,7 @@ export default function SIPFormModal({
 
   };
 
+
   const loadNumbers = async () => {
 
     try {
@@ -144,7 +151,12 @@ export default function SIPFormModal({
 
       let data = res.data.data || [];
 
-      // Edit Mode → Current Number bhi dikhana
+
+      // =================================================
+      // EDIT MODE
+      // Current Number ko available list mein dikhana
+      // =================================================
+
       if (
         account &&
         account.number &&
@@ -159,8 +171,6 @@ export default function SIPFormModal({
 
           did_number: account.did_number,
 
-          extension: account.extension,
-
           country_name: account.country_name,
 
           dial_code: account.dial_code,
@@ -171,6 +181,7 @@ export default function SIPFormModal({
 
       }
 
+
       setNumbers(data);
 
     } catch (err) {
@@ -180,7 +191,9 @@ export default function SIPFormModal({
     }
 
   };
-    const handleChange = (e) => {
+
+
+  const handleChange = (e) => {
 
     const {
       name,
@@ -189,7 +202,11 @@ export default function SIPFormModal({
       checked,
     } = e.target;
 
-    // Checkbox
+
+    // =================================================
+    // CHECKBOX
+    // =================================================
+
     if (type === "checkbox") {
 
       setForm((prev) => ({
@@ -201,14 +218,22 @@ export default function SIPFormModal({
 
     }
 
-    // Number Dropdown
+
+    // =================================================
+    // NUMBER / DID DROPDOWN
+    // =================================================
+
     if (name === "number") {
 
       const selected = numbers.find(
         (n) => String(n.id) === value
       );
 
-      setSelectedNumber(selected || null);
+
+      setSelectedNumber(
+        selected || null
+      );
+
 
       setForm((prev) => ({
 
@@ -216,11 +241,14 @@ export default function SIPFormModal({
 
         number: value,
 
+        // NumberPool no longer has extension.
+        // DID itself is used as SIP username.
+
         username:
-          selected?.extension || "",
+          selected?.did_number || "",
 
         auth_id:
-          selected?.extension || "",
+          selected?.did_number || "",
 
         caller_id: selected
           ? `${selected.did_number}`
@@ -232,12 +260,14 @@ export default function SIPFormModal({
 
     }
 
+
     setForm((prev) => ({
       ...prev,
       [name]: value,
     }));
 
   };
+
 
   const submit = (e) => {
 
@@ -249,13 +279,16 @@ export default function SIPFormModal({
 
   };
 
+
   if (!open) return null;
+
 
   return (
 
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
 
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-5xl p-6 max-h-[90vh] overflow-y-auto">
+
 
         <h2 className="text-2xl font-bold mb-6">
 
@@ -265,10 +298,15 @@ export default function SIPFormModal({
 
         </h2>
 
+
         <form
           onSubmit={submit}
           className="grid grid-cols-2 gap-4"
-        >          {/* Admin */}
+        >
+
+          {/* =================================================
+              ADMIN
+          ================================================= */}
 
           {user?.role === "SUPER_ADMIN" && (
 
@@ -283,13 +321,16 @@ export default function SIPFormModal({
                 Select Admin
               </option>
 
+
               {admins.map((admin) => (
 
                 <option
                   key={admin.id}
                   value={admin.id}
                 >
+
                   {admin.first_name} {admin.last_name}
+
                 </option>
 
               ))}
@@ -298,7 +339,10 @@ export default function SIPFormModal({
 
           )}
 
-          {/* Client */}
+
+          {/* =================================================
+              CLIENT
+          ================================================= */}
 
           <select
             name="client"
@@ -312,20 +356,26 @@ export default function SIPFormModal({
               Select Client
             </option>
 
+
             {clients.map((client) => (
 
               <option
                 key={client.id}
                 value={client.id}
               >
+
                 {client.name}
+
               </option>
 
             ))}
 
           </select>
 
-          {/* DID Number */}
+
+          {/* =================================================
+              DID NUMBER
+          ================================================= */}
 
           <select
             name="number"
@@ -339,22 +389,27 @@ export default function SIPFormModal({
               Select DID Number
             </option>
 
+
             {numbers.map((number) => (
 
               <option
                 key={number.id}
                 value={number.id}
               >
-                {number.did_number}
-                {" "}
+
+                {number.did_number}{" "}
                 ({number.country_name})
+
               </option>
 
             ))}
 
           </select>
 
-          {/* DID Information */}
+
+          {/* =================================================
+              DID INFORMATION
+          ================================================= */}
 
           {selectedNumber && (
 
@@ -364,7 +419,11 @@ export default function SIPFormModal({
                 Selected DID Information
               </h3>
 
+
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+
+                {/* Country */}
 
                 <div>
 
@@ -378,6 +437,9 @@ export default function SIPFormModal({
 
                 </div>
 
+
+                {/* Dial Code */}
+
                 <div>
 
                   <p className="text-xs text-slate-500">
@@ -390,17 +452,23 @@ export default function SIPFormModal({
 
                 </div>
 
+
+                {/* DID Number */}
+
                 <div>
 
                   <p className="text-xs text-slate-500">
-                    Extension
+                    DID Number
                   </p>
 
                   <p className="font-semibold">
-                    {selectedNumber.extension}
+                    {selectedNumber.did_number}
                   </p>
 
                 </div>
+
+
+                {/* Provider */}
 
                 <div>
 
@@ -414,13 +482,17 @@ export default function SIPFormModal({
 
                 </div>
 
+
               </div>
 
             </div>
 
           )}
 
-          {/* Username */}
+
+          {/* =================================================
+              USERNAME
+          ================================================= */}
 
           <input
             name="username"
@@ -430,7 +502,10 @@ export default function SIPFormModal({
             className="border rounded-lg p-3"
           />
 
-          {/* Password */}
+
+          {/* =================================================
+              PASSWORD
+          ================================================= */}
 
           <input
             name="password"
@@ -440,7 +515,10 @@ export default function SIPFormModal({
             className="border rounded-lg p-3"
           />
 
-          {/* Auth ID */}
+
+          {/* =================================================
+              AUTH ID
+          ================================================= */}
 
           <input
             name="auth_id"
@@ -450,7 +528,10 @@ export default function SIPFormModal({
             className="border rounded-lg p-3"
           />
 
-          {/* Transport */}
+
+          {/* =================================================
+              TRANSPORT
+          ================================================= */}
 
           <select
             name="transport"
@@ -459,15 +540,24 @@ export default function SIPFormModal({
             className="border rounded-lg p-3"
           >
 
-            <option value="UDP">UDP</option>
+            <option value="UDP">
+              UDP
+            </option>
 
-            <option value="TCP">TCP</option>
+            <option value="TCP">
+              TCP
+            </option>
 
-            <option value="TLS">TLS</option>
+            <option value="TLS">
+              TLS
+            </option>
 
           </select>
 
-          {/* Domain */}
+
+          {/* =================================================
+              DOMAIN
+          ================================================= */}
 
           <input
             name="domain"
@@ -477,7 +567,10 @@ export default function SIPFormModal({
             className="border rounded-lg p-3"
           />
 
-          {/* Context */}
+
+          {/* =================================================
+              CONTEXT
+          ================================================= */}
 
           <input
             name="context"
@@ -486,7 +579,11 @@ export default function SIPFormModal({
             placeholder="Context"
             className="border rounded-lg p-3"
           />
-                    {/* Caller ID */}
+
+
+          {/* =================================================
+              CALLER ID
+          ================================================= */}
 
           <input
             name="caller_id"
@@ -496,7 +593,10 @@ export default function SIPFormModal({
             className="border rounded-lg p-3"
           />
 
-          {/* Codecs */}
+
+          {/* =================================================
+              CODECS
+          ================================================= */}
 
           <input
             name="codecs"
@@ -506,7 +606,10 @@ export default function SIPFormModal({
             className="border rounded-lg p-3"
           />
 
-          {/* NAT */}
+
+          {/* =================================================
+              NAT
+          ================================================= */}
 
           <label className="flex items-center gap-3 border rounded-lg p-3">
 
@@ -517,11 +620,16 @@ export default function SIPFormModal({
               onChange={handleChange}
             />
 
-            <span>NAT Enabled</span>
+            <span>
+              NAT Enabled
+            </span>
 
           </label>
 
-          {/* Qualify */}
+
+          {/* =================================================
+              QUALIFY
+          ================================================= */}
 
           <label className="flex items-center gap-3 border rounded-lg p-3">
 
@@ -532,11 +640,16 @@ export default function SIPFormModal({
               onChange={handleChange}
             />
 
-            <span>Qualify</span>
+            <span>
+              Qualify
+            </span>
 
           </label>
 
-          {/* Status */}
+
+          {/* =================================================
+              STATUS
+          ================================================= */}
 
           <select
             name="status"
@@ -559,7 +672,10 @@ export default function SIPFormModal({
 
           </select>
 
-          {/* Buttons */}
+
+          {/* =================================================
+              BUTTONS
+          ================================================= */}
 
           <div className="col-span-2 flex justify-end gap-3 mt-6">
 
@@ -568,22 +684,28 @@ export default function SIPFormModal({
               onClick={onClose}
               className="px-6 py-3 rounded-xl bg-slate-300 hover:bg-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600"
             >
+
               Cancel
+
             </button>
+
 
             <button
               type="submit"
               disabled={saving}
               className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
             >
+
               {saving
                 ? "Saving..."
                 : account
                 ? "Update SIP Account"
                 : "Create SIP Account"}
+
             </button>
 
           </div>
+
 
         </form>
 

@@ -7,6 +7,7 @@ from .views import (
     NumberPoolStatisticsAPIView,
     BulkAllocationAPIView,
     BulkUnallocationAPIView,
+    AutoAssignAPIView,
 )
 
 from .country_views import (
@@ -46,16 +47,34 @@ urlpatterns = [
         name="number-statistics",
     ),
 
+    # =====================================================
+    # Bulk Allocation
+    # =====================================================
+
     path(
         "bulk-allocation/",
         BulkAllocationAPIView.as_view(),
         name="bulk-allocation",
     ),
 
+    # =====================================================
+    # Bulk Unallocation
+    # =====================================================
+
     path(
         "bulk-unallocation/",
         BulkUnallocationAPIView.as_view(),
         name="bulk-unallocation",
+    ),
+
+    # =====================================================
+    # Auto Assign Numbers
+    # =====================================================
+
+    path(
+        "auto-assign/",
+        AutoAssignAPIView.as_view(),
+        name="auto-assign",
     ),
 
     # =====================================================
