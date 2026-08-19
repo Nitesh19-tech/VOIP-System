@@ -279,20 +279,6 @@ export default function BulkAllocationModal({
     }
 
 
-    // -------------------------------------------------
-    // CLIENT
-    // -------------------------------------------------
-
-    if (!form.client) {
-
-      alert(
-        "Please select a client."
-      );
-
-      return;
-    }
-
-
     try {
 
       setLoading(true);
@@ -320,9 +306,9 @@ export default function BulkAllocationModal({
           ),
 
         client:
-          Number(
-            form.client
-          ),
+          form.client
+            ? Number(form.client)
+            : null,
       };
 
 
@@ -714,7 +700,6 @@ export default function BulkAllocationModal({
               name="client"
               value={form.client}
               onChange={handleChange}
-              required
               disabled={loading}
               className="
                 w-full
@@ -736,7 +721,7 @@ export default function BulkAllocationModal({
             >
 
               <option value="">
-                Select Client
+                Select Client (Optional)
               </option>
 
               {clients.map(

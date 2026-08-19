@@ -16,6 +16,7 @@ import {
   Server,
   Network,
   ShieldCheck,
+  ArrowRightLeft,
   ChevronRight,
 } from "lucide-react";
 
@@ -115,8 +116,8 @@ const menu = [
       },
 
       {
-        name: "Assign",
-        icon: ShieldCheck,
+        name: "Assign Numbers",
+        icon: ArrowRightLeft,
         path: "/dashboard/assign",
         roles: ["COMPANY_ADMIN"],
       },

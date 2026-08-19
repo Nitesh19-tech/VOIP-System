@@ -65,18 +65,53 @@ class NumberPoolListCreateAPIView(APIView):
             raise_exception=True
         )
 
-        number = NumberPoolService.create_number(
-            serializer.validated_data,
-            request.user,
-        )
+        try:
+
+            number = NumberPoolService.create_number(
+                serializer.validated_data,
+                request.user,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+
+            print(
+                "Create Number Error:",
+                e,
+            )
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Unable to create number.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        if isinstance(number, list):
+            response_data = NumberPoolSerializer(
+                number,
+                many=True,
+            ).data
+            message = f"{len(number)} numbers created successfully."
+        else:
+            response_data = NumberPoolSerializer(number).data
+            message = "Number created successfully."
 
         return Response(
             {
                 "success": True,
-                "message": "Number created successfully.",
-                "data": NumberPoolSerializer(
-                    number
-                ).data,
+                "message": message,
+                "data": response_data,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -127,11 +162,38 @@ class NumberPoolDetailAPIView(APIView):
             raise_exception=True
         )
 
-        number = NumberPoolService.update_number(
-            number,
-            serializer.validated_data,
-            request.user,
-        )
+        try:
+
+            number = NumberPoolService.update_number(
+                number,
+                serializer.validated_data,
+                request.user,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+
+            print(
+                "Update Number Error:",
+                e,
+            )
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Unable to update number.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response(
             {
@@ -221,9 +283,66 @@ class NumberPoolImportAPIView(APIView):
 
         try:
 
+            # -------------------------------------------------
+            # IMPORT OPTIONS FROM PREVIOUS PANEL
+            # -------------------------------------------------
+
+            carrier = request.data.get("carrier")
+            termination = request.data.get("termination")
+            client = request.data.get("client")
+
+            service_id = (
+                request.data.get("number_service")
+                or request.data.get("service_id")
+                or ""
+            )
+
+            service_variables = request.data.get(
+                "service_variables"
+            )
+
+            max_calls = (
+                request.data.get("daily_max_call")
+                or request.data.get("maxcall")
+                or 0
+            )
+
+            max_duration = (
+                request.data.get("daily_max_duration")
+                or request.data.get("maxduration")
+                or 0
+            )
+
+            make_test_number = request.data.get(
+                "make_test_number"
+            )
+
+            if make_test_number is None:
+                make_test_number = request.data.get(
+                    "setfirsttest"
+                )
+
+            # Multipart form values arrive as strings.
+            make_test_number = str(
+                make_test_number or ""
+            ).lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }
+
             result = NumberPoolImportService.import_file(
                 file=file,
                 user=request.user,
+                carrier=carrier,
+                termination=termination,
+                client=client,
+                service_id=service_id,
+                service_variables=service_variables,
+                max_calls=max_calls,
+                max_duration=max_duration,
+                make_test_number=make_test_number,
             )
 
             return Response(

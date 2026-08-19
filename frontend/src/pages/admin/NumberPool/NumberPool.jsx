@@ -19,6 +19,7 @@ import NumberTable from "./NumberTable";
 import NumberFormModal from "./NumberFormModal";
 import NumberDeleteModal from "./NumberDeleteModal";
 import BulkAllocationModal from "./BulkAllocationModal";
+import NumberImportModal from "./NumberImportModal";
 
 
 export default function NumberPool({ user }) {
@@ -54,6 +55,8 @@ export default function NumberPool({ user }) {
   const [loading, setLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
+
+  const [showImport, setShowImport] = useState(false);
 
   const [showDelete, setShowDelete] = useState(false);
 
@@ -107,14 +110,11 @@ export default function NumberPool({ user }) {
   const [search, setSearch] =
     useState("");
 
-
   const [country, setCountry] =
     useState("");
 
-
   const [carrier, setCarrier] =
     useState("");
-
 
   const [status, setStatus] =
     useState("");
@@ -167,7 +167,9 @@ export default function NumberPool({ user }) {
 
 
       setCountries(
-        res.data?.data || []
+        res.data?.data ||
+        res.data?.results ||
+        []
       );
 
     } catch (err) {
@@ -299,7 +301,9 @@ export default function NumberPool({ user }) {
 
 
       const loadedNumbers =
-        res.data?.data || [];
+        res.data?.data ||
+        res.data?.results ||
+        [];
 
 
       const serverPagination =
@@ -323,8 +327,9 @@ export default function NumberPool({ user }) {
       );
 
 
-      // If current page becomes invalid
-      // after delete/filter/import
+      // =================================================
+      // CURRENT PAGE VALIDATION
+      // =================================================
 
       const totalPages =
         serverPagination?.total_pages || 1;
@@ -341,8 +346,9 @@ export default function NumberPool({ user }) {
       }
 
 
-      // Remove selections that
-      // are no longer on current page
+      // =================================================
+      // REMOVE OLD SELECTIONS
+      // =================================================
 
       const currentIds =
         new Set(
@@ -359,6 +365,7 @@ export default function NumberPool({ user }) {
               currentIds.has(id)
           )
       );
+
 
     } catch (err) {
 
@@ -449,72 +456,22 @@ export default function NumberPool({ user }) {
 
 
   // =====================================================
-  // IMPORT
+  // IMPORT NUMBERS
   // =====================================================
 
-  const handleImport = async (e) => {
+  const openImport = () => {
+    setShowImport(true);
+  };
 
-    const file =
-      e.target.files?.[0];
+  const handleImportSuccess = async () => {
+    setShowImport(false);
+    setSelectedNumbers([]);
+    setCurrentPage(1);
 
-
-    if (!file) {
-
-      return;
-
-    }
-
-
-    try {
-
-      const res =
-        await numberPoolService.importNumbers(
-          file
-        );
-
-
-      const result =
-        res.data?.data || {};
-
-
-      alert(
-        `Import Completed
-
-Imported : ${result.imported || 0}
-Duplicate : ${result.duplicates || 0}
-Invalid : ${result.invalid || 0}`
-      );
-
-
-      setSelectedNumbers([]);
-
-
-      setCurrentPage(1);
-
-
-      await loadNumbers();
-
-      await loadStatistics();
-
-    } catch (err) {
-
-      console.error(
-        "Import Error:",
-        err
-      );
-
-
-      alert(
-        err.response?.data?.message ||
-        "Import failed."
-      );
-
-    } finally {
-
-      e.target.value = "";
-
-    }
-
+    await Promise.all([
+      loadNumbers(),
+      loadStatistics(),
+    ]);
   };
 
 
@@ -625,8 +582,15 @@ Invalid : ${result.invalid || 0}`
       );
 
 
+      console.error(
+        "Save Response:",
+        err.response?.data
+      );
+
+
       alert(
         err.response?.data?.message ||
+        err.response?.data?.detail ||
         "Unable to save number."
       );
 
@@ -689,9 +653,6 @@ Invalid : ${result.invalid || 0}`
       setSelectedNumbers([]);
 
 
-      // If last item of current page
-      // was deleted, go back one page.
-
       if (
         numbers.length === 1 &&
         currentPage > 1
@@ -719,6 +680,7 @@ Invalid : ${result.invalid || 0}`
         "Selected numbers deleted successfully."
       );
 
+
     } catch (err) {
 
       console.error(
@@ -727,8 +689,15 @@ Invalid : ${result.invalid || 0}`
       );
 
 
+      console.error(
+        "Bulk Delete Response:",
+        err.response?.data
+      );
+
+
       alert(
         err.response?.data?.message ||
+        err.response?.data?.detail ||
         "Unable to delete selected numbers."
       );
 
@@ -784,6 +753,7 @@ Invalid : ${result.invalid || 0}`
 
       const count =
         res.data?.unallocated_count ||
+        res.data?.data?.unallocated_count ||
         0;
 
 
@@ -799,6 +769,7 @@ Invalid : ${result.invalid || 0}`
         `${count} numbers unallocated successfully.`
       );
 
+
     } catch (err) {
 
       console.error(
@@ -807,8 +778,15 @@ Invalid : ${result.invalid || 0}`
       );
 
 
+      console.error(
+        "Bulk Unallocation Response:",
+        err.response?.data
+      );
+
+
       alert(
         err.response?.data?.message ||
+        err.response?.data?.detail ||
         "Unable to unallocate selected numbers."
       );
 
@@ -851,9 +829,6 @@ Invalid : ${result.invalid || 0}`
       );
 
 
-      // If deleting the only record
-      // on a page other than page 1
-
       if (
         numbers.length === 1 &&
         currentPage > 1
@@ -876,6 +851,7 @@ Invalid : ${result.invalid || 0}`
 
       await loadStatistics();
 
+
     } catch (err) {
 
       console.error(
@@ -884,8 +860,15 @@ Invalid : ${result.invalid || 0}`
       );
 
 
+      console.error(
+        "Delete Response:",
+        err.response?.data
+      );
+
+
       alert(
         err.response?.data?.message ||
+        err.response?.data?.detail ||
         "Unable to delete number."
       );
 
@@ -920,21 +903,20 @@ Invalid : ${result.invalid || 0}`
 
 
   // =====================================================
-  // PAGE SIZE CHANGE
+  // PAGE SIZE
   // =====================================================
 
   const handlePageSizeChange = (e) => {
 
+    const value =
+      e.target.value;
+
     const newSize =
-      Number(
-        e.target.value
-      );
+      value === "all"
+        ? "all"
+        : Number(value);
 
-
-    setPageSize(
-      newSize
-    );
-
+    setPageSize(newSize);
 
     setCurrentPage(1);
 
@@ -942,7 +924,7 @@ Invalid : ${result.invalid || 0}`
 
 
   // =====================================================
-  // PREVIOUS PAGE
+  // PREVIOUS
   // =====================================================
 
   const goPrevious = () => {
@@ -963,7 +945,7 @@ Invalid : ${result.invalid || 0}`
 
 
   // =====================================================
-  // NEXT PAGE
+  // NEXT
   // =====================================================
 
   const goNext = () => {
@@ -993,10 +975,6 @@ Invalid : ${result.invalid || 0}`
 
       setShowAllocation(false);
 
-
-      // Keep selection intentionally.
-      // This allows unallocation after allocation.
-
       await loadNumbers();
 
       await loadStatistics();
@@ -1019,21 +997,28 @@ Invalid : ${result.invalid || 0}`
     );
 
 
+  const isAllPageSize =
+    String(pageSize).toLowerCase() === "all";
+
+  const effectivePageSize =
+    isAllPageSize
+      ? totalCount || 1
+      : Number(pageSize) || 25;
+
   const startNumber =
     totalCount === 0
       ? 0
       : (
           (currentPage - 1) *
-            pageSize
+            effectivePageSize
         ) + 1;
-
 
   const endNumber =
     totalCount === 0
       ? 0
       : Math.min(
           currentPage *
-            pageSize,
+            effectivePageSize,
           totalCount
         );
 
@@ -1046,12 +1031,11 @@ Invalid : ${result.invalid || 0}`
 
     <div className="space-y-8">
 
-
       {/* =================================================
           TOOLBAR
       ================================================= */}
 
-      <div className="flex justify-end mb-6">
+      <div className="mb-6 flex justify-end">
 
         <div
           className="
@@ -1063,67 +1047,64 @@ Invalid : ${result.invalid || 0}`
           "
         >
 
-
-          {/* IMPORT */}
-
-          <label
-            className="
-              flex
-              items-center
-              gap-2
-              px-5
-              py-3
-              rounded-xl
-              bg-emerald-600
-              hover:bg-emerald-700
-              text-white
-              font-medium
-              shadow-md
-              hover:shadow-lg
-              cursor-pointer
-              transition-all
-            "
-          >
-
-            <Upload size={18} />
-
-            <span>
-              Import Numbers
-            </span>
-
-
-            <input
-              hidden
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={
-                handleImport
-              }
-            />
-
-          </label>
-
-
-          {/* ADD */}
+          {/* =================================================
+              IMPORT
+          ================================================= */}
 
           <button
+            type="button"
+            onClick={openImport}
+            disabled={loading}
+            className="
+              flex
+              cursor-pointer
+              items-center
+              gap-2
+              rounded-xl
+              bg-emerald-600
+              px-5
+              py-3
+              font-medium
+              text-white
+              shadow-md
+              transition-all
+              hover:bg-emerald-700
+              hover:shadow-lg
+              disabled:cursor-not-allowed
+              disabled:opacity-50
+            "
+          >
+            <Upload size={18} />
+            <span>Import Numbers</span>
+          </button>
+
+
+          {/* =================================================
+              ADD
+          ================================================= */}
+
+          <button
+            type="button"
             onClick={openCreate}
+            disabled={saving}
             className="
               flex
               items-center
               gap-2
-              px-5
-              py-3
               rounded-xl
               bg-gradient-to-r
               from-blue-600
               to-cyan-500
-              text-white
+              px-5
+              py-3
               font-medium
+              text-white
               shadow-md
-              hover:shadow-xl
-              hover:scale-[1.02]
               transition-all
+              hover:scale-[1.02]
+              hover:shadow-xl
+              disabled:cursor-not-allowed
+              disabled:opacity-50
             "
           >
 
@@ -1134,47 +1115,64 @@ Invalid : ${result.invalid || 0}`
           </button>
 
 
-          {/* REFRESH */}
+          {/* =================================================
+              REFRESH
+          ================================================= */}
 
           <button
+            type="button"
             onClick={async () => {
 
-              await loadNumbers();
-
-              await loadStatistics();
+              await Promise.all([
+                loadNumbers(),
+                loadStatistics(),
+              ]);
 
             }}
+            disabled={loading}
             className="
               flex
               items-center
               gap-2
-              px-5
-              py-3
               rounded-xl
               border
               border-slate-300
-              dark:border-slate-700
               bg-white
-              dark:bg-slate-900
+              px-5
+              py-3
               text-slate-700
-              dark:text-slate-200
-              hover:bg-slate-100
-              dark:hover:bg-slate-800
               shadow-sm
               transition-all
+              hover:bg-slate-100
+              dark:border-slate-700
+              dark:bg-slate-900
+              dark:text-slate-200
+              dark:hover:bg-slate-800
+              disabled:cursor-not-allowed
+              disabled:opacity-50
             "
           >
 
-            <RefreshCw size={18} />
+            <RefreshCw
+              size={18}
+              className={
+                loading
+                  ? "animate-spin"
+                  : ""
+              }
+            />
 
             Refresh
 
           </button>
 
 
-          {/* ALLOCATE */}
+          {/* =================================================
+              ALLOCATE
+          ================================================= */}
 
           <button
+            type="button"
             onClick={
               openAllocation
             }
@@ -1186,17 +1184,17 @@ Invalid : ${result.invalid || 0}`
               flex
               items-center
               gap-2
-              px-5
-              py-3
               rounded-xl
               bg-emerald-600
-              hover:bg-emerald-700
-              disabled:bg-emerald-300
-              disabled:cursor-not-allowed
-              text-white
+              px-5
+              py-3
               font-medium
+              text-white
               shadow-md
               transition-all
+              hover:bg-emerald-700
+              disabled:cursor-not-allowed
+              disabled:bg-emerald-300
             "
           >
 
@@ -1210,9 +1208,12 @@ Invalid : ${result.invalid || 0}`
           </button>
 
 
-          {/* UNALLOCATE */}
+          {/* =================================================
+              UNALLOCATE
+          ================================================= */}
 
           <button
+            type="button"
             onClick={
               handleBulkUnallocate
             }
@@ -1224,17 +1225,17 @@ Invalid : ${result.invalid || 0}`
               flex
               items-center
               gap-2
-              px-5
-              py-3
               rounded-xl
               bg-orange-500
-              hover:bg-orange-600
-              disabled:bg-orange-300
-              disabled:cursor-not-allowed
-              text-white
+              px-5
+              py-3
               font-medium
+              text-white
               shadow-md
               transition-all
+              hover:bg-orange-600
+              disabled:cursor-not-allowed
+              disabled:bg-orange-300
             "
           >
 
@@ -1248,9 +1249,12 @@ Invalid : ${result.invalid || 0}`
           </button>
 
 
-          {/* DELETE */}
+          {/* =================================================
+              DELETE
+          ================================================= */}
 
           <button
+            type="button"
             onClick={
               handleBulkDelete
             }
@@ -1262,17 +1266,17 @@ Invalid : ${result.invalid || 0}`
               flex
               items-center
               gap-2
-              px-5
-              py-3
               rounded-xl
               bg-red-600
-              hover:bg-red-700
-              disabled:bg-red-300
-              disabled:cursor-not-allowed
-              text-white
+              px-5
+              py-3
               font-medium
+              text-white
               shadow-md
               transition-all
+              hover:bg-red-700
+              disabled:cursor-not-allowed
+              disabled:bg-red-300
             "
           >
 
@@ -1298,209 +1302,78 @@ Invalid : ${result.invalid || 0}`
         className="
           grid
           grid-cols-1
+          gap-5
           sm:grid-cols-2
           xl:grid-cols-5
-          gap-5
         "
       >
 
-
         {/* TOTAL */}
 
-        <div
+        <StatCard
+          label="Total Numbers"
+          value={stats.total}
           className="
-            rounded-2xl
-            border
             border-slate-200
-            dark:border-slate-800
             bg-white
+            dark:border-slate-800
             dark:bg-slate-900
-            p-5
-            shadow-sm
+            text-slate-900
+            dark:text-white
           "
-        >
-
-          <p
-            className="
-              text-xs
-              uppercase
-              tracking-[0.2em]
-              text-slate-500
-            "
-          >
-            Total Numbers
-          </p>
-
-
-          <h2
-            className="
-              mt-3
-              text-4xl
-              font-bold
-              text-slate-900
-              dark:text-white
-            "
-          >
-            {stats.total || 0}
-          </h2>
-
-        </div>
+        />
 
 
         {/* AVAILABLE */}
 
-        <div
+        <StatCard
+          label="Available"
+          value={stats.available}
           className="
-            rounded-2xl
-            bg-emerald-500/10
-            border
             border-emerald-500/20
-            p-5
-            shadow-sm
+            bg-emerald-500/10
+            text-emerald-600
           "
-        >
-
-          <p
-            className="
-              text-xs
-              uppercase
-              tracking-[0.2em]
-              text-emerald-600
-            "
-          >
-            Available
-          </p>
-
-
-          <h2
-            className="
-              mt-3
-              text-4xl
-              font-bold
-              text-emerald-600
-            "
-          >
-            {stats.available || 0}
-          </h2>
-
-        </div>
+        />
 
 
         {/* ASSIGNED */}
 
-        <div
+        <StatCard
+          label="Assigned"
+          value={stats.assigned}
           className="
-            rounded-2xl
-            bg-blue-500/10
-            border
             border-blue-500/20
-            p-5
-            shadow-sm
+            bg-blue-500/10
+            text-blue-600
           "
-        >
-
-          <p
-            className="
-              text-xs
-              uppercase
-              tracking-[0.2em]
-              text-blue-600
-            "
-          >
-            Assigned
-          </p>
-
-
-          <h2
-            className="
-              mt-3
-              text-4xl
-              font-bold
-              text-blue-600
-            "
-          >
-            {stats.assigned || 0}
-          </h2>
-
-        </div>
+        />
 
 
         {/* RESERVED */}
 
-        <div
+        <StatCard
+          label="Reserved"
+          value={stats.reserved}
           className="
-            rounded-2xl
-            bg-yellow-500/10
-            border
             border-yellow-500/20
-            p-5
-            shadow-sm
+            bg-yellow-500/10
+            text-yellow-600
           "
-        >
-
-          <p
-            className="
-              text-xs
-              uppercase
-              tracking-[0.2em]
-              text-yellow-600
-            "
-          >
-            Reserved
-          </p>
-
-
-          <h2
-            className="
-              mt-3
-              text-4xl
-              font-bold
-              text-yellow-600
-            "
-          >
-            {stats.reserved || 0}
-          </h2>
-
-        </div>
+        />
 
 
         {/* DISABLED */}
 
-        <div
+        <StatCard
+          label="Disabled"
+          value={stats.disabled}
           className="
-            rounded-2xl
-            bg-red-500/10
-            border
             border-red-500/20
-            p-5
-            shadow-sm
+            bg-red-500/10
+            text-red-600
           "
-        >
-
-          <p
-            className="
-              text-xs
-              uppercase
-              tracking-[0.2em]
-              text-red-600
-            "
-          >
-            Disabled
-          </p>
-
-
-          <h2
-            className="
-              mt-3
-              text-4xl
-              font-bold
-              text-red-600
-            "
-          >
-            {stats.disabled || 0}
-          </h2>
-
-        </div>
+        />
 
       </div>
 
@@ -1514,11 +1387,11 @@ Invalid : ${result.invalid || 0}`
           rounded-2xl
           border
           border-slate-200
-          dark:border-slate-800
           bg-white
-          dark:bg-slate-900
-          shadow-sm
           p-6
+          shadow-sm
+          dark:border-slate-800
+          dark:bg-slate-900
         "
       >
 
@@ -1526,12 +1399,11 @@ Invalid : ${result.invalid || 0}`
           className="
             grid
             grid-cols-1
+            gap-4
             md:grid-cols-2
             xl:grid-cols-5
-            gap-4
           "
         >
-
 
           {/* SEARCH */}
 
@@ -1565,21 +1437,21 @@ Invalid : ${result.invalid || 0}`
               }
               className="
                 w-full
-                pl-11
-                pr-4
-                py-3
                 rounded-xl
                 border
                 border-slate-300
-                dark:border-slate-700
                 bg-slate-50
-                dark:bg-slate-950
+                py-3
+                pl-11
+                pr-4
                 text-slate-900
-                dark:text-white
                 outline-none
                 focus:border-blue-500
                 focus:ring-2
                 focus:ring-blue-500/20
+                dark:border-slate-700
+                dark:bg-slate-950
+                dark:text-white
               "
             />
 
@@ -1588,9 +1460,7 @@ Invalid : ${result.invalid || 0}`
 
           {/* COUNTRY */}
 
-          <div
-            className="relative"
-          >
+          <div className="relative">
 
             <Globe
               size={18}
@@ -1613,19 +1483,19 @@ Invalid : ${result.invalid || 0}`
               }
               className="
                 w-full
-                pl-11
-                pr-4
-                py-3
                 rounded-xl
                 border
                 border-slate-300
-                dark:border-slate-700
                 bg-slate-50
-                dark:bg-slate-950
+                py-3
+                pl-11
+                pr-4
                 text-slate-900
-                dark:text-white
                 outline-none
                 focus:border-blue-500
+                dark:border-slate-700
+                dark:bg-slate-950
+                dark:text-white
               "
             >
 
@@ -1654,9 +1524,7 @@ Invalid : ${result.invalid || 0}`
 
           {/* CARRIER */}
 
-          <div
-            className="relative"
-          >
+          <div className="relative">
 
             <Truck
               size={18}
@@ -1679,19 +1547,19 @@ Invalid : ${result.invalid || 0}`
               }
               className="
                 w-full
-                pl-11
-                pr-4
-                py-3
                 rounded-xl
                 border
                 border-slate-300
-                dark:border-slate-700
                 bg-slate-50
-                dark:bg-slate-950
+                py-3
+                pl-11
+                pr-4
                 text-slate-900
-                dark:text-white
                 outline-none
                 focus:border-blue-500
+                dark:border-slate-700
+                dark:bg-slate-950
+                dark:text-white
               "
             >
 
@@ -1729,18 +1597,18 @@ Invalid : ${result.invalid || 0}`
             }
             className="
               w-full
-              px-4
-              py-3
               rounded-xl
               border
               border-slate-300
-              dark:border-slate-700
               bg-slate-50
-              dark:bg-slate-950
+              px-4
+              py-3
               text-slate-900
-              dark:text-white
               outline-none
               focus:border-blue-500
+              dark:border-slate-700
+              dark:bg-slate-950
+              dark:text-white
             "
           >
 
@@ -1780,10 +1648,10 @@ Invalid : ${result.invalid || 0}`
             mt-6
             flex
             flex-col
+            gap-4
             md:flex-row
             md:items-center
             md:justify-between
-            gap-4
           "
         >
 
@@ -1823,9 +1691,11 @@ Invalid : ${result.invalid || 0}`
                   dark:text-blue-400
                 "
               >
+
                 {selectedNumbers.length}
                 {" "}
                 Selected
+
               </span>
 
             )}
@@ -1834,17 +1704,18 @@ Invalid : ${result.invalid || 0}`
 
 
           <button
+            type="button"
             onClick={
               clearFilters
             }
             className="
-              px-5
-              py-3
               rounded-xl
               bg-slate-800
-              hover:bg-slate-700
+              px-5
+              py-3
               text-white
               transition-all
+              hover:bg-slate-700
             "
           >
             Clear Filters
@@ -1861,17 +1732,16 @@ Invalid : ${result.invalid || 0}`
 
       <div
         className="
+          overflow-hidden
           rounded-2xl
           border
           border-slate-200
-          dark:border-slate-800
           bg-white
-          dark:bg-slate-900
           shadow-sm
-          overflow-hidden
+          dark:border-slate-800
+          dark:bg-slate-900
         "
       >
-
 
         {/* HEADER */}
 
@@ -1879,14 +1749,14 @@ Invalid : ${result.invalid || 0}`
           className="
             flex
             flex-col
+            gap-5
+            border-b
+            border-slate-200
+            px-6
+            py-5
             lg:flex-row
             lg:items-center
             lg:justify-between
-            gap-5
-            px-6
-            py-5
-            border-b
-            border-slate-200
             dark:border-slate-800
           "
         >
@@ -1929,11 +1799,11 @@ Invalid : ${result.invalid || 0}`
               rounded-xl
               border
               border-slate-200
-              dark:border-slate-700
               bg-slate-50
-              dark:bg-slate-950
               px-4
               py-2
+              dark:border-slate-700
+              dark:bg-slate-950
             "
           >
 
@@ -1958,17 +1828,17 @@ Invalid : ${result.invalid || 0}`
                 rounded-lg
                 border
                 border-slate-300
-                dark:border-slate-700
                 bg-white
-                dark:bg-slate-900
                 px-3
                 py-2
                 text-sm
                 font-semibold
                 text-slate-900
-                dark:text-white
                 outline-none
                 focus:border-blue-500
+                dark:border-slate-700
+                dark:bg-slate-900
+                dark:text-white
               "
             >
 
@@ -1984,6 +1854,14 @@ Invalid : ${result.invalid || 0}`
                 100
               </option>
 
+              <option value={500}>
+                500
+              </option>
+
+              <option value="all">
+                All
+              </option>
+
             </select>
 
           </div>
@@ -1996,11 +1874,11 @@ Invalid : ${result.invalid || 0}`
               rounded-xl
               border
               border-blue-200
-              dark:border-blue-500/20
               bg-blue-50
-              dark:bg-blue-500/10
               px-4
               py-2
+              dark:border-blue-500/20
+              dark:bg-blue-500/10
             "
           >
 
@@ -2042,7 +1920,7 @@ Invalid : ${result.invalid || 0}`
 
 
         {/* =================================================
-            SERVER SIDE PAGINATION
+            PAGINATION
         ================================================= */}
 
         {!loading &&
@@ -2052,18 +1930,17 @@ Invalid : ${result.invalid || 0}`
               className="
                 flex
                 flex-col
+                gap-4
+                border-t
+                border-slate-200
+                px-6
+                py-4
                 sm:flex-row
                 sm:items-center
                 sm:justify-between
-                gap-4
-                px-6
-                py-4
-                border-t
-                border-slate-200
                 dark:border-slate-800
               "
             >
-
 
               {/* INFO */}
 
@@ -2127,7 +2004,6 @@ Invalid : ${result.invalid || 0}`
                 "
               >
 
-
                 {/* PREVIOUS */}
 
                 <button
@@ -2140,19 +2016,19 @@ Invalid : ${result.invalid || 0}`
                     pagination.previous === null
                   }
                   className="
-                    px-3
-                    py-2
                     rounded-lg
                     border
                     border-slate-300
-                    dark:border-slate-700
                     bg-white
-                    dark:bg-slate-900
+                    px-3
+                    py-2
                     text-sm
                     font-medium
-                    disabled:opacity-40
-                    disabled:cursor-not-allowed
                     hover:bg-slate-100
+                    disabled:cursor-not-allowed
+                    disabled:opacity-40
+                    dark:border-slate-700
+                    dark:bg-slate-900
                     dark:hover:bg-slate-800
                   "
                 >
@@ -2190,19 +2066,19 @@ Invalid : ${result.invalid || 0}`
                     pagination.next === null
                   }
                   className="
-                    px-3
-                    py-2
                     rounded-lg
                     border
                     border-slate-300
-                    dark:border-slate-700
                     bg-white
-                    dark:bg-slate-900
+                    px-3
+                    py-2
                     text-sm
                     font-medium
-                    disabled:opacity-40
-                    disabled:cursor-not-allowed
                     hover:bg-slate-100
+                    disabled:cursor-not-allowed
+                    disabled:opacity-40
+                    dark:border-slate-700
+                    dark:bg-slate-900
                     dark:hover:bg-slate-800
                   "
                 >
@@ -2215,9 +2091,19 @@ Invalid : ${result.invalid || 0}`
 
           )}
 
-
       </div>
 
+
+      {/* =================================================
+          NUMBER IMPORT MODAL
+      ================================================= */}
+
+      <NumberImportModal
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        onSuccess={handleImportSuccess}
+        carriers={carriers}
+      />
 
       {/* =================================================
           NUMBER FORM
@@ -2276,6 +2162,57 @@ Invalid : ${result.invalid || 0}`
           handleAllocationSuccess
         }
       />
+
+    </div>
+
+  );
+
+}
+
+
+// =========================================================
+// STAT CARD
+// =========================================================
+
+function StatCard({
+  label,
+  value,
+  className = "",
+}) {
+
+  return (
+
+    <div
+      className={`
+        rounded-2xl
+        border
+        p-5
+        shadow-sm
+        ${className}
+      `}
+    >
+
+      <p
+        className="
+          text-xs
+          uppercase
+          tracking-[0.2em]
+          opacity-70
+        "
+      >
+        {label}
+      </p>
+
+
+      <h2
+        className="
+          mt-3
+          text-4xl
+          font-bold
+        "
+      >
+        {value || 0}
+      </h2>
 
     </div>
 

@@ -16,6 +16,7 @@ import Clients from "./pages/admin/Clients/Clients";
 import Analytics from "./pages/Analytics";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import NumberPool from "./pages/admin/NumberPool/NumberPool";
+import AssignNumbers from "./pages/admin/NumberPool/AssignNumbers";
 import AdminBillingDashboard from "./pages/admin/AdminBillingDashboard";
 import CDRPage from "./pages/cdr/CDRPage";
 import ProvisionPage from "./pages/admin/Provision/ProvisionPage";
@@ -431,6 +432,26 @@ export default function App() {
               ]}
             >
               <NumberPool
+                user={user}
+              />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =====================================================
+            ASSIGN NUMBERS
+        ===================================================== */}
+
+        <Route
+          path="/dashboard/assign"
+          element={
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "COMPANY_ADMIN",
+              ]}
+            >
+              <AssignNumbers
                 user={user}
               />
             </ProtectedRoute>
