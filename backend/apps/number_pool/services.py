@@ -44,13 +44,11 @@ class CountryService:
         queryset = Country.objects.all()
 
         if not filters:
-
             return queryset.order_by("name")
 
         search = filters.get("search")
 
         if search:
-
             queryset = queryset.filter(
                 Q(name__icontains=search)
                 | Q(iso_code__icontains=search)
@@ -90,38 +88,6 @@ class CountryService:
 
         return country
 
-    # =====================================================
-    # DELETE NUMBER
-    # =====================================================
-
-    @staticmethod
-    def delete_number(number):
-
-        if number.status == "ASSIGNED":
-
-            raise ValueError(
-                "Assigned numbers cannot be deleted. "
-                "Please unassign the number first."
-            )
-
-        if number.status == "RESERVED":
-
-            raise ValueError(
-                "Reserved numbers cannot be deleted. "
-                "Please release the reservation first."
-            )
-
-        try:
-
-            number.delete()
-
-        except ProtectedError:
-
-            raise ValueError(
-                "This number is linked with other records "
-                "and cannot be deleted."
-            )
-
 
 # =========================================================
 # NUMBER POOL SERVICE
@@ -135,12 +101,17 @@ class NumberPoolService:
 
     @staticmethod
     def sync_asterisk_inbound():
+
         try:
+
             AsteriskService.upload_inbound()
             AsteriskService.reload_dialplan()
+
         except Exception as e:
-            # Do not break the already-committed number assignment
-            # if Asterisk provisioning fails.
+
+            # Do not break the already-committed
+            # number operation if Asterisk provisioning fails.
+
             print(
                 f"Asterisk inbound provisioning failed: {e}"
             )
@@ -193,7 +164,12 @@ class NumberPoolService:
             **data,
         )
 
+        # -------------------------------------------------
+        # ASTERISK SYNC
+        # -------------------------------------------------
+
         if number.status == "ASSIGNED":
+
             transaction.on_commit(
                 NumberPoolService.sync_asterisk_inbound
             )
@@ -202,15 +178,6 @@ class NumberPoolService:
 
     # =====================================================
     # GET ALL NUMBERS
-    #
-    # SUPER_ADMIN / COMPANY_ADMIN
-    #
-    # Supports:
-    #
-    # ?page=1&page_size=25
-    # ?page=2&page_size=50
-    # ?page=1&page_size=100
-    #
     # =====================================================
 
     @staticmethod
@@ -364,7 +331,9 @@ class NumberPoolService:
 
             page_size = 25
 
-        # Only these values are allowed by frontend.
+        # -------------------------------------------------
+        # ALLOWED PAGE SIZES
+        # -------------------------------------------------
 
         allowed_page_sizes = {
             25,
@@ -457,9 +426,6 @@ class NumberPoolService:
 
     # =====================================================
     # GET NUMBER BY ID
-    #
-    # Both admins can access any number.
-    #
     # =====================================================
 
     @staticmethod
@@ -579,6 +545,10 @@ class NumberPoolService:
 
         number.save()
 
+        # -------------------------------------------------
+        # ASTERISK SYNC
+        # -------------------------------------------------
+
         transaction.on_commit(
             NumberPoolService.sync_asterisk_inbound
         )
@@ -592,21 +562,11 @@ class NumberPoolService:
     @staticmethod
     def delete_number(number):
 
-        if number.status == "ASSIGNED":
-
-            raise ValueError(
-                "Assigned numbers cannot be deleted. "
-                "Please unassign the number first."
-            )
-
-        if number.status == "RESERVED":
-
-            raise ValueError(
-                "Reserved numbers cannot be deleted. "
-                "Please release the reservation first."
-            )
-
         try:
+
+            # -------------------------------------------------
+            # DELETE
+            # -------------------------------------------------
 
             number.delete()
 
@@ -617,18 +577,16 @@ class NumberPoolService:
                 "and cannot be deleted."
             )
 
+        # -------------------------------------------------
+        # ASTERISK SYNC
+        # -------------------------------------------------
+
+        transaction.on_commit(
+            NumberPoolService.sync_asterisk_inbound
+        )
+
     # =====================================================
     # BULK ALLOCATION
-    #
-    # Payload:
-    #
-    # {
-    #     "number_ids": [1, 2, 3],
-    #     "carrier": 1,
-    #     "termination": 5,
-    #     "client": 5
-    # }
-    #
     # =====================================================
 
     @staticmethod
@@ -772,25 +730,18 @@ class NumberPoolService:
             ],
         )
 
+        # -------------------------------------------------
+        # ASTERISK SYNC
+        # -------------------------------------------------
+
         transaction.on_commit(
             NumberPoolService.sync_asterisk_inbound
         )
-
-        # -------------------------------------------------
-        # RESPONSE
-        # -------------------------------------------------
 
         return len(numbers)
 
     # =====================================================
     # BULK UNALLOCATION
-    #
-    # Payload:
-    #
-    # {
-    #     "number_ids": [1, 2, 3]
-    # }
-    #
     # =====================================================
 
     @staticmethod
@@ -909,6 +860,10 @@ class NumberPoolService:
             ],
         )
 
+        # -------------------------------------------------
+        # ASTERISK SYNC
+        # -------------------------------------------------
+
         transaction.on_commit(
             NumberPoolService.sync_asterisk_inbound
         )
@@ -917,20 +872,6 @@ class NumberPoolService:
 
     # =====================================================
     # AUTO ASSIGN NUMBERS
-    #
-    # Used by separate Assign Numbers page.
-    #
-    # Payload:
-    #
-    # {
-    #     "carrier": 1,
-    #     "termination": 5,
-    #     "client": 10,
-    #     "quantity": 20,
-    #     "prefix": "",
-    #     "payment_term": "Weekly"
-    # }
-    #
     # =====================================================
 
     @staticmethod
@@ -1023,9 +964,6 @@ class NumberPoolService:
         # PREFIX
         # -------------------------------------------------
 
-        # If frontend did not provide a prefix,
-        # use selected termination prefix.
-
         if termination and not prefix:
 
             prefix = (
@@ -1036,16 +974,6 @@ class NumberPoolService:
         # -------------------------------------------------
         # BASE QUERY
         # -------------------------------------------------
-
-        # Imported numbers can initially have:
-        #
-        # carrier     = NULL
-        # termination = NULL
-        # client      = NULL
-        # status      = AVAILABLE
-        #
-        # Therefore carrier / termination are NOT
-        # availability filters here.
 
         queryset = (
             NumberPool.objects
@@ -1130,6 +1058,10 @@ class NumberPoolService:
                 "assigned_at",
             ],
         )
+
+        # -------------------------------------------------
+        # ASTERISK SYNC
+        # -------------------------------------------------
 
         transaction.on_commit(
             NumberPoolService.sync_asterisk_inbound
