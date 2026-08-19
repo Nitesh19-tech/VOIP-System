@@ -13,6 +13,10 @@ class CallRecord(models.Model):
         ("CANCEL", "Cancel"),
     ]
 
+    # =====================================================
+    # SIP / CALL PARTICIPANTS
+    # =====================================================
+
     caller = models.ForeignKey(
         SIPAccount,
         on_delete=models.SET_NULL,
@@ -51,6 +55,10 @@ class CallRecord(models.Model):
         default="",
     )
 
+    # =====================================================
+    # ASTERISK
+    # =====================================================
+
     context = models.CharField(
         max_length=100,
         default="",
@@ -84,6 +92,10 @@ class CallRecord(models.Model):
         default="ANSWERED",
     )
 
+    # =====================================================
+    # TIMING
+    # =====================================================
+
     start_time = models.DateTimeField()
 
     answer_time = models.DateTimeField(
@@ -102,11 +114,19 @@ class CallRecord(models.Model):
     )
 
     # =====================================================
-    # Rating Information
+    # NUMBER / INCOMING DID MAPPING
     # =====================================================
 
     country = models.ForeignKey(
         "number_pool.Country",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cdrs",
+    )
+
+    number_pool = models.ForeignKey(
+        "number_pool.NumberPool",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -124,6 +144,10 @@ class CallRecord(models.Model):
         blank=True,
         default="",
     )
+
+    # =====================================================
+    # PROVIDER / RATING
+    # =====================================================
 
     provider = models.CharField(
         max_length=100,
@@ -157,6 +181,10 @@ class CallRecord(models.Model):
         default=0,
     )
 
+    # =====================================================
+    # INVOICE
+    # =====================================================
+
     invoice_status = models.CharField(
         max_length=20,
         choices=(
@@ -165,6 +193,10 @@ class CallRecord(models.Model):
         ),
         default="PENDING",
     )
+
+    # =====================================================
+    # SYSTEM
+    # =====================================================
 
     created_at = models.DateTimeField(
         auto_now_add=True,
