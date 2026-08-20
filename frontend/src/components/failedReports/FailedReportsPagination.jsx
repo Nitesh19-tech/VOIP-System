@@ -15,7 +15,7 @@ const OPTIONS = [
 ];
 
 
-export default function CDRPagination({
+export default function FailedReportsPagination({
   page,
   setPage,
   count,
@@ -34,7 +34,6 @@ export default function CDRPagination({
           )
         );
 
-
   const currentPage =
     Math.min(
       Math.max(
@@ -45,62 +44,21 @@ export default function CDRPagination({
     );
 
 
-  const pages =
-    getPageNumbers(
-      currentPage,
-      totalPages
-    );
-
-
   const changeSize = (
     event
   ) => {
 
-    const raw =
-      event.target.value;
-
     const value =
-      raw === "all"
+      event.target.value === "all"
         ? "all"
-        : Number(raw);
+        : Number(
+            event.target.value
+          );
 
-    setPageSize?.(value);
+    setPageSize(value);
     setPage(1);
 
   };
-
-
-  if (!count) {
-
-    return (
-
-      <div className="
-        flex
-        items-center
-        justify-between
-        px-2
-        py-1
-      ">
-
-        <span className="
-          text-sm
-          text-slate-500
-        ">
-
-          0 records
-
-        </span>
-
-        <SizeSelector
-          value={pageSize}
-          onChange={changeSize}
-        />
-
-      </div>
-
-    );
-
-  }
 
 
   return (
@@ -117,41 +75,53 @@ export default function CDRPagination({
       <div className="
         flex
         items-center
-        gap-4
+        gap-2
+        text-sm
+        text-slate-500
       ">
 
-        <SizeSelector
+        <span>
+          Show
+        </span>
+
+        <select
           value={pageSize}
           onChange={changeSize}
-        />
-
-        <span className="
-          hidden
-          text-sm
-          text-slate-500
-          sm:inline
-          dark:text-slate-400
-        ">
-
-          Showing page{" "}
-          <strong className="
-            text-slate-700
+          className="
+            h-9
+            rounded-lg
+            border
+            border-slate-200
+            bg-white
+            px-3
+            text-sm
+            dark:border-slate-700
+            dark:bg-slate-900
             dark:text-slate-200
-          ">
+          "
+        >
 
-            {currentPage}
+          {OPTIONS.map(
+            (option) => (
 
-          </strong>{" "}
-          of{" "}
-          <strong className="
-            text-slate-700
-            dark:text-slate-200
-          ">
+              <option
+                key={option}
+                value={option}
+              >
 
-            {totalPages}
+                {option === "all"
+                  ? "All"
+                  : option}
 
-          </strong>
+              </option>
 
+            )
+          )}
+
+        </select>
+
+        <span>
+          entries
         </span>
 
       </div>
@@ -165,7 +135,7 @@ export default function CDRPagination({
           gap-1
         ">
 
-          <PageButton
+          <Button
             disabled={
               currentPage === 1
             }
@@ -173,15 +143,10 @@ export default function CDRPagination({
               setPage(1)
             }
           >
+            <ChevronsLeft size={16} />
+          </Button>
 
-            <ChevronsLeft
-              size={16}
-            />
-
-          </PageButton>
-
-
-          <PageButton
+          <Button
             disabled={
               currentPage === 1
             }
@@ -191,25 +156,19 @@ export default function CDRPagination({
               )
             }
           >
+            <ChevronLeft size={16} />
+          </Button>
 
-            <ChevronLeft
-              size={16}
-            />
-
-          </PageButton>
-
-
-          {pages.map(
+          {getPages(
+            currentPage,
+            totalPages
+          ).map(
             (item, index) =>
               item === "..."
                 ? (
                   <span
                     key={`dots-${index}`}
-                    className="
-                      px-2
-                      text-sm
-                      text-slate-400
-                    "
+                    className="px-2 text-slate-400"
                   >
                     ...
                   </span>
@@ -227,31 +186,19 @@ export default function CDRPagination({
                       rounded-lg
                       px-2
                       text-sm
-                      font-medium
                       ${
                         item === currentPage
-                          ? `
-                            bg-sky-500
-                            text-white
-                          `
-                          : `
-                            text-slate-600
-                            hover:bg-slate-100
-                            dark:text-slate-300
-                            dark:hover:bg-slate-800
-                          `
+                          ? "bg-sky-500 text-white"
+                          : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                       }
                     `}
                   >
-
                     {item}
-
                   </button>
                 )
           )}
 
-
-          <PageButton
+          <Button
             disabled={
               currentPage === totalPages
             }
@@ -261,30 +208,19 @@ export default function CDRPagination({
               )
             }
           >
+            <ChevronRight size={16} />
+          </Button>
 
-            <ChevronRight
-              size={16}
-            />
-
-          </PageButton>
-
-
-          <PageButton
+          <Button
             disabled={
               currentPage === totalPages
             }
             onClick={() =>
-              setPage(
-                totalPages
-              )
+              setPage(totalPages)
             }
           >
-
-            <ChevronsRight
-              size={16}
-            />
-
-          </PageButton>
+            <ChevronsRight size={16} />
+          </Button>
 
         </div>
 
@@ -297,78 +233,7 @@ export default function CDRPagination({
 }
 
 
-function SizeSelector({
-  value,
-  onChange,
-}) {
-
-  return (
-
-    <label className="
-      flex
-      items-center
-      gap-2
-      text-sm
-      text-slate-500
-    ">
-
-      <span>
-        Show
-      </span>
-
-      <select
-        value={value}
-        onChange={onChange}
-        className="
-          h-9
-          min-w-[78px]
-          rounded-lg
-          border
-          border-slate-200
-          bg-white
-          px-3
-          text-sm
-          font-medium
-          text-slate-700
-          outline-none
-          focus:border-sky-400
-          dark:border-slate-700
-          dark:bg-slate-900
-          dark:text-slate-200
-        "
-      >
-
-        {OPTIONS.map(
-          (option) => (
-
-            <option
-              key={option}
-              value={option}
-            >
-
-              {option === "all"
-                ? "All"
-                : option}
-
-            </option>
-
-          )
-        )}
-
-      </select>
-
-      <span>
-        entries
-      </span>
-
-    </label>
-
-  );
-
-}
-
-
-function PageButton({
+function Button({
   children,
   disabled,
   onClick,
@@ -392,7 +257,6 @@ function PageButton({
         bg-white
         text-slate-600
         hover:bg-slate-50
-        disabled:cursor-not-allowed
         disabled:opacity-40
         dark:border-slate-700
         dark:bg-slate-900
@@ -409,7 +273,7 @@ function PageButton({
 }
 
 
-function getPageNumbers(
+function getPages(
   current,
   total
 ) {
@@ -427,11 +291,7 @@ function getPageNumbers(
   if (current <= 4) {
 
     return [
-      1,
-      2,
-      3,
-      4,
-      5,
+      1, 2, 3, 4, 5,
       "...",
       total,
     ];

@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 
 import Companies from "./pages/superadmin/Companies/Companies";
+
 import API, { setAuthToken } from "./services/api";
+
 import Login from "./pages/Login";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 import AdminUsers from "./pages/superadmin/AdminUsers/AdminUsers";
+
 import SipDashboard from "./pages/SipDashborad";
 import Calls from "./pages/Calls";
 import Billing from "./pages/Billing";
@@ -15,37 +18,45 @@ import Settings from "./pages/Settings";
 import Clients from "./pages/admin/Clients/Clients";
 import Analytics from "./pages/Analytics";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
+
 import NumberPool from "./pages/admin/NumberPool/NumberPool";
 import AssignNumbers from "./pages/admin/NumberPool/AssignNumbers";
+
 import AdminBillingDashboard from "./pages/admin/AdminBillingDashboard";
+
 import CDRPage from "./pages/cdr/CDRPage";
+
+import FailedReportsPage from "./pages/failedReports/FailedReportsPage";
+
 import ProvisionPage from "./pages/admin/Provision/ProvisionPage";
 import Countries from "./pages/admin/Countries/Countries";
 import RateManagement from "./pages/dashboard/rate/RateManagement";
+
 import CarrierList from "./pages/admin/Carriers/CarrierList";
 import TerminationList from "./pages/admin/termination/TerminationList";
 
-// Incoming Routes
 import IncomingRoutes from "./pages/admin/IncomingRoutes/IncomingRoutes";
 
 
 export default function App() {
 
-  // null = loading
-  // false = not logged in
-  // object = logged in
+  // =====================================================
+  // USER
+  // =====================================================
 
   const [user, setUser] = useState(null);
 
   const navigate = useNavigate();
 
+
   // =====================================================
-  // THEME STATE
+  // THEME
   // =====================================================
 
   const [dark, setDark] = useState(
     localStorage.getItem("theme") !== "light"
   );
+
 
   const toggleTheme = () => {
 
@@ -57,17 +68,27 @@ export default function App() {
       "theme",
       newTheme ? "dark" : "light"
     );
+
   };
+
+
+  // =====================================================
+  // APPLY THEME
+  // =====================================================
 
   useEffect(() => {
 
     if (dark) {
 
-      document.documentElement.classList.add("dark");
+      document.documentElement.classList.add(
+        "dark"
+      );
 
     } else {
 
-      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.remove(
+        "dark"
+      );
 
     }
 
@@ -87,9 +108,13 @@ export default function App() {
 
     setUser(false);
 
-    navigate("/login", {
-      replace: true,
-    });
+    navigate(
+      "/login",
+      {
+        replace: true,
+      }
+    );
+
   };
 
 
@@ -105,18 +130,27 @@ export default function App() {
         "auth/profile/"
       );
 
-      if (res.data.force_password_change) {
 
-        setUser(res.data);
+      if (
+        res.data.force_password_change
+      ) {
+
+        setUser(
+          res.data
+        );
 
         navigate(
           "/force-change-password"
         );
 
         return;
+
       }
 
-      setUser(res.data);
+
+      setUser(
+        res.data
+      );
 
     } catch (err) {
 
@@ -126,40 +160,53 @@ export default function App() {
       );
 
       logout();
+
     }
+
   };
 
 
   // =====================================================
-  // CHECK TOKEN ON APP LOAD
+  // CHECK TOKEN
   // =====================================================
 
   useEffect(() => {
 
     const token =
-      localStorage.getItem("access");
+      localStorage.getItem(
+        "access"
+      );
+
 
     if (token) {
 
-      setAuthToken(token);
+      setAuthToken(
+        token
+      );
 
       loadUser();
 
     } else {
 
-      setUser(false);
+      setUser(
+        false
+      );
 
     }
 
   }, []);
 
 
+  // =====================================================
+  // ROUTES
+  // =====================================================
+
   return (
 
     <Routes>
 
       {/* =====================================================
-          PUBLIC
+          LOGIN
       ===================================================== */}
 
       <Route
@@ -173,12 +220,15 @@ export default function App() {
 
 
       {/* =====================================================
-          PROTECTED
+          PROTECTED LAYOUT
       ===================================================== */}
 
       <Route
         element={
-          <ProtectedRoute user={user}>
+
+          <ProtectedRoute
+            user={user}
+          >
 
             <DashboardLayout
               user={user}
@@ -188,8 +238,10 @@ export default function App() {
             />
 
           </ProtectedRoute>
+
         }
       >
+
 
         {/* =====================================================
             DASHBOARD
@@ -203,6 +255,7 @@ export default function App() {
             />
           }
         />
+
 
         <Route
           path="/dashboard"
@@ -221,6 +274,7 @@ export default function App() {
         <Route
           path="/calls"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -229,8 +283,11 @@ export default function App() {
                 "CLIENT",
               ]}
             >
+
               <Calls />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -242,6 +299,7 @@ export default function App() {
         <Route
           path="/billing"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -250,8 +308,11 @@ export default function App() {
                 "SUPER_ADMIN",
               ]}
             >
+
               <Billing />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -263,14 +324,18 @@ export default function App() {
         <Route
           path="/superadmin/companies"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
                 "SUPER_ADMIN",
               ]}
             >
+
               <Companies />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -282,6 +347,7 @@ export default function App() {
         <Route
           path="/analytics"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -289,8 +355,11 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <Analytics />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -302,6 +371,7 @@ export default function App() {
         <Route
           path="/dashboard/billing"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -309,8 +379,11 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <AdminBillingDashboard />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -322,16 +395,20 @@ export default function App() {
         <Route
           path="/rates"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
                 "SUPER_ADMIN",
               ]}
             >
+
               <RateManagement
                 user={user}
               />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -343,14 +420,18 @@ export default function App() {
         <Route
           path="/force-change-password"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
                 "CLIENT",
               ]}
             >
+
               <ForcePasswordChange />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -362,6 +443,7 @@ export default function App() {
         <Route
           path="/settings"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -370,27 +452,34 @@ export default function App() {
                 "CLIENT",
               ]}
             >
+
               <Settings />
+
             </ProtectedRoute>
+
           }
         />
 
 
         {/* =====================================================
-            SUPER ADMIN - ADMIN USERS
+            ADMIN USERS
         ===================================================== */}
 
         <Route
           path="/superadmin/admin-users"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
                 "SUPER_ADMIN",
               ]}
             >
+
               <AdminUsers />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -402,6 +491,7 @@ export default function App() {
         <Route
           path="/dashboard/clients"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -409,10 +499,13 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <Clients
                 user={user}
               />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -424,6 +517,7 @@ export default function App() {
         <Route
           path="/dashboard/number-pool"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -431,12 +525,16 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <NumberPool
                 user={user}
               />
+
             </ProtectedRoute>
+
           }
         />
+
 
         {/* =====================================================
             ASSIGN NUMBERS
@@ -445,16 +543,20 @@ export default function App() {
         <Route
           path="/dashboard/assign"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
                 "COMPANY_ADMIN",
               ]}
             >
+
               <AssignNumbers
                 user={user}
               />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -466,14 +568,18 @@ export default function App() {
         <Route
           path="/dashboard/countries"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
                 "SUPER_ADMIN",
               ]}
             >
+
               <Countries />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -485,6 +591,7 @@ export default function App() {
         <Route
           path="/cdr"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -492,8 +599,34 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <CDRPage />
+
             </ProtectedRoute>
+
+          }
+        />
+
+
+        {/* =====================================================
+            FAILED REPORTS
+        ===================================================== */}
+
+        <Route
+          path="/reports/failed"
+          element={
+
+            <ProtectedRoute
+              user={user}
+              allowedRoles={[
+                "COMPANY_ADMIN",
+              ]}
+            >
+
+              <FailedReportsPage />
+
+            </ProtectedRoute>
+
           }
         />
 
@@ -505,6 +638,7 @@ export default function App() {
         <Route
           path="/provision"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -512,8 +646,11 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <ProvisionPage />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -525,6 +662,7 @@ export default function App() {
         <Route
           path="/dashboard/carriers"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -532,8 +670,11 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <CarrierList />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -545,6 +686,7 @@ export default function App() {
         <Route
           path="/dashboard/terminations"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -552,8 +694,11 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <TerminationList />
+
             </ProtectedRoute>
+
           }
         />
 
@@ -565,6 +710,7 @@ export default function App() {
         <Route
           path="/dashboard/incoming-routes"
           element={
+
             <ProtectedRoute
               user={user}
               allowedRoles={[
@@ -572,15 +718,20 @@ export default function App() {
                 "COMPANY_ADMIN",
               ]}
             >
+
               <IncomingRoutes
                 user={user}
               />
+
             </ProtectedRoute>
+
           }
         />
 
       </Route>
 
     </Routes>
+
   );
+
 }

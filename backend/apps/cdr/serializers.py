@@ -22,8 +22,11 @@ class CallRecordSerializer(serializers.ModelSerializer):
     )
 
     carrier = serializers.SerializerMethodField()
+    carrier_ip = serializers.SerializerMethodField()
+
     termination = serializers.SerializerMethodField()
     number = serializers.SerializerMethodField()
+
     cli = serializers.CharField(
         source="caller_number",
         read_only=True,
@@ -61,22 +64,18 @@ class CallRecordSerializer(serializers.ModelSerializer):
     # =====================================================
 
     class Meta:
+
         model = CallRecord
 
         fields = [
 
-            # ---------------------------------------------
             # BASIC
-            # ---------------------------------------------
-
             "id",
 
-            # ---------------------------------------------
-            # REPORT COLUMNS
-            # ---------------------------------------------
-
+            # REPORT
             "date",
             "carrier",
+            "carrier_ip",
             "termination",
             "number",
             "cli",
@@ -89,10 +88,7 @@ class CallRecordSerializer(serializers.ModelSerializer):
             "client_payout",
             "cause",
 
-            # ---------------------------------------------
-            # EXISTING CDR DATA
-            # ---------------------------------------------
-
+            # EXISTING CDR
             "caller",
             "receiver",
 
@@ -120,10 +116,7 @@ class CallRecordSerializer(serializers.ModelSerializer):
             "answer_time",
             "end_time",
 
-            # ---------------------------------------------
             # RATING
-            # ---------------------------------------------
-
             "country",
             "destination",
             "prefix",
@@ -138,16 +131,10 @@ class CallRecordSerializer(serializers.ModelSerializer):
 
             "invoice_status",
 
-            # ---------------------------------------------
             # NUMBER POOL
-            # ---------------------------------------------
-
             "number_pool",
 
-            # ---------------------------------------------
             # SYSTEM
-            # ---------------------------------------------
-
             "created_at",
         ]
 
@@ -179,10 +166,45 @@ class CallRecordSerializer(serializers.ModelSerializer):
 
     def get_carrier(self, obj):
 
-        if obj.number_pool and obj.number_pool.carrier:
+        if (
+            obj.number_pool
+            and obj.number_pool.carrier
+        ):
             return obj.number_pool.carrier.name
 
         return None
+
+    # =====================================================
+    # CARRIER IP
+    # =====================================================
+
+    def get_carrier_ip(self, obj):
+
+        if not (
+            obj.number_pool
+            and obj.number_pool.carrier
+        ):
+            return None
+
+        carrier_ips = (
+            obj.number_pool
+            .carrier
+            .ips
+            .all()
+        )
+
+        ip_addresses = [
+            str(ip.ip_address)
+            for ip in carrier_ips
+            if ip.ip_address
+        ]
+
+        if not ip_addresses:
+            return None
+
+        return ", ".join(
+            ip_addresses
+        )
 
     # =====================================================
     # TERMINATION
@@ -190,7 +212,10 @@ class CallRecordSerializer(serializers.ModelSerializer):
 
     def get_termination(self, obj):
 
-        if obj.number_pool and obj.number_pool.termination:
+        if (
+            obj.number_pool
+            and obj.number_pool.termination
+        ):
             return obj.number_pool.termination.name
 
         return None
@@ -209,8 +234,10 @@ class CallRecordSerializer(serializers.ModelSerializer):
             if obj.number_pool.number:
                 return obj.number_pool.number
 
-        # Fallback for old CDR records
-        return obj.receiver_number or None
+        return (
+            obj.receiver_number
+            or None
+        )
 
     # =====================================================
     # CURRENCY
@@ -251,7 +278,10 @@ class CallRecordSerializer(serializers.ModelSerializer):
 
     def get_client(self, obj):
 
-        if obj.number_pool and obj.number_pool.client:
+        if (
+            obj.number_pool
+            and obj.number_pool.client
+        ):
             return obj.number_pool.client.name
 
         return None
@@ -262,8 +292,6 @@ class CallRecordSerializer(serializers.ModelSerializer):
 
     def get_client_payterm(self, obj):
 
-        # Client model currently does not contain
-        # a client payterm field.
         return None
 
     # =====================================================
@@ -272,6 +300,4 @@ class CallRecordSerializer(serializers.ModelSerializer):
 
     def get_client_payout(self, obj):
 
-        # Client model currently does not contain
-        # a client payout field.
         return None
