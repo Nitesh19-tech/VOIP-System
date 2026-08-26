@@ -189,19 +189,15 @@ class NumberPoolGenerator:
         )
 
         # -------------------------------------------------
-        # CARRIER IPS
+        # IMPORTANT
         # -------------------------------------------------
-
-        ips = list(
-            carrier.ips
-            .filter(
-                is_active=True
-            )
-            .order_by("id")
-        )
-
-        if not ips:
-            return ""
+        # Incoming DID ke liye Carrier IP ki zarurat nahi hai.
+        #
+        # Carrier already Asterisk ki IP par SIP INVITE
+        # bhej raha hai.
+        #
+        # Isliye yahan carrier.ips check nahi karna hai.
+        # -------------------------------------------------
 
         # -------------------------------------------------
         # ACTUAL INBOUND DIALPLAN
@@ -366,9 +362,6 @@ class NumberPoolGenerator:
                 "client",
                 "carrier",
                 "termination",
-            )
-            .prefetch_related(
-                "carrier__ips",
             )
             .order_by(
                 "did_number"
