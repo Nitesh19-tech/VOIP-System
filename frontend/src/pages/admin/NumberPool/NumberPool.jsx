@@ -179,7 +179,6 @@ export default function NumberPool({ user }) {
         err
       );
 
-
       setCountries([]);
 
     }
@@ -214,7 +213,6 @@ export default function NumberPool({ user }) {
         err
       );
 
-
       setCarriers([]);
 
     }
@@ -242,7 +240,9 @@ export default function NumberPool({ user }) {
       };
 
 
+      // =================================================
       // SEARCH
+      // =================================================
 
       if (search.trim()) {
 
@@ -252,7 +252,9 @@ export default function NumberPool({ user }) {
       }
 
 
+      // =================================================
       // COUNTRY
+      // =================================================
 
       if (country) {
 
@@ -262,7 +264,9 @@ export default function NumberPool({ user }) {
       }
 
 
+      // =================================================
       // CARRIER
+      // =================================================
 
       if (carrier) {
 
@@ -272,7 +276,9 @@ export default function NumberPool({ user }) {
       }
 
 
+      // =================================================
       // STATUS
+      // =================================================
 
       if (status) {
 
@@ -460,18 +466,25 @@ export default function NumberPool({ user }) {
   // =====================================================
 
   const openImport = () => {
+
     setShowImport(true);
+
   };
 
+
   const handleImportSuccess = async () => {
+
     setShowImport(false);
+
     setSelectedNumbers([]);
+
     setCurrentPage(1);
 
     await Promise.all([
       loadNumbers(),
       loadStatistics(),
     ]);
+
   };
 
 
@@ -570,9 +583,10 @@ export default function NumberPool({ user }) {
       setSelectedNumber(null);
 
 
-      await loadNumbers();
-
-      await loadStatistics();
+      await Promise.all([
+        loadNumbers(),
+        loadStatistics(),
+      ]);
 
     } catch (err) {
 
@@ -638,23 +652,82 @@ export default function NumberPool({ user }) {
       setDeleting(true);
 
 
-      await Promise.all(
+      // IMPORTANT:
+      // Make a copy because selectedNumbers
+      // will be cleared after successful delete.
 
-        selectedNumbers.map(
-          (id) =>
-            numberPoolService.deleteNumber(
-              id
-            )
-        )
+      const idsToDelete =
+        [...selectedNumbers];
 
+
+      // =================================================
+      // BACKEND DELETE
+      // =================================================
+
+      // =================================================
+      // BACKEND BULK DELETE
+      // =================================================
+      // ONE API request for all selected numbers.
+      // Backend performs ONE DB delete + ONE Asterisk sync.
+
+      const res =
+        await numberPoolService.bulkDelete(
+          idsToDelete
+        );
+
+      console.log(
+        "Bulk Delete Response:",
+        res.data
       );
 
+
+      // =================================================
+      // IMMEDIATE UI UPDATE
+      // =================================================
+
+      setNumbers(
+        (previous) =>
+          previous.filter(
+            (number) =>
+              !idsToDelete.includes(
+                number.id
+              )
+          )
+      );
+
+
+      // =================================================
+      // CLEAR SELECTION
+      // =================================================
 
       setSelectedNumbers([]);
 
 
+      // =================================================
+      // UPDATE PAGINATION LOCALLY
+      // =================================================
+
+      setPagination(
+        (previous) => ({
+          ...previous,
+
+          count: Math.max(
+            0,
+            (previous.count || 0) -
+              idsToDelete.length
+          ),
+
+        })
+      );
+
+
+      // =================================================
+      // IF PAGE BECOMES EMPTY
+      // =================================================
+
       if (
-        numbers.length === 1 &&
+        numbers.length <=
+          idsToDelete.length &&
         currentPage > 1
       ) {
 
@@ -666,14 +739,17 @@ export default function NumberPool({ user }) {
             )
         );
 
-      } else {
-
-        await loadNumbers();
-
       }
 
 
-      await loadStatistics();
+      // =================================================
+      // SERVER REFRESH
+      // =================================================
+
+      await Promise.all([
+        loadNumbers(),
+        loadStatistics(),
+      ]);
 
 
       alert(
@@ -693,6 +769,14 @@ export default function NumberPool({ user }) {
         "Bulk Delete Response:",
         err.response?.data
       );
+
+
+      // In case of partial failure,
+      // restore server state.
+
+      await loadNumbers();
+
+      await loadStatistics();
 
 
       alert(
@@ -745,24 +829,80 @@ export default function NumberPool({ user }) {
       setDeleting(true);
 
 
+      // IMPORTANT:
+      // Copy selected IDs before clearing selection.
+
+      const idsToUnallocate =
+        [...selectedNumbers];
+
+
+      // =================================================
+      // BACKEND UNALLOCATE
+      // =================================================
+
       const res =
         await numberPoolService.bulkUnallocate(
-          selectedNumbers
+          idsToUnallocate
         );
 
 
       const count =
         res.data?.unallocated_count ||
         res.data?.data?.unallocated_count ||
-        0;
+        idsToUnallocate.length;
 
+
+      // =================================================
+      // IMMEDIATE UI UPDATE
+      // =================================================
+
+      setNumbers(
+        (previous) =>
+          previous.map(
+            (number) => {
+
+              if (
+                !idsToUnallocate.includes(
+                  number.id
+                )
+              ) {
+
+                return number;
+
+              }
+
+
+              return {
+                ...number,
+
+                status: "AVAILABLE",
+
+                client: null,
+
+                assigned_at: null,
+
+              };
+
+            }
+          )
+      );
+
+
+      // =================================================
+      // CLEAR SELECTION
+      // =================================================
 
       setSelectedNumbers([]);
 
 
-      await loadNumbers();
+      // =================================================
+      // SERVER REFRESH
+      // =================================================
 
-      await loadStatistics();
+      await Promise.all([
+        loadNumbers(),
+        loadStatistics(),
+      ]);
 
 
       alert(
@@ -784,11 +924,19 @@ export default function NumberPool({ user }) {
       );
 
 
+      // Restore actual server state
+
+      await loadNumbers();
+
+      await loadStatistics();
+
+
       alert(
         err.response?.data?.message ||
         err.response?.data?.detail ||
         "Unable to unallocate selected numbers."
       );
+
 
     } finally {
 
@@ -810,27 +958,73 @@ export default function NumberPool({ user }) {
       setDeleting(true);
 
 
+      // =================================================
+      // BACKEND DELETE
+      // =================================================
+
       await numberPoolService.deleteNumber(
         id
       );
 
 
-      setShowDelete(false);
+      // =================================================
+      // IMMEDIATE UI UPDATE
+      // =================================================
 
-      setSelectedNumber(null);
+      setNumbers(
+        (previous) =>
+          previous.filter(
+            (number) =>
+              number.id !== id
+          )
+      );
 
+
+      // =================================================
+      // REMOVE FROM SELECTION
+      // =================================================
 
       setSelectedNumbers(
-        (prev) =>
-          prev.filter(
+        (previous) =>
+          previous.filter(
             (numberId) =>
               numberId !== id
           )
       );
 
 
+      // =================================================
+      // CLOSE MODAL
+      // =================================================
+
+      setShowDelete(false);
+
+      setSelectedNumber(null);
+
+
+      // =================================================
+      // UPDATE PAGINATION COUNT
+      // =================================================
+
+      setPagination(
+        (previous) => ({
+          ...previous,
+
+          count: Math.max(
+            0,
+            (previous.count || 0) - 1
+          ),
+
+        })
+      );
+
+
+      // =================================================
+      // PAGE CORRECTION
+      // =================================================
+
       if (
-        numbers.length === 1 &&
+        numbers.length <= 1 &&
         currentPage > 1
       ) {
 
@@ -842,14 +1036,17 @@ export default function NumberPool({ user }) {
             )
         );
 
-      } else {
-
-        await loadNumbers();
-
       }
 
 
-      await loadStatistics();
+      // =================================================
+      // SERVER REFRESH
+      // =================================================
+
+      await Promise.all([
+        loadNumbers(),
+        loadStatistics(),
+      ]);
 
 
     } catch (err) {
@@ -866,11 +1063,19 @@ export default function NumberPool({ user }) {
       );
 
 
+      // Restore actual server state
+
+      await loadNumbers();
+
+      await loadStatistics();
+
+
       alert(
         err.response?.data?.message ||
         err.response?.data?.detail ||
         "Unable to delete number."
       );
+
 
     } finally {
 
@@ -911,10 +1116,12 @@ export default function NumberPool({ user }) {
     const value =
       e.target.value;
 
+
     const newSize =
       value === "all"
         ? "all"
         : Number(value);
+
 
     setPageSize(newSize);
 
@@ -975,9 +1182,12 @@ export default function NumberPool({ user }) {
 
       setShowAllocation(false);
 
-      await loadNumbers();
+      setSelectedNumbers([]);
 
-      await loadStatistics();
+      await Promise.all([
+        loadNumbers(),
+        loadStatistics(),
+      ]);
 
     };
 
@@ -998,12 +1208,15 @@ export default function NumberPool({ user }) {
 
 
   const isAllPageSize =
-    String(pageSize).toLowerCase() === "all";
+    String(pageSize).toLowerCase() ===
+    "all";
+
 
   const effectivePageSize =
     isAllPageSize
       ? totalCount || 1
       : Number(pageSize) || 25;
+
 
   const startNumber =
     totalCount === 0
@@ -1012,6 +1225,7 @@ export default function NumberPool({ user }) {
           (currentPage - 1) *
             effectivePageSize
         ) + 1;
+
 
   const endNumber =
     totalCount === 0
@@ -1074,8 +1288,13 @@ export default function NumberPool({ user }) {
               disabled:opacity-50
             "
           >
+
             <Upload size={18} />
-            <span>Import Numbers</span>
+
+            <span>
+              Import Numbers
+            </span>
+
           </button>
 
 
@@ -1173,9 +1392,7 @@ export default function NumberPool({ user }) {
 
           <button
             type="button"
-            onClick={
-              openAllocation
-            }
+            onClick={openAllocation}
             disabled={
               selectedNumbers.length === 0 ||
               deleting
@@ -1214,9 +1431,7 @@ export default function NumberPool({ user }) {
 
           <button
             type="button"
-            onClick={
-              handleBulkUnallocate
-            }
+            onClick={handleBulkUnallocate}
             disabled={
               selectedNumbers.length === 0 ||
               deleting
@@ -1255,9 +1470,7 @@ export default function NumberPool({ user }) {
 
           <button
             type="button"
-            onClick={
-              handleBulkDelete
-            }
+            onClick={handleBulkDelete}
             disabled={
               selectedNumbers.length === 0 ||
               deleting
@@ -1308,8 +1521,6 @@ export default function NumberPool({ user }) {
         "
       >
 
-        {/* TOTAL */}
-
         <StatCard
           label="Total Numbers"
           value={stats.total}
@@ -1324,8 +1535,6 @@ export default function NumberPool({ user }) {
         />
 
 
-        {/* AVAILABLE */}
-
         <StatCard
           label="Available"
           value={stats.available}
@@ -1336,8 +1545,6 @@ export default function NumberPool({ user }) {
           "
         />
 
-
-        {/* ASSIGNED */}
 
         <StatCard
           label="Assigned"
@@ -1350,8 +1557,6 @@ export default function NumberPool({ user }) {
         />
 
 
-        {/* RESERVED */}
-
         <StatCard
           label="Reserved"
           value={stats.reserved}
@@ -1362,8 +1567,6 @@ export default function NumberPool({ user }) {
           "
         />
 
-
-        {/* DISABLED */}
 
         <StatCard
           label="Disabled"
@@ -1511,7 +1714,9 @@ export default function NumberPool({ user }) {
                     key={item.id}
                     value={item.id}
                   >
+
                     {item.name}
+
                   </option>
 
                 )
@@ -1575,7 +1780,9 @@ export default function NumberPool({ user }) {
                     key={item.id}
                     value={item.id}
                   >
+
                     {item.name}
+
                   </option>
 
                 )
@@ -1616,21 +1823,17 @@ export default function NumberPool({ user }) {
               All Status
             </option>
 
-
             <option value="AVAILABLE">
               🟢 Available
             </option>
-
 
             <option value="ASSIGNED">
               🔵 Assigned
             </option>
 
-
             <option value="RESERVED">
               🟡 Reserved
             </option>
-
 
             <option value="DISABLED">
               🔴 Disabled
@@ -1673,9 +1876,13 @@ export default function NumberPool({ user }) {
                 dark:text-white
               "
             >
+
               {startNumber}
+
               {" - "}
+
               {endNumber}
+
             </span>
 
             of {totalCount} Numbers
@@ -1705,9 +1912,7 @@ export default function NumberPool({ user }) {
 
           <button
             type="button"
-            onClick={
-              clearFilters
-            }
+            onClick={clearFilters}
             className="
               rounded-xl
               bg-slate-800
@@ -1718,7 +1923,9 @@ export default function NumberPool({ user }) {
               hover:bg-slate-700
             "
           >
+
             Clear Filters
+
           </button>
 
         </div>
@@ -1771,7 +1978,9 @@ export default function NumberPool({ user }) {
                 dark:text-white
               "
             >
+
               DID Inventory
+
             </h3>
 
 
@@ -1783,7 +1992,9 @@ export default function NumberPool({ user }) {
                 dark:text-slate-400
               "
             >
+
               Manage assigned and available phone numbers
+
             </p>
 
           </div>
@@ -1815,7 +2026,9 @@ export default function NumberPool({ user }) {
                 dark:text-slate-300
               "
             >
+
               Rows per page
+
             </span>
 
 
@@ -1890,7 +2103,9 @@ export default function NumberPool({ user }) {
                 dark:text-blue-300
               "
             >
+
               {totalCount} Numbers
+
             </span>
 
           </div>
@@ -1962,7 +2177,9 @@ export default function NumberPool({ user }) {
                     dark:text-white
                   "
                 >
+
                   {startNumber}
+
                 </span>
 
                 -
@@ -1975,7 +2192,9 @@ export default function NumberPool({ user }) {
                     dark:text-white
                   "
                 >
+
                   {endNumber}
+
                 </span>
 
                 of
@@ -1988,7 +2207,9 @@ export default function NumberPool({ user }) {
                     dark:text-white
                   "
                 >
+
                   {totalCount}
+
                 </span>
 
               </div>
@@ -2032,7 +2253,9 @@ export default function NumberPool({ user }) {
                     dark:hover:bg-slate-800
                   "
                 >
+
                   ‹ Previous
+
                 </button>
 
 
@@ -2048,9 +2271,13 @@ export default function NumberPool({ user }) {
                     dark:text-slate-200
                   "
                 >
+
                   Page {currentPage}
+
                   {" / "}
+
                   {totalPages}
+
                 </span>
 
 
@@ -2082,7 +2309,9 @@ export default function NumberPool({ user }) {
                     dark:hover:bg-slate-800
                   "
                 >
+
                   Next ›
+
                 </button>
 
               </div>
@@ -2100,10 +2329,15 @@ export default function NumberPool({ user }) {
 
       <NumberImportModal
         open={showImport}
-        onClose={() => setShowImport(false)}
-        onSuccess={handleImportSuccess}
+        onClose={() =>
+          setShowImport(false)
+        }
+        onSuccess={
+          handleImportSuccess
+        }
         carriers={carriers}
       />
+
 
       {/* =================================================
           NUMBER FORM
@@ -2200,7 +2434,9 @@ function StatCard({
           opacity-70
         "
       >
+
         {label}
+
       </p>
 
 
@@ -2211,7 +2447,9 @@ function StatCard({
           font-bold
         "
       >
+
         {value || 0}
+
       </h2>
 
     </div>

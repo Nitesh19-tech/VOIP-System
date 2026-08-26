@@ -8,7 +8,10 @@ from phonenumbers import (
     region_code_for_number,
 )
 
+from django.db import transaction
+
 from apps.accounts.constants import COMPANY_ADMIN
+from apps.asterisk.asterisk_service import AsteriskService
 
 from .models import Country, NumberPool
 from apps.carriers.models import Carrier, Termination
@@ -41,14 +44,12 @@ class NumberPoolImportService:
         if value.endswith(".0"):
 
             try:
-
                 value = value[:-2]
 
             except Exception:
                 pass
 
         return value
-
 
     # =====================================================
     # DECIMAL
@@ -80,7 +81,6 @@ class NumberPoolImportService:
 
             return Decimal(default)
 
-
     # =====================================================
     # INTEGER
     # =====================================================
@@ -111,7 +111,6 @@ class NumberPoolImportService:
 
             return default
 
-
     # =====================================================
     # NORMALIZE NUMBER
     # =====================================================
@@ -136,7 +135,6 @@ class NumberPoolImportService:
         )
 
         return digits
-
 
     # =====================================================
     # FIND COUNTRY FROM PHONE NUMBER
@@ -166,9 +164,7 @@ class NumberPoolImportService:
         if not digits:
             return None
 
-
         possible_numbers = []
-
 
         # -------------------------------------------------
         # INTERNATIONAL NUMBER
@@ -177,7 +173,6 @@ class NumberPoolImportService:
         possible_numbers.append(
             f"+{digits}"
         )
-
 
         # -------------------------------------------------
         # 10 DIGIT NANP NUMBER
@@ -188,7 +183,6 @@ class NumberPoolImportService:
             possible_numbers.append(
                 f"+1{digits}"
             )
-
 
         # -------------------------------------------------
         # TRY ALL POSSIBILITIES
@@ -210,12 +204,10 @@ class NumberPoolImportService:
                 ):
                     continue
 
-
                 if not phonenumbers.is_valid_number(
                     parsed
                 ):
                     continue
-
 
                 region = (
                     region_code_for_number(
@@ -223,13 +215,10 @@ class NumberPoolImportService:
                     )
                 )
 
-
                 if not region:
                     continue
 
-
                 region = region.upper()
-
 
                 # -----------------------------------------
                 # FIND COUNTRY BY ISO
@@ -239,11 +228,8 @@ class NumberPoolImportService:
                     region
                 )
 
-
                 if country:
-
                     return country
-
 
             except NumberParseException:
 
@@ -258,9 +244,7 @@ class NumberPoolImportService:
 
                 continue
 
-
         return None
-
 
     # =====================================================
     # FIND COUNTRY FROM CSV NAME
@@ -281,9 +265,7 @@ class NumberPoolImportService:
         if not value:
             return None
 
-
         value_lower = value.lower()
-
 
         # Exact match
         country = countries_by_name.get(
@@ -292,7 +274,6 @@ class NumberPoolImportService:
 
         if country:
             return country
-
 
         # Some common variations
         aliases = {
@@ -317,19 +298,15 @@ class NumberPoolImportService:
 
         }
 
-
         iso_code = aliases.get(
             value_lower
         )
-
 
         if iso_code:
 
             return iso_code
 
-
         return None
-
 
     # =====================================================
     # FIND COUNTRY FROM RANGE NAME
@@ -350,9 +327,7 @@ class NumberPoolImportService:
         if not range_name:
             return None
 
-
         range_lower = range_name.lower()
-
 
         # Exact match first
 
@@ -361,9 +336,7 @@ class NumberPoolImportService:
         )
 
         if country:
-
             return country
-
 
         # Partial match
 
@@ -373,70 +346,148 @@ class NumberPoolImportService:
         ) in countries_by_name.items():
 
             if country_name in range_lower:
-
                 return country
 
-
         return None
-
 
     # =====================================================
     # IMPORT HELPERS
     # =====================================================
 
     @staticmethod
-    def _resolve_fk(value, model):
+    def _resolve_fk(
+        value,
+        model,
+    ):
         """Resolve FK from instance, primary key, or name."""
-        if value in (None, ""):
+
+        if value in (
+            None,
+            "",
+        ):
             return None
 
-        if isinstance(value, model):
+        if isinstance(
+            value,
+            model,
+        ):
             return value
 
-        value = NumberPoolImportService.clean_value(value)
+        value = (
+            NumberPoolImportService.clean_value(
+                value
+            )
+        )
 
         if not value:
             return None
 
         try:
-            return model.objects.get(pk=int(value))
-        except (ValueError, TypeError, model.DoesNotExist):
+
+            return model.objects.get(
+                pk=int(value)
+            )
+
+        except (
+            ValueError,
+            TypeError,
+            model.DoesNotExist,
+        ):
             pass
 
         try:
-            return model.objects.filter(name__iexact=value).first()
+
+            return (
+                model.objects
+                .filter(
+                    name__iexact=value
+                )
+                .first()
+            )
+
         except Exception:
+
             return None
 
     @staticmethod
-    def _normalize_service_variables(value):
+    def _normalize_service_variables(
+        value,
+    ):
         """Keep service variables JSON serializable."""
-        if value in (None, ""):
+
+        if value in (
+            None,
+            "",
+        ):
             return {}
 
-        if isinstance(value, dict):
+        if isinstance(
+            value,
+            dict,
+        ):
             return value
 
-        if isinstance(value, str):
+        if isinstance(
+            value,
+            str,
+        ):
+
             value = value.strip()
 
             if not value:
                 return {}
 
             try:
+
                 import json
 
-                parsed = json.loads(value)
+                parsed = json.loads(
+                    value
+                )
 
-                if isinstance(parsed, dict):
+                if isinstance(
+                    parsed,
+                    dict,
+                ):
                     return parsed
 
             except Exception:
                 pass
 
-            return {"value": value}
+            return {
+                "value": value
+            }
 
-        return {"value": str(value)}
+        return {
+            "value": str(value)
+        }
+
+    # =====================================================
+    # ASTERISK SYNC
+    # =====================================================
+
+    @staticmethod
+    def sync_asterisk_inbound():
+
+        try:
+
+            print(
+                "Starting Asterisk inbound sync after bulk import..."
+            )
+
+            AsteriskService.upload_inbound()
+
+            AsteriskService.reload_dialplan()
+
+            print(
+                "Asterisk inbound sync completed successfully."
+            )
+
+        except Exception as e:
+
+            print(
+                f"Asterisk inbound provisioning failed: {e}"
+            )
 
     # =====================================================
     # IMPORT
@@ -464,39 +515,67 @@ class NumberPoolImportService:
         # IMPORT OPTIONS
         # =================================================
 
-        carrier_obj = NumberPoolImportService._resolve_fk(
-            carrier,
-            Carrier,
+        carrier_obj = (
+            NumberPoolImportService._resolve_fk(
+                carrier,
+                Carrier,
+            )
         )
 
-        termination_obj = NumberPoolImportService._resolve_fk(
-            termination,
-            Termination,
+        termination_obj = (
+            NumberPoolImportService._resolve_fk(
+                termination,
+                Termination,
+            )
         )
 
         client_obj = None
 
-        if client not in (None, ""):
+        if client not in (
+            None,
+            "",
+        ):
+
             try:
+
                 from apps.clients.models import Client
 
                 client_obj = (
-                    NumberPoolImportService._resolve_fk(
+                    NumberPoolImportService
+                    ._resolve_fk(
                         client,
                         Client,
                     )
                 )
+
             except Exception:
+
                 client_obj = None
 
         try:
-            max_calls_value = int(max_calls or 0)
-        except (ValueError, TypeError):
+
+            max_calls_value = int(
+                max_calls or 0
+            )
+
+        except (
+            ValueError,
+            TypeError,
+        ):
+
             max_calls_value = 0
 
         try:
-            max_duration_value = int(max_duration or 0)
-        except (ValueError, TypeError):
+
+            max_duration_value = int(
+                max_duration or 0
+            )
+
+        except (
+            ValueError,
+            TypeError,
+        ):
+
             max_duration_value = 0
 
         service_variables_value = (
@@ -620,7 +699,9 @@ class NumberPoolImportService:
                 for column in df.columns
                 if (
                     column == "payterm"
-                    or column.startswith("payterm(")
+                    or column.startswith(
+                        "payterm("
+                    )
                 )
             ),
             None,
@@ -1003,7 +1084,9 @@ class NumberPoolImportService:
 
                     number_service=(
                         NumberPoolImportService
-                        .clean_value(service_id)
+                        .clean_value(
+                            service_id
+                        )
                     ),
 
                     service_variables=(
@@ -1048,6 +1131,20 @@ class NumberPoolImportService:
             NumberPool.objects.bulk_create(
                 objects,
                 batch_size=1000,
+            )
+
+            # -------------------------------------------------
+            # IMPORTANT:
+            # bulk_create() does NOT execute the normal
+            # NumberPool save/create hooks.
+            #
+            # Therefore explicitly sync Asterisk after
+            # successful database commit.
+            # -------------------------------------------------
+
+            transaction.on_commit(
+                NumberPoolImportService
+                .sync_asterisk_inbound
             )
 
         # =================================================

@@ -7,6 +7,7 @@ from .views import (
     NumberPoolStatisticsAPIView,
     BulkAllocationAPIView,
     BulkUnallocationAPIView,
+    BulkDeleteAPIView,
     AutoAssignAPIView,
 )
 
@@ -65,6 +66,16 @@ urlpatterns = [
         "bulk-unallocation/",
         BulkUnallocationAPIView.as_view(),
         name="bulk-unallocation",
+    ),
+
+    # =====================================================
+    # Bulk Delete
+    # =====================================================
+
+    path(
+        "bulk-delete/",
+        BulkDeleteAPIView.as_view(),
+        name="bulk-delete",
     ),
 
     # =====================================================

@@ -204,7 +204,7 @@ class NumberPoolGenerator:
             return ""
 
         # -------------------------------------------------
-        # ACTUAL ASTERISK DIALPLAN
+        # ACTUAL INBOUND DIALPLAN
         # -------------------------------------------------
 
         lines = []
@@ -233,6 +233,10 @@ class NumberPoolGenerator:
             "; =================================================="
         )
 
+        # -------------------------------------------------
+        # INCOMING DID
+        # -------------------------------------------------
+
         lines.append(
             f"exten => {did},1,NoOp(Incoming DID {did})"
         )
@@ -250,11 +254,28 @@ class NumberPoolGenerator:
         )
 
         # -------------------------------------------------
-        # TEMPORARY TEST HANDLER
+        # PRESERVE / LOG CALLER ID
         # -------------------------------------------------
-        # अभी destination define नहीं है.
-        # इसलिए call को safely hangup करेंगे.
-        # बाद में actual destination logic यहाँ आएगा.
+
+        lines.append(
+            ' same => n,NoOp(Incoming CLI: ${CALLERID(all)})'
+        )
+
+        lines.append(
+            ' same => n,NoOp(Incoming Number: ${EXTEN})'
+        )
+
+        # -------------------------------------------------
+        # RECEIVE IN ASTERISK
+        # -------------------------------------------------
+
+        lines.append(
+            " same => n,Answer()"
+        )
+
+        lines.append(
+            " same => n,Wait(60)"
+        )
 
         lines.append(
             " same => n,Hangup()"

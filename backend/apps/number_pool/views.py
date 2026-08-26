@@ -8,6 +8,7 @@ from .serializers import (
     NumberPoolSerializer,
     BulkAllocationSerializer,
     BulkUnallocationSerializer,
+    BulkDeleteSerializer,
     AutoAssignSerializer,
 )
 
@@ -509,6 +510,102 @@ class BulkUnallocationAPIView(APIView):
                 {
                     "success": False,
                     "message": "Internal server error.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+
+# =========================================================
+# BULK DELETE
+# =========================================================
+
+class BulkDeleteAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = BulkDeleteSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        try:
+
+            result = NumberPoolService.bulk_delete(
+                serializer.validated_data[
+                    "number_ids"
+                ],
+                request.user,
+            )
+
+            # -------------------------------------------------
+            # Support both:
+            #   integer result
+            #   {"deleted": count, ...} result
+            # -------------------------------------------------
+
+            if isinstance(result, dict):
+
+                deleted_count = result.get(
+                    "deleted",
+                    result.get(
+                        "deleted_count",
+                        0,
+                    ),
+                )
+
+                response_data = result
+
+            else:
+
+                deleted_count = result
+
+                response_data = {
+                    "deleted": deleted_count,
+                }
+
+            return Response(
+                {
+                    "success": True,
+                    "deleted_count": deleted_count,
+                    "message": (
+                        f"{deleted_count} numbers "
+                        "deleted successfully."
+                    ),
+                    "data": response_data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+
+            print(
+                "Bulk Delete Error:",
+                e,
+            )
+
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "Unable to delete "
+                        "selected numbers."
+                    ),
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

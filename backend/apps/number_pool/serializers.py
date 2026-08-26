@@ -18,6 +18,7 @@ User = get_user_model()
 class CountrySerializer(serializers.ModelSerializer):
 
     class Meta:
+
         model = Country
 
         fields = "__all__"
@@ -152,6 +153,7 @@ class NumberPoolSerializer(serializers.ModelSerializer):
         model = NumberPool
 
         fields = [
+
             "id",
 
             # ADMIN
@@ -330,7 +332,10 @@ class NumberPoolSerializer(serializers.ModelSerializer):
         )
 
         number = attrs.get("number")
-        did_number = attrs.get("did_number")
+
+        did_number = attrs.get(
+            "did_number"
+        )
 
         # -------------------------------------------------
         # SINGLE
@@ -341,7 +346,8 @@ class NumberPoolSerializer(serializers.ModelSerializer):
             if not number and not did_number:
 
                 raise serializers.ValidationError({
-                    "number": "Number is required."
+                    "number":
+                    "Number is required."
                 })
 
         # -------------------------------------------------
@@ -353,7 +359,8 @@ class NumberPoolSerializer(serializers.ModelSerializer):
             if not number and not did_number:
 
                 raise serializers.ValidationError({
-                    "number": "First Number is required."
+                    "number":
+                    "First Number is required."
                 })
 
             length = attrs.get(
@@ -460,6 +467,7 @@ class NumberPoolSerializer(serializers.ModelSerializer):
         ):
 
             attrs["number_type"] = "TEST"
+
             attrs["is_test_number"] = True
 
         else:
@@ -491,11 +499,15 @@ class NumberPoolSerializer(serializers.ModelSerializer):
 
         elif mode == "CSV":
 
-            csv_numbers = attrs.get(
-                "csv_numbers"
-            ) or attrs.get(
-                "number_list"
-            ) or []
+            csv_numbers = (
+                attrs.get(
+                    "csv_numbers"
+                )
+                or attrs.get(
+                    "number_list"
+                )
+                or []
+            )
 
             attrs["total_numbers"] = len(
                 csv_numbers
@@ -512,7 +524,9 @@ class NumberPoolSerializer(serializers.ModelSerializer):
 # BULK ALLOCATION SERIALIZER
 # =========================================================
 
-class BulkAllocationSerializer(serializers.Serializer):
+class BulkAllocationSerializer(
+    serializers.Serializer
+):
 
     number_ids = serializers.ListField(
         child=serializers.IntegerField(
@@ -531,9 +545,17 @@ class BulkAllocationSerializer(serializers.Serializer):
 
     def validate_number_ids(self, value):
 
+        # -------------------------------------------------
+        # REMOVE DUPLICATES
+        # -------------------------------------------------
+
         value = list(
             dict.fromkeys(value)
         )
+
+        # -------------------------------------------------
+        # FIND NUMBERS
+        # -------------------------------------------------
 
         numbers = NumberPool.objects.filter(
             id__in=value
@@ -546,6 +568,10 @@ class BulkAllocationSerializer(serializers.Serializer):
             )
         )
 
+        # -------------------------------------------------
+        # MISSING IDS
+        # -------------------------------------------------
+
         missing_ids = [
             number_id
             for number_id in value
@@ -557,6 +583,10 @@ class BulkAllocationSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 f"Number IDs not found: {missing_ids}"
             )
+
+        # -------------------------------------------------
+        # ONLY AVAILABLE NUMBERS CAN BE ALLOCATED
+        # -------------------------------------------------
 
         unavailable_numbers = list(
             numbers.exclude(
@@ -584,7 +614,9 @@ class BulkAllocationSerializer(serializers.Serializer):
 # BULK UNALLOCATION SERIALIZER
 # =========================================================
 
-class BulkUnallocationSerializer(serializers.Serializer):
+class BulkUnallocationSerializer(
+    serializers.Serializer
+):
 
     number_ids = serializers.ListField(
         child=serializers.IntegerField(
@@ -595,9 +627,17 @@ class BulkUnallocationSerializer(serializers.Serializer):
 
     def validate_number_ids(self, value):
 
+        # -------------------------------------------------
+        # REMOVE DUPLICATES
+        # -------------------------------------------------
+
         value = list(
             dict.fromkeys(value)
         )
+
+        # -------------------------------------------------
+        # FIND EXISTING NUMBERS
+        # -------------------------------------------------
 
         existing_ids = set(
             NumberPool.objects.filter(
@@ -608,6 +648,10 @@ class BulkUnallocationSerializer(serializers.Serializer):
             )
         )
 
+        # -------------------------------------------------
+        # MISSING IDS
+        # -------------------------------------------------
+
         missing_ids = [
             number_id
             for number_id in value
@@ -616,9 +660,14 @@ class BulkUnallocationSerializer(serializers.Serializer):
 
         if missing_ids:
 
-            raise serializers.ValidationError(
+            raise serializers.ValidationError({
+                "number_ids":
                 f"Number IDs not found: {missing_ids}"
-            )
+            })
+
+        # -------------------------------------------------
+        # FIND ASSIGNED NUMBERS
+        # -------------------------------------------------
 
         assigned_ids = set(
             NumberPool.objects.filter(
@@ -630,18 +679,92 @@ class BulkUnallocationSerializer(serializers.Serializer):
             )
         )
 
-        not_assigned = [
-            number_id
-            for number_id in value
-            if number_id not in assigned_ids
-        ]
+        # -------------------------------------------------
+        # NOTHING TO UNALLOCATE
+        # -------------------------------------------------
 
-        if not_assigned:
+        if not assigned_ids:
 
             raise serializers.ValidationError({
                 "number_ids":
-                "Some selected numbers are not assigned."
+                "None of the selected numbers are assigned."
             })
+
+        # -------------------------------------------------
+        # IMPORTANT
+        #
+        # Only ASSIGNED numbers are returned.
+        #
+        # AVAILABLE / RESERVED / DISABLED numbers
+        # are ignored.
+        #
+        # This prevents one invalid selection from
+        # blocking the complete bulk operation.
+        # -------------------------------------------------
+
+        return list(
+            assigned_ids
+        )
+
+
+# =========================================================
+# BULK DELETE SERIALIZER
+# =========================================================
+
+class BulkDeleteSerializer(
+    serializers.Serializer
+):
+
+    number_ids = serializers.ListField(
+        child=serializers.IntegerField(
+            min_value=1
+        ),
+        allow_empty=False,
+    )
+
+    def validate_number_ids(self, value):
+
+        # -------------------------------------------------
+        # REMOVE DUPLICATES
+        # -------------------------------------------------
+
+        value = list(
+            dict.fromkeys(value)
+        )
+
+        # -------------------------------------------------
+        # FIND EXISTING NUMBERS
+        # -------------------------------------------------
+
+        existing_ids = set(
+            NumberPool.objects.filter(
+                id__in=value
+            ).values_list(
+                "id",
+                flat=True
+            )
+        )
+
+        # -------------------------------------------------
+        # MISSING IDS
+        # -------------------------------------------------
+
+        missing_ids = [
+            number_id
+            for number_id in value
+            if number_id not in existing_ids
+        ]
+
+        if missing_ids:
+
+            raise serializers.ValidationError({
+                "number_ids":
+                f"Number IDs not found: {missing_ids}"
+            })
+
+        # -------------------------------------------------
+        # RETURN VALID IDS
+        # -------------------------------------------------
 
         return value
 
@@ -650,23 +773,26 @@ class BulkUnallocationSerializer(serializers.Serializer):
 # AUTO ASSIGN SERIALIZER
 # =========================================================
 
-class AutoAssignSerializer(serializers.Serializer):
+class AutoAssignSerializer(
+    serializers.Serializer
+):
 
     carrier = serializers.PrimaryKeyRelatedField(
         queryset=Carrier.objects.filter(
-            is_active=True,
+            is_active=True
         )
     )
 
     termination = serializers.PrimaryKeyRelatedField(
         queryset=Termination.objects.filter(
-            is_active=True,
+            is_active=True
         ),
         required=False,
         allow_null=True,
     )
 
     # CLIENT IS OPTIONAL
+
     client = serializers.PrimaryKeyRelatedField(
         queryset=Client.objects.filter(
             is_active=True
@@ -677,7 +803,7 @@ class AutoAssignSerializer(serializers.Serializer):
     )
 
     quantity = serializers.IntegerField(
-        min_value=1,
+        min_value=1
     )
 
     prefix = serializers.CharField(
@@ -695,9 +821,12 @@ class AutoAssignSerializer(serializers.Serializer):
 
     def validate(self, attrs):
 
-        # Client is optional. If the frontend does not send it,
-        # keep the value as None and continue allocation.
+        # -------------------------------------------------
+        # CLIENT IS OPTIONAL
+        # -------------------------------------------------
+
         if "client" not in attrs:
+
             attrs["client"] = None
 
         carrier = attrs["carrier"]
@@ -709,6 +838,10 @@ class AutoAssignSerializer(serializers.Serializer):
         payment_term = attrs.get(
             "payment_term"
         )
+
+        # -------------------------------------------------
+        # TERMINATION
+        # -------------------------------------------------
 
         if termination:
 
@@ -730,7 +863,10 @@ class AutoAssignSerializer(serializers.Serializer):
                     termination_payment_term
                 )
 
-            elif payment_term != termination_payment_term:
+            elif (
+                payment_term !=
+                termination_payment_term
+            ):
 
                 raise serializers.ValidationError({
                     "payment_term":
@@ -738,13 +874,23 @@ class AutoAssignSerializer(serializers.Serializer):
                     "match the selected termination."
                 })
 
+        # -------------------------------------------------
+        # PREFIX
+        # -------------------------------------------------
+
         prefix = attrs.get(
             "prefix"
         )
 
         if prefix:
 
-            attrs["prefix"] = prefix.strip()
+            attrs["prefix"] = (
+                prefix.strip()
+            )
+
+        # -------------------------------------------------
+        # QUANTITY
+        # -------------------------------------------------
 
         quantity = attrs.get(
             "quantity"

@@ -1167,6 +1167,95 @@ class NumberPoolService:
         )
 
     # =====================================================
+    # BULK DELETE NUMBERS
+    # =====================================================
+
+    @staticmethod
+    @transaction.atomic
+    def bulk_delete(
+        number_ids,
+        user,
+    ):
+        """
+        Delete multiple NumberPool records in one transaction.
+
+        Only SUPER_ADMIN and COMPANY_ADMIN can perform bulk delete.
+        Asterisk provisioning/reload is triggered only once after the
+        database transaction commits successfully.
+        """
+
+        if user.role not in [
+            SUPER_ADMIN,
+            COMPANY_ADMIN,
+        ]:
+            raise ValueError(
+                "You do not have permission to delete numbers."
+            )
+
+        if not number_ids:
+            raise ValueError(
+                "No numbers selected."
+            )
+
+        # Remove duplicate IDs while preserving order.
+        number_ids = list(dict.fromkeys(number_ids))
+
+        numbers = list(
+            NumberPool.objects
+            .select_for_update()
+            .filter(id__in=number_ids)
+        )
+
+        if not numbers:
+            raise ValueError(
+                "No numbers found."
+            )
+
+        found_ids = {
+            number.id
+            for number in numbers
+        }
+
+        missing_ids = [
+            number_id
+            for number_id in number_ids
+            if number_id not in found_ids
+        ]
+
+        if missing_ids:
+            raise ValueError(
+                f"Number IDs not found: {missing_ids}"
+            )
+
+        deleted_numbers = [
+            number.did_number
+            for number in numbers
+        ]
+
+        try:
+            # delete() on the queryset performs a bulk delete and
+            # respects Django's related-object protection rules.
+            NumberPool.objects.filter(
+                id__in=number_ids
+            ).delete()
+
+        except ProtectedError:
+            raise ValueError(
+                "One or more selected numbers are linked with "
+                "other records and cannot be deleted."
+            )
+
+        # Sync Asterisk only once after the transaction commits.
+        transaction.on_commit(
+            NumberPoolService.sync_asterisk_inbound
+        )
+
+        return {
+            "deleted": len(deleted_numbers),
+            "numbers": deleted_numbers,
+        }
+
+    # =====================================================
     # BULK ALLOCATION
     # =====================================================
 

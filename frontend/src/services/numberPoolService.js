@@ -74,13 +74,32 @@ const numberPoolService = {
 
 
     // =====================================================
-    // DELETE NUMBER
+    // DELETE SINGLE NUMBER
     // =====================================================
 
     deleteNumber(id) {
 
         return API.delete(
             `numbers/${id}/`
+        );
+    },
+
+
+    // =====================================================
+    // BULK DELETE NUMBERS
+    // =====================================================
+
+    bulkDelete(numberIds) {
+
+        return API.post(
+            "numbers/bulk-delete/",
+            {
+                number_ids:
+                    numberIds,
+            },
+            {
+                timeout: 120000,
+            }
         );
     },
 
@@ -212,6 +231,7 @@ const numberPoolService = {
         console.log(
             "Number Import FormData:"
         );
+
 
         for (
             const [key, value]
