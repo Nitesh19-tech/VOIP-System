@@ -514,12 +514,6 @@ class NumberPoolService:
             )
 
         # -------------------------------------------------
-        # COUNTRY
-        # -------------------------------------------------
-
-        country_hint = data.get("country")
-
-        # -------------------------------------------------
         # CREATE
         # -------------------------------------------------
 
@@ -551,14 +545,6 @@ class NumberPoolService:
                 numbers
             ):
 
-                country = (
-                    NumberPoolService
-                    ._resolve_country(
-                        value,
-                        country_hint,
-                    )
-                )
-
                 current_is_test = (
                     index == test_index
                 )
@@ -585,7 +571,6 @@ class NumberPoolService:
 
                         termination=termination,
 
-                        country=country,
 
                         did_number=value,
 
@@ -656,7 +641,6 @@ class NumberPoolService:
         queryset = NumberPool.objects.select_related(
             "admin",
             "client",
-            "country",
             "carrier",
             "termination",
         )
@@ -699,8 +683,6 @@ class NumberPoolService:
 
         search = filters.get("search")
 
-        country = filters.get("country")
-
         carrier = filters.get("carrier")
 
         termination = filters.get(
@@ -724,10 +706,6 @@ class NumberPoolService:
                 )
 
                 | Q(
-                    country__name__icontains=search
-                )
-
-                | Q(
                     carrier__name__icontains=search
                 )
 
@@ -739,16 +717,6 @@ class NumberPoolService:
                     client__name__icontains=search
                 )
 
-            )
-
-        # -------------------------------------------------
-        # COUNTRY
-        # -------------------------------------------------
-
-        if country:
-
-            queryset = queryset.filter(
-                country_id=country
             )
 
         # -------------------------------------------------
@@ -971,7 +939,6 @@ class NumberPoolService:
         queryset = NumberPool.objects.select_related(
             "admin",
             "client",
-            "country",
             "carrier",
             "termination",
         )
