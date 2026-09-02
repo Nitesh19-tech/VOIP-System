@@ -72,12 +72,6 @@ class NumberPool(BaseModel):
         blank=True,
     )
 
-    country = models.ForeignKey(
-        Country,
-        on_delete=models.PROTECT,
-        related_name="numbers",
-    )
-
     range_name = models.CharField(
         max_length=255,
         blank=True,
@@ -108,17 +102,71 @@ class NumberPool(BaseModel):
         db_column="Currency",
     )
 
-    payterm = models.IntegerField(default=30, db_column="Payterm")
-    payout = models.DecimalField(max_digits=15, decimal_places=6, default=0, db_column="Payout")
-    daily = models.DecimalField(max_digits=15, decimal_places=6, default=0, db_column="Daily")
-    weekly = models.DecimalField(max_digits=15, decimal_places=6, default=0, db_column="Weekly")
-    weekly7 = models.DecimalField(max_digits=15, decimal_places=6, default=0, db_column="Weekly7")
-    monthly30 = models.DecimalField(max_digits=15, decimal_places=6, default=0, db_column="Monthly30")
-    monthly45 = models.DecimalField(max_digits=15, decimal_places=6, default=0, db_column="Monthly45")
-    monthly60 = models.DecimalField(max_digits=15, decimal_places=6, default=0, db_column="Monthly60")
-    prefix = models.CharField(max_length=30, blank=True, default="", db_column="Prefix")
+    payterm = models.IntegerField(
+        default=30,
+        db_column="Payterm",
+    )
 
-    did_number = models.CharField(max_length=30, unique=True)
+    payout = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Payout",
+    )
+
+    daily = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Daily",
+    )
+
+    weekly = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Weekly",
+    )
+
+    weekly7 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Weekly7",
+    )
+
+    monthly30 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Monthly30",
+    )
+
+    monthly45 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Monthly45",
+    )
+
+    monthly60 = models.DecimalField(
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        db_column="Monthly60",
+    )
+
+    prefix = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        db_column="Prefix",
+    )
+
+    did_number = models.CharField(
+        max_length=30,
+        unique=True,
+    )
 
     status = models.CharField(
         max_length=20,
@@ -126,10 +174,26 @@ class NumberPool(BaseModel):
         default="AVAILABLE",
     )
 
-    purchase_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    monthly_rental = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    assigned_at = models.DateTimeField(null=True, blank=True)
-    description = models.TextField(blank=True)
+    purchase_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
+
+    monthly_rental = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
+
+    assigned_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
 
     # =====================================================
     # PREVIOUS PANEL / NUMBER ADD OPTIONS
@@ -147,9 +211,17 @@ class NumberPool(BaseModel):
         default="SINGLE",
     )
 
-    total_numbers = models.PositiveIntegerField(default=1)
-    daily_max_call = models.PositiveIntegerField(default=0)
-    daily_max_duration = models.PositiveIntegerField(default=0)
+    total_numbers = models.PositiveIntegerField(
+        default=1,
+    )
+
+    daily_max_call = models.PositiveIntegerField(
+        default=0,
+    )
+
+    daily_max_duration = models.PositiveIntegerField(
+        default=0,
+    )
 
     number_service = models.CharField(
         max_length=100,
@@ -162,11 +234,13 @@ class NumberPool(BaseModel):
         blank=True,
     )
 
-    is_test_number = models.BooleanField(default=False)
+    is_test_number = models.BooleanField(
+        default=False,
+    )
 
     class Meta:
         db_table = "number_pool"
-        ordering = ["country", "did_number"]
+        ordering = ["did_number"]
 
     def __str__(self):
         return self.did_number
