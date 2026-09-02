@@ -13,6 +13,10 @@ from .models import (
 )
 
 
+# =========================================================
+# CARRIER SERVICE
+# =========================================================
+
 class CarrierService:
 
     @staticmethod
@@ -73,6 +77,10 @@ class CarrierService:
 
         carrier.delete()
 
+
+# =========================================================
+# CARRIER IP SERVICE
+# =========================================================
 
 class CarrierIPService:
 
@@ -136,6 +144,10 @@ class CarrierIPService:
 
         ip.delete()
 
+
+# =========================================================
+# TERMINATION SERVICE
+# =========================================================
 
 class TerminationService:
 
@@ -272,7 +284,7 @@ class TerminationService:
         """
         Import Termination CSV.
 
-        CSV fields:
+        Supported CSV fields:
 
         Name
             -> Termination.name
@@ -351,13 +363,45 @@ class TerminationService:
                 "\ufeff"
             )
 
+        # =================================================
+        # DETECT CSV DELIMITER
+        # =================================================
+        #
+        # Supports:
+        #   comma     ,
+        #   semicolon ;
+        #   tab       \t
+        #
+        # Important:
+        # payout values use "|" internally, so "|" is
+        # intentionally NOT used as CSV delimiter.
+        # =================================================
+
+        sample = raw[:8192]
+
+        try:
+
+            dialect = csv.Sniffer().sniff(
+                sample,
+                delimiters=",;\t",
+            )
+
+        except csv.Error:
+
+            # Default to normal comma-separated CSV
+            dialect = csv.excel
+
         reader = csv.DictReader(
-            io.StringIO(raw)
+            io.StringIO(raw),
+            dialect=dialect,
         )
 
         fieldnames = reader.fieldnames or []
 
-        # Remove BOM / spaces from headers
+        # =================================================
+        # CLEAN HEADERS
+        # =================================================
+
         fieldnames = [
             field.strip()
             if field
@@ -393,6 +437,9 @@ class TerminationService:
 
         for column in fieldnames:
 
+            if not column:
+                continue
+
             normalized = (
                 column
                 .replace(" ", "")
@@ -412,6 +459,10 @@ class TerminationService:
             missing_columns.append(
                 "D|W|W7|M30|M45|M60"
             )
+
+        # =================================================
+        # VALIDATE COLUMNS
+        # =================================================
 
         if missing_columns:
 
@@ -612,6 +663,7 @@ class TerminationService:
                             name=name,
 
                             defaults=data,
+
                         )
                     )
 
@@ -659,7 +711,9 @@ class TerminationService:
             "total": (
                 created
                 + updated
+                + failed
             ),
 
             "errors": errors,
+
         }
