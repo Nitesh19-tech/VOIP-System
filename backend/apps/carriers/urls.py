@@ -7,9 +7,15 @@ from .views import (
     CarrierIPDetailAPIView,
     TerminationListCreateAPIView,
     TerminationDetailAPIView,
+    TerminationImportAPIView,
 )
 
+
 urlpatterns = [
+
+    # =====================================================
+    # CARRIERS
+    # =====================================================
 
     path(
         "",
@@ -21,6 +27,10 @@ urlpatterns = [
         CarrierDetailAPIView.as_view(),
     ),
 
+    # =====================================================
+    # CARRIER IPS
+    # =====================================================
+
     path(
         "ips/",
         CarrierIPListCreateAPIView.as_view(),
@@ -31,14 +41,28 @@ urlpatterns = [
         CarrierIPDetailAPIView.as_view(),
     ),
 
+    # =====================================================
+    # TERMINATIONS
+    # =====================================================
+
     path(
         "terminations/",
         TerminationListCreateAPIView.as_view(),
+    ),
+
+    # =====================================================
+    # TERMINATION CSV IMPORT
+    # =====================================================
+
+    path(
+        "terminations/import/",
+        TerminationImportAPIView.as_view(),
+        name="termination-import",
     ),
 
     path(
         "terminations/<int:pk>/",
         TerminationDetailAPIView.as_view(),
     ),
-    
+
 ]

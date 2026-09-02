@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .serializers import (
     CarrierSerializer,
@@ -14,6 +15,11 @@ from .services import (
     CarrierIPService,
     TerminationService,
 )
+
+
+# =====================================================
+# CARRIER
+# =====================================================
 
 class CarrierListCreateAPIView(APIView):
 
@@ -131,7 +137,12 @@ class CarrierDetailAPIView(APIView):
             },
             status=status.HTTP_204_NO_CONTENT,
         )
-    
+
+
+# =====================================================
+# CARRIER IP
+# =====================================================
+
 class CarrierIPListCreateAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -148,13 +159,12 @@ class CarrierIPListCreateAPIView(APIView):
             many=True,
         )
 
-        return Response({
-
-            "success": True,
-
-            "data": serializer.data,
-
-        })
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+            }
+        )
 
     def post(self, request):
 
@@ -171,15 +181,18 @@ class CarrierIPListCreateAPIView(APIView):
             request.user,
         )
 
-        return Response({
+        return Response(
+            {
+                "success": True,
+                "message": "Carrier IP added successfully.",
+                "data": CarrierIPSerializer(
+                    ip,
+                ).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
-            "success": True,
 
-            "message": "Carrier IP added successfully.",
-
-            "data": CarrierIPSerializer(ip).data,
-
-        }, status=status.HTTP_201_CREATED)
 class CarrierIPDetailAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -194,13 +207,12 @@ class CarrierIPDetailAPIView(APIView):
             self.get_object(pk)
         )
 
-        return Response({
-
-            "success": True,
-
-            "data": serializer.data,
-
-        })
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+            }
+        )
 
     def put(self, request, pk):
 
@@ -222,29 +234,36 @@ class CarrierIPDetailAPIView(APIView):
             request.user,
         )
 
-        return Response({
-
-            "success": True,
-
-            "message": "Carrier IP updated successfully.",
-
-            "data": CarrierIPSerializer(ip).data,
-
-        })
+        return Response(
+            {
+                "success": True,
+                "message": "Carrier IP updated successfully.",
+                "data": CarrierIPSerializer(
+                    ip,
+                ).data,
+            }
+        )
 
     def delete(self, request, pk):
 
         ip = self.get_object(pk)
 
-        CarrierIPService.delete_ip(ip)
+        CarrierIPService.delete_ip(
+            ip
+        )
 
-        return Response({
+        return Response(
+            {
+                "success": True,
+                "message": "Carrier IP deleted successfully.",
+            },
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
-            "success": True,
 
-            "message": "Carrier IP deleted successfully.",
-
-        }, status=status.HTTP_204_NO_CONTENT)
+# =====================================================
+# TERMINATION
+# =====================================================
 
 class TerminationListCreateAPIView(APIView):
 
@@ -296,13 +315,120 @@ class TerminationListCreateAPIView(APIView):
         )
 
 
+# =====================================================
+# TERMINATION CSV IMPORT
+# =====================================================
+
+class TerminationImportAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+    ]
+
+    def post(self, request):
+
+        # ---------------------------------------------
+        # GET CSV FILE
+        # ---------------------------------------------
+
+        csv_file = request.FILES.get(
+            "file"
+        )
+
+        if not csv_file:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "CSV file is required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ---------------------------------------------
+        # FILE EXTENSION CHECK
+        # ---------------------------------------------
+
+        if not csv_file.name.lower().endswith(
+            ".csv"
+        ):
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Only CSV files are allowed.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ---------------------------------------------
+        # IMPORT
+        # ---------------------------------------------
+
+        try:
+
+            result = TerminationService.import_csv(
+                file_obj=csv_file,
+                user=request.user,
+                carrier_name="saurabh1",
+            )
+
+        except ValueError as exc:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": str(exc),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as exc:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "Termination CSV import failed."
+                    ),
+                    "error": str(exc),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # ---------------------------------------------
+        # SUCCESS
+        # ---------------------------------------------
+
+        return Response(
+            {
+                "success": True,
+                "message": (
+                    "Termination CSV import "
+                    "completed successfully."
+                ),
+                "data": result,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+# =====================================================
+# TERMINATION DETAIL
+# =====================================================
+
 class TerminationDetailAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
 
-        return TerminationService.get_by_id(pk)
+        return TerminationService.get_by_id(
+            pk
+        )
 
     def get(self, request, pk):
 
@@ -319,7 +445,9 @@ class TerminationDetailAPIView(APIView):
 
     def put(self, request, pk):
 
-        termination = self.get_object(pk)
+        termination = self.get_object(
+            pk
+        )
 
         serializer = TerminationSerializer(
             termination,
@@ -331,16 +459,20 @@ class TerminationDetailAPIView(APIView):
             raise_exception=True,
         )
 
-        termination = TerminationService.update_termination(
-            termination,
-            serializer.validated_data,
-            request.user,
+        termination = (
+            TerminationService.update_termination(
+                termination,
+                serializer.validated_data,
+                request.user,
+            )
         )
 
         return Response(
             {
                 "success": True,
-                "message": "Termination updated successfully.",
+                "message": (
+                    "Termination updated successfully."
+                ),
                 "data": TerminationSerializer(
                     termination,
                 ).data,
@@ -349,16 +481,20 @@ class TerminationDetailAPIView(APIView):
 
     def delete(self, request, pk):
 
-        termination = self.get_object(pk)
+        termination = self.get_object(
+            pk
+        )
 
         TerminationService.delete_termination(
-            termination,
+            termination
         )
 
         return Response(
             {
                 "success": True,
-                "message": "Termination deleted successfully.",
+                "message": (
+                    "Termination deleted successfully."
+                ),
             },
             status=status.HTTP_204_NO_CONTENT,
         )
