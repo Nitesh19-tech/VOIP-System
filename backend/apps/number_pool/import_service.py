@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 
 from decimal import Decimal, InvalidOperation
@@ -463,6 +464,83 @@ class NumberPoolImportService:
         }
 
     # =====================================================
+    # AUTO RESOLVE TERMINATION FROM RANGE NAME
+    # =====================================================
+    @staticmethod
+    def resolve_termination_from_range(
+        range_name,
+        carrier_obj=None,
+        termination_queryset=None,
+    ):
+        """
+        CSV has no Termination column.
+        Example:
+            AFGHANISTAN - MOBILE ROSHAN-ING2.18
+
+        Resolve the NumberPool termination from Range_Name.
+        Matching order:
+          1. exact normalized termination name
+          2. normalized Range_Name contained in termination name
+          3. final ING2.x suffix, only when it gives one
+             unambiguous termination for the selected carrier.
+        """
+        value = NumberPoolImportService.clean_value(range_name)
+        if not value:
+            return None
+
+        def normalize(value):
+            value = NumberPoolImportService.clean_value(value).upper()
+            value = re.sub(r"[^A-Z0-9]+", " ", value)
+            return " ".join(value.split())
+
+        normalized_range = normalize(value)
+        if not normalized_range:
+            return None
+
+        qs = termination_queryset
+        if qs is None:
+            qs = Termination.objects.all()
+
+        if carrier_obj is not None:
+            qs = qs.filter(carrier_id=carrier_obj.id)
+
+        terminations = list(qs.only("id", "name", "carrier_id"))
+
+        # 1. Exact normalized name.
+        exact = [
+            obj for obj in terminations
+            if normalize(obj.name) == normalized_range
+        ]
+        if len(exact) == 1:
+            return exact[0]
+
+        # 2. Match Range_Name against termination name.
+        contains = [
+            obj for obj in terminations
+            if normalized_range in normalize(obj.name)
+            or normalize(obj.name) in normalized_range
+        ]
+        if len(contains) == 1:
+            return contains[0]
+
+        # 3. Use ING2.x suffix only if unique.
+        suffix_match = re.search(
+            r"\b(ING2(?:\.\d+)?)\s*$",
+            value,
+            flags=re.IGNORECASE,
+        )
+        if suffix_match:
+            suffix = suffix_match.group(1).upper()
+            suffix_candidates = [
+                obj for obj in terminations
+                if suffix in normalize(obj.name).replace(" ", "")
+            ]
+            if len(suffix_candidates) == 1:
+                return suffix_candidates[0]
+
+        return None
+
+    # =====================================================
     # ASTERISK SYNC
     # =====================================================
 
@@ -912,10 +990,8 @@ class NumberPoolImportService:
                 # =================================================
                 # ROW TERMINATION
                 # =================================================
-                # If CSV contains Termination / termination /
-                # termination_name / termination_id, use that
-                # termination for this specific number. Otherwise
-                # fall back to the termination selected in the UI.
+                # If CSV contains a Termination column, use it.
+                # Otherwise automatically resolve it from Range_Name.
                 # =================================================
 
                 row_termination = termination_obj
@@ -939,6 +1015,21 @@ class NumberPoolImportService:
                             raise ValueError(
                                 f"Termination not found: {termination_value}"
                             )
+
+                elif range_name:
+                    row_termination = (
+                        NumberPoolImportService
+                        .resolve_termination_from_range(
+                            range_name,
+                            carrier_obj=carrier_obj,
+                        )
+                    )
+
+                    if not row_termination:
+                        raise ValueError(
+                            f"Termination not found for Range_Name: "
+                            f"{range_name}"
+                        )
 
                 # =================================================
                 # CARRIER / TERMINATION RESOLUTION
