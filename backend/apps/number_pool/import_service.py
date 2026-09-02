@@ -943,9 +943,9 @@ class NumberPoolImportService:
                 # =================================================
                 # CARRIER / TERMINATION RESOLUTION
                 # =================================================
-                # If termination comes from CSV and no carrier was
-                # selected in the UI, automatically use the carrier
-                # belonging to that termination.
+                # CSV termination is authoritative when supplied.
+                # If no carrier was selected in the UI, derive the
+                # carrier automatically from the selected termination.
 
                 row_carrier = carrier_obj
 
@@ -1178,7 +1178,7 @@ class NumberPoolImportService:
 
                     obj.admin = user
 
-                if carrier_obj and row_termination:
+                if row_carrier and row_termination:
 
                     from django.utils import timezone
 
