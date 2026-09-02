@@ -3,18 +3,12 @@ import pandas as pd
 
 from decimal import Decimal, InvalidOperation
 
-import phonenumbers
-from phonenumbers import (
-    NumberParseException,
-    region_code_for_number,
-)
-
 from django.db import transaction
 
 from apps.accounts.constants import COMPANY_ADMIN
 from apps.asterisk.asterisk_service import AsteriskService
 
-from .models import Country, NumberPool
+from .models import NumberPool
 from apps.carriers.models import Carrier, Termination
 
 
@@ -136,220 +130,6 @@ class NumberPoolImportService:
         )
 
         return digits
-
-    # =====================================================
-    # FIND COUNTRY FROM PHONE NUMBER
-    # =====================================================
-
-    @staticmethod
-    def detect_country_from_number(
-        number,
-        countries,
-    ):
-        """
-        Detect country using Google's libphonenumber
-        metadata.
-
-        Examples:
-
-        +12424221547 -> BS -> Bahamas
-        +919876543210 -> IN -> India
-        +447911123456 -> GB -> United Kingdom
-        """
-
-        digits = (
-            NumberPoolImportService
-            .normalize_number(number)
-        )
-
-        if not digits:
-            return None
-
-        possible_numbers = []
-
-        # -------------------------------------------------
-        # INTERNATIONAL NUMBER
-        # -------------------------------------------------
-
-        possible_numbers.append(
-            f"+{digits}"
-        )
-
-        # -------------------------------------------------
-        # 10 DIGIT NANP NUMBER
-        # -------------------------------------------------
-
-        if len(digits) == 10:
-
-            possible_numbers.append(
-                f"+1{digits}"
-            )
-
-        # -------------------------------------------------
-        # TRY ALL POSSIBILITIES
-        # -------------------------------------------------
-
-        for candidate in possible_numbers:
-
-            try:
-
-                parsed = (
-                    phonenumbers.parse(
-                        candidate,
-                        None,
-                    )
-                )
-
-                if not phonenumbers.is_possible_number(
-                    parsed
-                ):
-                    continue
-
-                if not phonenumbers.is_valid_number(
-                    parsed
-                ):
-                    continue
-
-                region = (
-                    region_code_for_number(
-                        parsed
-                    )
-                )
-
-                if not region:
-                    continue
-
-                region = region.upper()
-
-                # -----------------------------------------
-                # FIND COUNTRY BY ISO
-                # -----------------------------------------
-
-                country = countries.get(
-                    region
-                )
-
-                if country:
-                    return country
-
-            except NumberParseException:
-
-                continue
-
-            except Exception as e:
-
-                print(
-                    "Country Detection Error:",
-                    e,
-                )
-
-                continue
-
-        return None
-
-    # =====================================================
-    # FIND COUNTRY FROM CSV NAME
-    # =====================================================
-
-    @staticmethod
-    def detect_country_from_name(
-        value,
-        countries_by_name,
-    ):
-
-        value = (
-            NumberPoolImportService.clean_value(
-                value
-            )
-        )
-
-        if not value:
-            return None
-
-        value_lower = value.lower()
-
-        # Exact match
-        country = countries_by_name.get(
-            value_lower
-        )
-
-        if country:
-            return country
-
-        # Some common variations
-        aliases = {
-
-            "usa": "US",
-            "us": "US",
-            "united states of america": "US",
-
-            "uk": "GB",
-            "great britain": "GB",
-            "england": "GB",
-
-            "uae": "AE",
-            "united arab emirates": "AE",
-
-            "russia": "RU",
-
-            "south korea": "KR",
-            "republic of korea": "KR",
-
-            "czech republic": "CZ",
-
-        }
-
-        iso_code = aliases.get(
-            value_lower
-        )
-
-        if iso_code:
-
-            return iso_code
-
-        return None
-
-    # =====================================================
-    # FIND COUNTRY FROM RANGE NAME
-    # =====================================================
-
-    @staticmethod
-    def detect_country_from_range(
-        range_name,
-        countries_by_name,
-    ):
-
-        range_name = (
-            NumberPoolImportService.clean_value(
-                range_name
-            )
-        )
-
-        if not range_name:
-            return None
-
-        range_lower = range_name.lower()
-
-        # Exact match first
-
-        country = countries_by_name.get(
-            range_lower
-        )
-
-        if country:
-            return country
-
-        # Partial match
-
-        for (
-            country_name,
-            country,
-        ) in countries_by_name.items():
-
-            if country_name in range_lower:
-                return country
-
-        return None
 
     # =====================================================
     # IMPORT HELPERS
@@ -781,22 +561,6 @@ class NumberPoolImportService:
         )
 
         # =================================================
-        # COUNTRY COLUMN
-        # =================================================
-
-        country_column = next(
-            (
-                column
-                for column in [
-                    "country",
-                    "country_name",
-                ]
-                if column in df.columns
-            ),
-            None,
-        )
-
-        # =================================================
         # PAYTERM
         # =================================================
 
@@ -831,25 +595,6 @@ class NumberPoolImportService:
                 flat=True,
             )
         )
-
-        # =================================================
-        # COUNTRIES
-        # =================================================
-
-        country_objects = list(
-            Country.objects.all()
-        )
-
-        countries_by_name = {
-            country.name.strip().lower(): country
-            for country in country_objects
-        }
-
-        countries_by_iso = {
-            country.iso_code.strip().upper(): country
-            for country in country_objects
-            if country.iso_code
-        }
 
         # =================================================
         # PRELOAD TERMINATIONS
@@ -934,82 +679,6 @@ class NumberPoolImportService:
                         .clean_value(
                             row[range_name_column]
                         )
-                    )
-
-                # =================================================
-                # COUNTRY DETECTION
-                # =================================================
-
-                country = None
-
-                if country_column:
-
-                    country_name = (
-                        NumberPoolImportService
-                        .clean_value(
-                            row[country_column]
-                        )
-                    )
-
-                    if country_name:
-
-                        result = (
-                            NumberPoolImportService
-                            .detect_country_from_name(
-                                country_name,
-                                countries_by_name,
-                            )
-                        )
-
-                        if isinstance(
-                            result,
-                            Country,
-                        ):
-
-                            country = result
-
-                        elif result:
-
-                            country = (
-                                countries_by_iso
-                                .get(result)
-                            )
-
-                if (
-                    country is None
-                    and range_name
-                ):
-
-                    country = (
-                        NumberPoolImportService
-                        .detect_country_from_range(
-                            range_name,
-                            countries_by_name,
-                        )
-                    )
-
-                # For this CSV, Range_Name already identifies the
-                # destination country. Do not run libphonenumber for every
-                # row when Range_Name is present; many valid NANP numbers
-                # have no unique region metadata and would be rejected.
-                if country is None and not range_name:
-                    country = (
-                        NumberPoolImportService
-                        .detect_country_from_number(
-                            number,
-                            countries_by_iso,
-                        )
-                    )
-
-                # Country metadata is optional for NumberPool import.
-                # A number must not fail import merely because its country
-                # cannot be resolved.
-                if country is None:
-                    print(
-                        "COUNTRY NOT DETECTED:",
-                        number,
-                        "| RANGE:",
-                        range_name,
                     )
 
                 # =================================================
@@ -1259,8 +928,6 @@ class NumberPoolImportService:
                     ),
 
                     description=description,
-
-                    country=country,
 
                     carrier=row_carrier,
 
