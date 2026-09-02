@@ -497,14 +497,19 @@ class NumberPoolImportService:
         if not normalized_range:
             return None
 
-        qs = termination_queryset
-        if qs is None:
-            qs = Termination.objects.all()
+        # Accept a preloaded list/queryset. The importer processes thousands
+        # of rows, so do not hit the database once per row.
+        if isinstance(termination_queryset, (list, tuple)):
+            terminations = list(termination_queryset)
+        else:
+            qs = termination_queryset
+            if qs is None:
+                qs = Termination.objects.all()
 
-        if carrier_obj is not None:
-            qs = qs.filter(carrier_id=carrier_obj.id)
+            if carrier_obj is not None:
+                qs = qs.filter(carrier_id=carrier_obj.id)
 
-        terminations = list(qs.only("id", "name", "carrier_id"))
+            terminations = list(qs.only("id", "name", "carrier_id"))
 
         # 1. Exact normalized name.
         exact = [
@@ -847,6 +852,24 @@ class NumberPoolImportService:
         }
 
         # =================================================
+        # PRELOAD TERMINATIONS
+        # =================================================
+        # Range_Name -> Termination is resolved for every imported row.
+        # Load the carrier's terminations once instead of querying the DB
+        # for every row.
+        termination_candidates = list(
+            (
+                Termination.objects.filter(
+                    carrier_id=carrier_obj.id
+                )
+                if carrier_obj
+                else Termination.objects.all()
+            ).only("id", "name", "carrier_id")
+        )
+
+        termination_cache = {}
+
+        # =================================================
         # TRACKING
         # =================================================
 
@@ -965,8 +988,11 @@ class NumberPoolImportService:
                         )
                     )
 
-                if country is None:
-
+                # For this CSV, Range_Name already identifies the
+                # destination country. Do not run libphonenumber for every
+                # row when Range_Name is present; many valid NANP numbers
+                # have no unique region metadata and would be rejected.
+                if country is None and not range_name:
                     country = (
                         NumberPoolImportService
                         .detect_country_from_number(
@@ -975,17 +1001,16 @@ class NumberPoolImportService:
                         )
                     )
 
+                # Country metadata is optional for NumberPool import.
+                # A number must not fail import merely because its country
+                # cannot be resolved.
                 if country is None:
-
                     print(
                         "COUNTRY NOT DETECTED:",
                         number,
                         "| RANGE:",
                         range_name,
                     )
-
-                    invalid += 1
-                    continue
 
                 # =================================================
                 # ROW TERMINATION
@@ -1017,13 +1042,21 @@ class NumberPoolImportService:
                             )
 
                 elif range_name:
-                    row_termination = (
-                        NumberPoolImportService
-                        .resolve_termination_from_range(
-                            range_name,
-                            carrier_obj=carrier_obj,
+                    # Cache Range_Name -> Termination so repeated ranges
+                    # (e.g. many numbers under ANGUILLA-ING2.18) are
+                    # resolved only once.
+                    cache_key = range_name.strip().upper()
+                    if cache_key not in termination_cache:
+                        termination_cache[cache_key] = (
+                            NumberPoolImportService
+                            .resolve_termination_from_range(
+                                range_name,
+                                carrier_obj=carrier_obj,
+                                termination_queryset=termination_candidates,
+                            )
                         )
-                    )
+
+                    row_termination = termination_cache[cache_key]
 
                     if not row_termination:
                         raise ValueError(
