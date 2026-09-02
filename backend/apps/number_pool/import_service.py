@@ -633,6 +633,30 @@ class NumberPoolImportService:
         ]
 
         # =================================================
+        # TERMINATION COLUMN
+        # =================================================
+        # Supported names (case-insensitive because headers are
+        # normalized to lowercase below):
+        #   Termination / termination
+        #   termination_name
+        #   termination_id
+        # =================================================
+
+        termination_column = next(
+            (
+                column
+                for column in [
+                    "termination",
+                    "termination_name",
+                    "termination_id",
+                    "terminationid",
+                ]
+                if column in df.columns
+            ),
+            None,
+        )
+
+        # =================================================
         # NUMBER COLUMN
         # =================================================
 
@@ -886,6 +910,48 @@ class NumberPoolImportService:
                     continue
 
                 # =================================================
+                # ROW TERMINATION
+                # =================================================
+                # If CSV contains Termination / termination /
+                # termination_name / termination_id, use that
+                # termination for this specific number. Otherwise
+                # fall back to the termination selected in the UI.
+                # =================================================
+
+                row_termination = termination_obj
+
+                if termination_column:
+                    termination_value = (
+                        NumberPoolImportService.clean_value(
+                            row[termination_column]
+                        )
+                    )
+
+                    if termination_value:
+                        row_termination = (
+                            NumberPoolImportService._resolve_fk(
+                                termination_value,
+                                Termination,
+                            )
+                        )
+
+                        if not row_termination:
+                            raise ValueError(
+                                f"Termination not found: {termination_value}"
+                            )
+
+                # =================================================
+                # CARRIER / TERMINATION VALIDATION
+                # =================================================
+
+                if row_termination and carrier_obj:
+                    if row_termination.carrier_id != carrier_obj.id:
+                        raise ValueError(
+                            f"Termination '{row_termination.name}' does not "
+                            f"belong to carrier '{carrier_obj.name}'."
+                        )
+
+                # =================================================
                 # CSV FINANCIAL DATA
                 # =================================================
 
@@ -1054,7 +1120,7 @@ class NumberPoolImportService:
 
                     status=(
                         "ASSIGNED"
-                        if carrier_obj and termination_obj
+                        if carrier_obj and row_termination
                         else "AVAILABLE"
                     ),
 
@@ -1064,7 +1130,7 @@ class NumberPoolImportService:
 
                     carrier=carrier_obj,
 
-                    termination=termination_obj,
+                    termination=row_termination,
 
                     client=client_obj,
 
@@ -1102,7 +1168,7 @@ class NumberPoolImportService:
 
                     obj.admin = user
 
-                if carrier_obj and termination_obj:
+                if carrier_obj and row_termination:
 
                     from django.utils import timezone
 
