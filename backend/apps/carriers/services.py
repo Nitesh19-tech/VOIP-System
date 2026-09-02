@@ -96,6 +96,7 @@ class CarrierIPService:
         carrier = params.get("carrier")
 
         if carrier:
+
             queryset = queryset.filter(
                 carrier_id=carrier
             )
@@ -163,6 +164,7 @@ class TerminationService:
         search = params.get("search")
 
         if search:
+
             queryset = queryset.filter(
                 name__icontains=search
             )
@@ -170,6 +172,7 @@ class TerminationService:
         carrier = params.get("carrier")
 
         if carrier:
+
             queryset = queryset.filter(
                 carrier_id=carrier
             )
@@ -233,6 +236,7 @@ class TerminationService:
         value = (value or "").strip()
 
         if not value:
+
             return Decimal("0")
 
         try:
@@ -254,6 +258,7 @@ class TerminationService:
         value = (value or "").strip()
 
         if not value:
+
             return 0
 
         try:
@@ -284,50 +289,42 @@ class TerminationService:
         """
         Import Termination CSV.
 
-        Supported CSV fields:
+        Supports BOTH formats.
 
-        Name
-            -> Termination.name
+        OLD FORMAT:
 
-        Prefix
-            -> Termination.prefix
+            Name
+            Prefix
+            Currency
+            Carrier Term
+            Carrier Payout
+            D|W|W7|M30|M45|M60
+            Active
+            Info
+            Max Duration
+            Action
 
-        Currency
-            -> Termination.currency
+        NEW FORMAT:
 
-        Carrier Term
-            -> Termination.payment_term
+            carrier
+            name
+            prefix
+            currency
+            payment_term
+            carrier_payout
+            daily_payout
+            weekly_payout
+            weekly7_payout
+            monthly30_payout
+            monthly45_payout
+            monthly60_payout
+            max_duration
+            info
 
-        Carrier Payout
-            -> Termination.carrier_payout
+        Carrier is forced to carrier_name.
+        Default carrier = saurabh1.
 
-        D|W|W7|M30|M45|M60
-            -> daily_payout
-            -> weekly_payout
-            -> weekly7_payout
-            -> monthly30_payout
-            -> monthly45_payout
-            -> monthly60_payout
-
-        Max Duration
-            -> Termination.max_duration
-
-        Info
-            -> Termination.info
-
-        Active
-            -> ignored
-
-        Action
-            -> ignored
-
-        Unnamed: 0
-            -> ignored
-
-        Carrier
-            -> fixed to saurabh1
-
-        Existing records with the same
+        Existing records with same
         carrier + name are updated.
         """
 
@@ -364,36 +361,18 @@ class TerminationService:
             )
 
         # =================================================
-        # DETECT CSV DELIMITER
+        # CSV READER
         # =================================================
         #
-        # Supports:
-        #   comma     ,
-        #   semicolon ;
-        #   tab       \t
+        # CSV files are comma separated.
         #
-        # Important:
-        # payout values use "|" internally, so "|" is
-        # intentionally NOT used as CSV delimiter.
+        # We intentionally do NOT use csv.Sniffer()
+        # because payout values contain "|" characters.
         # =================================================
-
-        sample = raw[:8192]
-
-        try:
-
-            dialect = csv.Sniffer().sniff(
-                sample,
-                delimiters=",;\t",
-            )
-
-        except csv.Error:
-
-            # Default to normal comma-separated CSV
-            dialect = csv.excel
 
         reader = csv.DictReader(
             io.StringIO(raw),
-            dialect=dialect,
+            delimiter=",",
         )
 
         fieldnames = reader.fieldnames or []
@@ -412,66 +391,92 @@ class TerminationService:
         reader.fieldnames = fieldnames
 
         # =================================================
-        # REQUIRED COLUMNS
+        # HEADER MAP
         # =================================================
 
-        required_columns = [
-            "Name",
-            "Prefix",
-            "Currency",
-            "Carrier Term",
-            "Carrier Payout",
-        ]
+        header_map = {}
 
-        missing_columns = [
-            column
-            for column in required_columns
-            if column not in fieldnames
-        ]
+        for field in fieldnames:
+
+            if field:
+
+                header_map[
+                    field.strip().lower()
+                ] = field
+
+        def get_column(row, *names):
+
+            for name in names:
+
+                actual_column = header_map.get(
+                    name.strip().lower()
+                )
+
+                if actual_column is not None:
+
+                    return row.get(
+                        actual_column
+                    )
+
+            return None
 
         # =================================================
-        # PAYOUT COLUMN
+        # DETECT FORMAT
+        # =================================================
+
+        new_format = (
+            "name" in header_map
+            and "payment_term" in header_map
+        )
+
+        old_format = (
+            "name" in header_map
+            and "carrier term" in header_map
+        )
+
+        if not new_format and not old_format:
+
+            raise ValueError(
+                "Invalid Termination CSV format. "
+                "Expected original Callpanel CSV "
+                "or processed termination CSV."
+            )
+
+        # =================================================
+        # OLD FORMAT PAYOUT COLUMN
         # =================================================
 
         payout_column = None
 
-        for column in fieldnames:
+        if old_format:
 
-            if not column:
-                continue
+            for field in fieldnames:
 
-            normalized = (
-                column
-                .replace(" ", "")
-                .strip()
-            )
+                if not field:
 
-            if normalized == (
-                "D|W|W7|M30|M45|M60"
-            ):
+                    continue
 
-                payout_column = column
-
-                break
-
-        if not payout_column:
-
-            missing_columns.append(
-                "D|W|W7|M30|M45|M60"
-            )
-
-        # =================================================
-        # VALIDATE COLUMNS
-        # =================================================
-
-        if missing_columns:
-
-            raise ValueError(
-                "Missing CSV columns: "
-                + ", ".join(
-                    missing_columns
+                normalized = (
+                    field
+                    .replace(" ", "")
+                    .strip()
+                    .lower()
                 )
-            )
+
+                if normalized == (
+                    "d|w|w7|m30|m45|m60"
+                ):
+
+                    payout_column = field
+
+                    break
+
+            if not payout_column:
+
+                raise ValueError(
+                    "Missing CSV column: "
+                    "D|W|W7|M30|M45|M60"
+                )
 
         # =================================================
         # RESULT COUNTERS
@@ -496,12 +501,16 @@ class TerminationService:
 
                 try:
 
-                    # -------------------------------------
+                    # =====================================
                     # NAME
-                    # -------------------------------------
+                    # =====================================
 
                     name = (
-                        row.get("Name")
+                        get_column(
+                            row,
+                            "name",
+                            "Name",
+                        )
                         or ""
                     ).strip()
 
@@ -511,44 +520,48 @@ class TerminationService:
                             "Name is empty"
                         )
 
-                    # -------------------------------------
-                    # PAYOUT VALUES
-                    # -------------------------------------
+                    # =====================================
+                    # PREFIX
+                    # =====================================
 
-                    payout_string = (
-                        row.get(
-                            payout_column
+                    prefix = (
+                        get_column(
+                            row,
+                            "prefix",
+                            "Prefix",
                         )
                         or ""
                     ).strip()
 
-                    payouts = payout_string.split(
-                        "|"
-                    )
+                    # =====================================
+                    # CURRENCY
+                    # =====================================
 
-                    # Always keep six payout values
+                    currency = (
+                        get_column(
+                            row,
+                            "currency",
+                            "Currency",
+                        )
+                        or "USD"
+                    ).strip() or "USD"
 
-                    payouts = (
-                        payouts
-                        + ["0"] * 6
-                    )[:6]
-
-                    # -------------------------------------
+                    # =====================================
                     # PAYMENT TERM
-                    # -------------------------------------
+                    # =====================================
 
                     payment_term = (
-                        row.get(
-                            "Carrier Term"
+                        get_column(
+                            row,
+                            "payment_term",
+                            "Carrier Term",
                         )
                         or ""
                     ).strip()
 
                     if not payment_term:
 
-                        payment_term = (
-                            "Monthly30"
-                        )
+                        payment_term = "Monthly30"
 
                     valid_payment_terms = {
                         "Daily",
@@ -559,19 +572,138 @@ class TerminationService:
                         "Monthly60",
                     }
 
-                    if (
-                        payment_term
-                        not in valid_payment_terms
-                    ):
+                    if payment_term not in valid_payment_terms:
 
                         raise ValueError(
-                            "Invalid Carrier Term: "
+                            "Invalid Payment Term: "
                             f"{payment_term}"
                         )
 
-                    # -------------------------------------
+                    # =====================================
+                    # CARRIER PAYOUT
+                    # =====================================
+
+                    carrier_payout = (
+                        get_column(
+                            row,
+                            "carrier_payout",
+                            "Carrier Payout",
+                        )
+                        or "0"
+                    )
+
+                    # =====================================
+                    # PAYOUT VALUES
+                    # =====================================
+
+                    if new_format:
+
+                        daily_payout = (
+                            get_column(
+                                row,
+                                "daily_payout",
+                            )
+                            or "0"
+                        )
+
+                        weekly_payout = (
+                            get_column(
+                                row,
+                                "weekly_payout",
+                            )
+                            or "0"
+                        )
+
+                        weekly7_payout = (
+                            get_column(
+                                row,
+                                "weekly7_payout",
+                            )
+                            or "0"
+                        )
+
+                        monthly30_payout = (
+                            get_column(
+                                row,
+                                "monthly30_payout",
+                            )
+                            or "0"
+                        )
+
+                        monthly45_payout = (
+                            get_column(
+                                row,
+                                "monthly45_payout",
+                            )
+                            or "0"
+                        )
+
+                        monthly60_payout = (
+                            get_column(
+                                row,
+                                "monthly60_payout",
+                            )
+                            or "0"
+                        )
+
+                    else:
+
+                        payout_string = (
+                            row.get(
+                                payout_column
+                            )
+                            or ""
+                        ).strip()
+
+                        payouts = (
+                            payout_string.split(
+                                "|"
+                            )
+                        )
+
+                        # Always keep exactly six values
+
+                        payouts = (
+                            payouts
+                            + ["0"] * 6
+                        )[:6]
+
+                        daily_payout = payouts[0]
+                        weekly_payout = payouts[1]
+                        weekly7_payout = payouts[2]
+                        monthly30_payout = payouts[3]
+                        monthly45_payout = payouts[4]
+                        monthly60_payout = payouts[5]
+
+                    # =====================================
+                    # MAX DURATION
+                    # =====================================
+
+                    max_duration = (
+                        get_column(
+                            row,
+                            "max_duration",
+                            "Max Duration",
+                        )
+                        or "0"
+                    )
+
+                    # =====================================
+                    # INFO
+                    # =====================================
+
+                    info = (
+                        get_column(
+                            row,
+                            "info",
+                            "Info",
+                        )
+                        or ""
+                    ).strip()
+
+                    # =====================================
                     # BUILD DATA
-                    # -------------------------------------
+                    # =====================================
 
                     data = {
 
@@ -579,81 +711,60 @@ class TerminationService:
 
                         "name": name,
 
-                        "prefix": (
-                            row.get(
-                                "Prefix"
-                            )
-                            or ""
-                        ).strip(),
+                        "prefix": prefix,
 
-                        "currency": (
-                            row.get(
-                                "Currency"
-                            )
-                            or "USD"
-                        ).strip() or "USD",
+                        "currency": currency,
 
-                        "payment_term": (
-                            payment_term
-                        ),
+                        "payment_term": payment_term,
 
                         "carrier_payout":
                             TerminationService._decimal(
-                                row.get(
-                                    "Carrier Payout"
-                                )
+                                carrier_payout
                             ),
 
                         "daily_payout":
                             TerminationService._decimal(
-                                payouts[0]
+                                daily_payout
                             ),
 
                         "weekly_payout":
                             TerminationService._decimal(
-                                payouts[1]
+                                weekly_payout
                             ),
 
                         "weekly7_payout":
                             TerminationService._decimal(
-                                payouts[2]
+                                weekly7_payout
                             ),
 
                         "monthly30_payout":
                             TerminationService._decimal(
-                                payouts[3]
+                                monthly30_payout
                             ),
 
                         "monthly45_payout":
                             TerminationService._decimal(
-                                payouts[4]
+                                monthly45_payout
                             ),
 
                         "monthly60_payout":
                             TerminationService._decimal(
-                                payouts[5]
+                                monthly60_payout
                             ),
 
                         "max_duration":
                             TerminationService._integer(
-                                row.get(
-                                    "Max Duration"
-                                )
+                                max_duration
                             ),
 
-                        "info": (
-                            row.get(
-                                "Info"
-                            )
-                            or ""
-                        ).strip(),
+                        "info": info,
 
                         "created_by": user,
                     }
 
-                    # -------------------------------------
+                    # =====================================
                     # CREATE / UPDATE
-                    # -------------------------------------
+                    # =====================================
 
                     termination, was_created = (
                         Termination.objects.update_or_create(
@@ -684,8 +795,10 @@ class TerminationService:
                             "row": row_number,
 
                             "name": (
-                                row.get(
-                                    "Name"
+                                get_column(
+                                    row,
+                                    "name",
+                                    "Name",
                                 )
                                 or ""
                             ).strip(),
@@ -715,5 +828,4 @@ class TerminationService:
             ),
 
             "errors": errors,
-
         }
