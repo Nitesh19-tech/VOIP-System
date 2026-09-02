@@ -941,15 +941,25 @@ class NumberPoolImportService:
                             )
 
                 # =================================================
-                # CARRIER / TERMINATION VALIDATION
+                # CARRIER / TERMINATION RESOLUTION
                 # =================================================
+                # If termination comes from CSV and no carrier was
+                # selected in the UI, automatically use the carrier
+                # belonging to that termination.
 
-                if row_termination and carrier_obj:
-                    if row_termination.carrier_id != carrier_obj.id:
-                        raise ValueError(
-                            f"Termination '{row_termination.name}' does not "
-                            f"belong to carrier '{carrier_obj.name}'."
-                        )
+                row_carrier = carrier_obj
+
+                if row_termination:
+                    termination_carrier = row_termination.carrier
+
+                    if row_carrier:
+                        if row_termination.carrier_id != row_carrier.id:
+                            raise ValueError(
+                                f"Termination '{row_termination.name}' does not "
+                                f"belong to carrier '{row_carrier.name}'."
+                            )
+                    else:
+                        row_carrier = termination_carrier
 
                 # =================================================
                 # CSV FINANCIAL DATA
@@ -1120,7 +1130,7 @@ class NumberPoolImportService:
 
                     status=(
                         "ASSIGNED"
-                        if carrier_obj and row_termination
+                        if row_carrier and row_termination
                         else "AVAILABLE"
                     ),
 
@@ -1128,7 +1138,7 @@ class NumberPoolImportService:
 
                     country=country,
 
-                    carrier=carrier_obj,
+                    carrier=row_carrier,
 
                     termination=row_termination,
 
