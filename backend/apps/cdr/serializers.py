@@ -41,7 +41,7 @@ class CallRecordSerializer(serializers.ModelSerializer):
     client_payout = serializers.SerializerMethodField()
 
     cause = serializers.CharField(
-        source="disposition",
+        source="cause",
         read_only=True,
     )
 
@@ -69,7 +69,6 @@ class CallRecordSerializer(serializers.ModelSerializer):
 
         fields = [
 
-            # BASIC
             "id",
 
             # REPORT
@@ -107,7 +106,6 @@ class CallRecordSerializer(serializers.ModelSerializer):
             "channel",
             "destination_channel",
 
-            "duration",
             "billsec",
 
             "disposition",
@@ -202,9 +200,7 @@ class CallRecordSerializer(serializers.ModelSerializer):
         if not ip_addresses:
             return None
 
-        return ", ".join(
-            ip_addresses
-        )
+        return ", ".join(ip_addresses)
 
     # =====================================================
     # TERMINATION
@@ -234,10 +230,7 @@ class CallRecordSerializer(serializers.ModelSerializer):
             if obj.number_pool.number:
                 return obj.number_pool.number
 
-        return (
-            obj.receiver_number
-            or None
-        )
+        return obj.receiver_number or None
 
     # =====================================================
     # CURRENCY

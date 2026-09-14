@@ -1,3 +1,14 @@
+const GROUP_BY_LABELS = {
+  "1": "Carrier",
+  "2": "Cause",
+  "3": "Number",
+  "4": "CLI",
+  "5": "IP",
+  "6": "Date",
+  "7": "Hour",
+};
+
+
 const value = (
   row,
   ...keys
@@ -22,9 +33,80 @@ const value = (
 };
 
 
+function getGroupedValue(
+  row,
+  group
+) {
+
+  switch (String(group)) {
+
+    case "1":
+      return value(
+        row,
+        "carrier",
+        "carrier_name",
+        "provider"
+      );
+
+    case "2":
+      return value(
+        row,
+        "cause",
+        "failure_cause",
+        "reason",
+        "disposition"
+      );
+
+    case "3":
+      return value(
+        row,
+        "number",
+        "receiver_number",
+        "destination"
+      );
+
+    case "4":
+      return value(
+        row,
+        "cli",
+        "caller_number"
+      );
+
+    case "5":
+      return value(
+        row,
+        "ip",
+        "carrier_ip",
+        "source_ip",
+        "caller_ip"
+      );
+
+    case "6":
+      return value(
+        row,
+        "date",
+        "start_time",
+        "created_at"
+      );
+
+    case "7":
+      return value(
+        row,
+        "hour"
+      );
+
+    default:
+      return "-";
+  }
+
+}
+
+
 export default function FailedReportsTable({
   loading,
   data = [],
+  grouped = false,
+  groupBy = [],
 }) {
 
   if (loading) {
@@ -71,6 +153,47 @@ export default function FailedReportsTable({
   }
 
 
+  /*
+   * GROUPED HEADERS
+   *
+   * Example:
+   * groupBy = ["1", "2"]
+   *
+   * Result:
+   * Carrier | Cause | Count
+   */
+
+  const groupedHeadings = (
+    Array.isArray(groupBy)
+      ? groupBy
+      : []
+  )
+    .map(
+      (group) =>
+        GROUP_BY_LABELS[
+          String(group)
+        ]
+    )
+    .filter(Boolean);
+
+
+  const headings = grouped
+
+    ? [
+        ...groupedHeadings,
+        "Count",
+      ]
+
+    : [
+        "Date",
+        "Carrier",
+        "Number",
+        "CLI",
+        "IP",
+        "Cause",
+      ];
+
+
   return (
 
     <div className="
@@ -84,6 +207,11 @@ export default function FailedReportsTable({
         border-collapse
       ">
 
+
+        {/* =================================================
+            TABLE HEADER
+        ================================================= */}
+
         <thead>
 
           <tr className="
@@ -92,18 +220,11 @@ export default function FailedReportsTable({
             dark:border-slate-800
           ">
 
-            {[
-              "Date",
-              "Carrier",
-              "Number",
-              "CLI",
-              "IP",
-              "Cause",
-            ].map(
-              (heading) => (
+            {headings.map(
+              (heading, index) => (
 
                 <th
-                  key={heading}
+                  key={`${heading}-${index}`}
                   className="
                     whitespace-nowrap
                     px-4
@@ -128,6 +249,10 @@ export default function FailedReportsTable({
         </thead>
 
 
+        {/* =================================================
+            TABLE BODY
+        ================================================= */}
+
         <tbody>
 
           {data.map(
@@ -147,106 +272,229 @@ export default function FailedReportsTable({
                 "
               >
 
-                <td className="px-4 py-3 text-sm whitespace-nowrap">
 
-                  {formatDate(
-                    value(
-                      row,
-                      "date",
-                      "start_time",
-                      "created_at"
-                    )
-                  )}
+                {/* =================================================
+                    GROUPED MODE
+                ================================================= */}
 
-                </td>
+                {grouped ? (
 
-                <td className="px-4 py-3 text-sm">
+                  <>
 
-                  {value(
-                    row,
-                    "carrier",
-                    "carrier_name",
-                    "provider"
-                  )}
+                    {(
+                      Array.isArray(groupBy)
+                        ? groupBy
+                        : []
+                    ).map(
+                      (group, groupIndex) => (
 
-                </td>
+                        <td
+                          key={
+                            `${group}-${groupIndex}`
+                          }
+                          className="
+                            px-4
+                            py-3
+                            text-sm
+                            whitespace-nowrap
+                          "
+                        >
 
-                <td className="
-                  px-4
-                  py-3
-                  font-mono
-                  text-sm
-                  whitespace-nowrap
-                ">
+                          {String(group) === "2" ? (
 
-                  {value(
-                    row,
-                    "number",
-                    "receiver_number",
-                    "destination"
-                  )}
+                            <span className="
+                              inline-flex
+                              rounded-full
+                              bg-red-50
+                              px-2.5
+                              py-1
+                              text-xs
+                              font-semibold
+                              text-red-700
+                              dark:bg-red-500/10
+                              dark:text-red-400
+                            ">
 
-                </td>
+                              {getGroupedValue(
+                                row,
+                                group
+                              )}
 
-                <td className="
-                  px-4
-                  py-3
-                  font-mono
-                  text-sm
-                  whitespace-nowrap
-                ">
+                            </span>
 
-                  {value(
-                    row,
-                    "cli",
-                    "caller_number"
-                  )}
+                          ) : (
 
-                </td>
+                            getGroupedValue(
+                              row,
+                              group
+                            )
 
-                <td className="
-                  px-4
-                  py-3
-                  font-mono
-                  text-sm
-                  whitespace-nowrap
-                ">
+                          )}
 
-                  {value(
-                    row,
-                    "ip",
-                    "source_ip",
-                    "caller_ip"
-                  )}
+                        </td>
 
-                </td>
-
-                <td className="px-4 py-3">
-
-                  <span className="
-                    inline-flex
-                    rounded-full
-                    bg-red-50
-                    px-2.5
-                    py-1
-                    text-xs
-                    font-semibold
-                    text-red-700
-                    dark:bg-red-500/10
-                    dark:text-red-400
-                  ">
-
-                    {value(
-                      row,
-                      "cause",
-                      "failure_cause",
-                      "reason",
-                      "disposition"
+                      )
                     )}
 
-                  </span>
 
-                </td>
+                    {/* COUNT */}
+
+                    <td className="
+                      px-4
+                      py-3
+                      text-sm
+                      font-semibold
+                      whitespace-nowrap
+                    ">
+
+                      {row.count ?? 0}
+
+                    </td>
+
+                  </>
+
+                ) : (
+
+                  /* =================================================
+                     NORMAL MODE
+                  ================================================= */
+
+                  <>
+
+                    {/* DATE */}
+
+                    <td className="
+                      px-4
+                      py-3
+                      text-sm
+                      whitespace-nowrap
+                    ">
+
+                      {formatDate(
+                        value(
+                          row,
+                          "date",
+                          "start_time",
+                          "created_at"
+                        )
+                      )}
+
+                    </td>
+
+
+                    {/* CARRIER */}
+
+                    <td className="
+                      px-4
+                      py-3
+                      text-sm
+                    ">
+
+                      {value(
+                        row,
+                        "carrier",
+                        "carrier_name",
+                        "provider"
+                      )}
+
+                    </td>
+
+
+                    {/* NUMBER */}
+
+                    <td className="
+                      px-4
+                      py-3
+                      font-mono
+                      text-sm
+                      whitespace-nowrap
+                    ">
+
+                      {value(
+                        row,
+                        "number",
+                        "receiver_number",
+                        "destination"
+                      )}
+
+                    </td>
+
+
+                    {/* CLI */}
+
+                    <td className="
+                      px-4
+                      py-3
+                      font-mono
+                      text-sm
+                      whitespace-nowrap
+                    ">
+
+                      {value(
+                        row,
+                        "cli",
+                        "caller_number"
+                      )}
+
+                    </td>
+
+
+                    {/* IP */}
+
+                    <td className="
+                      px-4
+                      py-3
+                      font-mono
+                      text-sm
+                      whitespace-nowrap
+                    ">
+
+                      {value(
+                        row,
+                        "ip",
+                        "carrier_ip",
+                        "source_ip",
+                        "caller_ip"
+                      )}
+
+                    </td>
+
+
+                    {/* CAUSE */}
+
+                    <td className="
+                      px-4
+                      py-3
+                    ">
+
+                      <span className="
+                        inline-flex
+                        rounded-full
+                        bg-red-50
+                        px-2.5
+                        py-1
+                        text-xs
+                        font-semibold
+                        text-red-700
+                        dark:bg-red-500/10
+                        dark:text-red-400
+                      ">
+
+                        {value(
+                          row,
+                          "cause",
+                          "failure_cause",
+                          "reason",
+                          "disposition"
+                        )}
+
+                      </span>
+
+                    </td>
+
+                  </>
+
+                )}
 
               </tr>
 
@@ -264,12 +512,22 @@ export default function FailedReportsTable({
 }
 
 
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
 function formatDate(value) {
 
-  if (!value) return "-";
+  if (!value) {
+
+    return "-";
+
+  }
+
 
   const date =
     new Date(value);
+
 
   if (
     Number.isNaN(
@@ -280,6 +538,7 @@ function formatDate(value) {
     return String(value);
 
   }
+
 
   return date.toLocaleString(
     "en-IN",

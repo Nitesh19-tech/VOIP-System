@@ -12,7 +12,6 @@ class LiveCall(BaseModel):
         ("HANGUP", "Hangup"),
     )
 
-
     uniqueid = models.CharField(
         max_length=100,
         unique=True,
@@ -46,6 +45,16 @@ class LiveCall(BaseModel):
         default="RINGING",
     )
 
+    # =====================================================
+    # HANGUP / FAILURE CAUSE
+    # =====================================================
+
+    cause = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+
     started_at = models.DateTimeField(
         auto_now_add=True,
     )
@@ -71,7 +80,8 @@ class LiveCall(BaseModel):
     def __str__(self):
 
         return f"{self.caller} → {self.receiver}"
-    
+
+
 class ExtensionStatus(BaseModel):
 
     STATUS_CHOICES = (

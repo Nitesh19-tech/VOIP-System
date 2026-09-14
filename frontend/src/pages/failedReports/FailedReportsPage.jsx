@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -21,11 +22,14 @@ import {
 } from "../../services/failedReportsService";
 
 
-import FailedReportsFilters from "../../components/failedReports/FailedReportsFilters";
+import FailedReportsFilters
+  from "../../components/failedReports/FailedReportsFilters";
 
-import FailedReportsTable from "../../components/failedReports/FailedReportsTable";
+import FailedReportsTable
+  from "../../components/failedReports/FailedReportsTable";
 
-import FailedReportsPagination from "../../components/failedReports/FailedReportsPagination";
+import FailedReportsPagination
+  from "../../components/failedReports/FailedReportsPagination";
 
 
 /* =========================================================
@@ -52,10 +56,34 @@ const INITIAL_FILTERS = {
 
 
 /* =========================================================
+   GROUP BY LABELS
+========================================================= */
+
+const GROUP_BY_LABELS = {
+
+  "1": "Carrier",
+
+  "2": "Cause",
+
+  "3": "Number",
+
+  "4": "CLI",
+
+  "5": "IP",
+
+  "6": "Date",
+
+  "7": "Hour",
+
+};
+
+
+/* =========================================================
    PAGE
 ========================================================= */
 
 export default function FailedReportsPage() {
+
 
   /* =======================================================
      FILTERS
@@ -121,6 +149,36 @@ export default function FailedReportsPage() {
     error,
     setError,
   ] = useState("");
+
+
+  /* =======================================================
+     GROUPED MODE
+  ======================================================= */
+
+  const grouped = useMemo(
+    () =>
+      Array.isArray(filters.groupBy) &&
+      filters.groupBy.length > 0,
+    [
+      filters.groupBy,
+    ]
+  );
+
+
+  const selectedGroupLabels = useMemo(
+    () =>
+      (filters.groupBy || [])
+        .map(
+          (group) =>
+            GROUP_BY_LABELS[
+              String(group)
+            ]
+        )
+        .filter(Boolean),
+    [
+      filters.groupBy,
+    ]
+  );
 
 
   /* =======================================================
@@ -282,7 +340,7 @@ export default function FailedReportsPage() {
 
 
   /* =======================================================
-     INITIAL LOAD
+     INITIAL LOAD / PAGE CHANGE
   ======================================================= */
 
   useEffect(() => {
@@ -362,7 +420,132 @@ export default function FailedReportsPage() {
 
 
   /* =======================================================
-     EXPORT CSV
+     COPY
+  ======================================================= */
+
+  const handleCopy = async () => {
+
+    try {
+
+      let headers = [];
+
+      let rows = [];
+
+
+      /* ===================================================
+         GROUPED COPY
+      =================================================== */
+
+      if (grouped) {
+
+        headers = [
+          ...selectedGroupLabels,
+          "Count",
+        ];
+
+
+        rows = data.map(
+          (row) => [
+
+            ...(
+              filters.groupBy || []
+            ).map(
+              (group) =>
+                getGroupedValue(
+                  row,
+                  group
+                )
+            ),
+
+            row.count ?? 0,
+
+          ]
+        );
+
+
+      }
+
+      /* ===================================================
+         NORMAL COPY
+      =================================================== */
+
+      else {
+
+        headers = [
+          "Date",
+          "Carrier",
+          "Number",
+          "CLI",
+          "IP",
+          "Cause",
+        ];
+
+
+        rows =
+          data.map(
+            (row) => [
+
+              row.date ?? "",
+
+              row.carrier ?? "",
+
+              row.number ?? "",
+
+              row.cli ?? "",
+
+              row.ip ?? "",
+
+              row.cause ?? "",
+
+            ]
+          );
+
+      }
+
+
+      const text = [
+
+        headers.join("\t"),
+
+        ...rows.map(
+          (row) =>
+            row.join("\t")
+        ),
+
+      ].join("\n");
+
+
+      await navigator.clipboard.writeText(
+        text
+      );
+
+
+      alert(
+        grouped
+          ? "Grouped failed reports copied successfully."
+          : "Failed reports copied successfully."
+      );
+
+
+    } catch (err) {
+
+      console.error(
+        "Copy Error:",
+        err
+      );
+
+
+      setError(
+        "Unable to copy records."
+      );
+
+    }
+
+  };
+
+
+  /* =======================================================
+     CSV EXPORT
   ======================================================= */
 
   const handleCSVExport =
@@ -401,7 +584,9 @@ export default function FailedReportsPage() {
 
         downloadBlob(
           blob,
-          "failed_reports.csv"
+          grouped
+            ? "failed_reports_grouped.csv"
+            : "failed_reports.csv"
         );
 
 
@@ -428,72 +613,6 @@ export default function FailedReportsPage() {
 
 
   /* =======================================================
-     COPY
-  ======================================================= */
-
-  const handleCopy = async () => {
-
-    try {
-
-      const headers = [
-        "Date",
-        "Carrier",
-        "Number",
-        "CLI",
-        "IP",
-        "Cause",
-      ];
-
-
-      const rows =
-        data.map(
-          (row) => [
-            row.date ?? "",
-            row.carrier ?? "",
-            row.number ?? "",
-            row.cli ?? "",
-            row.ip ?? "",
-            row.cause ?? "",
-          ]
-        );
-
-
-      const text = [
-        headers.join("\t"),
-        ...rows.map(
-          (row) =>
-            row.join("\t")
-        ),
-      ].join("\n");
-
-
-      await navigator.clipboard.writeText(
-        text
-      );
-
-
-      alert(
-        "Failed reports copied successfully."
-      );
-
-
-    } catch (err) {
-
-      console.error(
-        "Copy Error:",
-        err
-      );
-
-      setError(
-        "Unable to copy records."
-      );
-
-    }
-
-  };
-
-
-  /* =======================================================
      EXCEL
   ======================================================= */
 
@@ -506,65 +625,127 @@ export default function FailedReportsPage() {
       setError("");
 
 
-      const rows =
-        data.map(
-          (row) => ({
+      let rows = [];
 
-            Date:
-              row.date ?? "",
+      let columns = [];
 
-            Carrier:
-              row.carrier ?? "",
 
-            Number:
-              row.number ?? "",
+      /* ===================================================
+         GROUPED EXCEL
+      =================================================== */
 
-            CLI:
-              row.cli ?? "",
+      if (grouped) {
 
-            IP:
-              row.ip ?? "",
+        columns = [
+          ...selectedGroupLabels,
+          "Count",
+        ];
 
-            Cause:
-              row.cause ?? "",
 
-          })
-        );
+        rows =
+          data.map(
+            (row) => {
+
+              const output = {};
+
+
+              (
+                filters.groupBy || []
+              ).forEach(
+                (group) => {
+
+                  const label =
+                    GROUP_BY_LABELS[
+                      String(group)
+                    ];
+
+
+                  output[label] =
+                    getGroupedValue(
+                      row,
+                      group
+                    );
+
+                }
+              );
+
+
+              output.Count =
+                row.count ?? 0;
+
+
+              return output;
+
+            }
+          );
+
+      }
+
+      /* ===================================================
+         NORMAL EXCEL
+      =================================================== */
+
+      else {
+
+        columns = [
+          "Date",
+          "Carrier",
+          "Number",
+          "CLI",
+          "IP",
+          "Cause",
+        ];
+
+
+        rows =
+          data.map(
+            (row) => ({
+
+              Date:
+                row.date ?? "",
+
+              Carrier:
+                row.carrier ?? "",
+
+              Number:
+                row.number ?? "",
+
+              CLI:
+                row.cli ?? "",
+
+              IP:
+                row.ip ?? "",
+
+              Cause:
+                row.cause ?? "",
+
+            })
+          );
+
+      }
 
 
       const worksheet =
         XLSX.utils.json_to_sheet(
-          rows
+          rows,
+          {
+            header:
+              columns,
+          }
         );
 
 
-      worksheet["!cols"] = [
+      worksheet["!cols"] =
+        columns.map(
+          (column) => ({
 
-        {
-          wch: 22,
-        },
+            wch:
+              column === "Count"
+                ? 12
+                : 22,
 
-        {
-          wch: 20,
-        },
-
-        {
-          wch: 20,
-        },
-
-        {
-          wch: 20,
-        },
-
-        {
-          wch: 18,
-        },
-
-        {
-          wch: 20,
-        },
-
-      ];
+          })
+        );
 
 
       const workbook =
@@ -580,7 +761,9 @@ export default function FailedReportsPage() {
 
       XLSX.writeFile(
         workbook,
-        "failed_reports.xlsx"
+        grouped
+          ? "failed_reports_grouped.xlsx"
+          : "failed_reports.xlsx"
       );
 
 
@@ -651,24 +834,80 @@ export default function FailedReportsPage() {
       );
 
 
-      const rows =
-        data.map(
-          (row) => [
+      let headers = [];
 
-            row.date ?? "",
+      let rows = [];
 
-            row.carrier ?? "",
 
-            row.number ?? "",
+      /* ===================================================
+         GROUPED PDF
+      =================================================== */
 
-            row.cli ?? "",
+      if (grouped) {
 
-            row.ip ?? "",
+        headers = [
+          ...selectedGroupLabels,
+          "Count",
+        ];
 
-            row.cause ?? "",
 
-          ]
-        );
+        rows =
+          data.map(
+            (row) => [
+
+              ...(
+                filters.groupBy || []
+              ).map(
+                (group) =>
+                  getGroupedValue(
+                    row,
+                    group
+                  )
+              ),
+
+              row.count ?? 0,
+
+            ]
+          );
+
+      }
+
+      /* ===================================================
+         NORMAL PDF
+      =================================================== */
+
+      else {
+
+        headers = [
+          "Date",
+          "Carrier",
+          "Number",
+          "CLI",
+          "IP",
+          "Cause",
+        ];
+
+
+        rows =
+          data.map(
+            (row) => [
+
+              row.date ?? "",
+
+              row.carrier ?? "",
+
+              row.number ?? "",
+
+              row.cli ?? "",
+
+              row.ip ?? "",
+
+              row.cause ?? "",
+
+            ]
+          );
+
+      }
 
 
       autoTable(
@@ -677,14 +916,9 @@ export default function FailedReportsPage() {
 
           startY: 28,
 
-          head: [[
-            "Date",
-            "Carrier",
-            "Number",
-            "CLI",
-            "IP",
-            "Cause",
-          ]],
+          head: [
+            headers,
+          ],
 
           body: rows,
 
@@ -711,7 +945,9 @@ export default function FailedReportsPage() {
 
 
       doc.save(
-        "failed_reports.pdf"
+        grouped
+          ? "failed_reports_grouped.pdf"
+          : "failed_reports.pdf"
       );
 
 
@@ -743,36 +979,110 @@ export default function FailedReportsPage() {
 
   const handlePrint = () => {
 
-    const rows =
-      data.map(
-        (row) => `
-          <tr>
-            <td>${escapeHTML(
-              row.date
-            )}</td>
+    let headers = [];
 
-            <td>${escapeHTML(
-              row.carrier
-            )}</td>
+    let rows = [];
 
-            <td>${escapeHTML(
-              row.number
-            )}</td>
 
-            <td>${escapeHTML(
-              row.cli
-            )}</td>
+    /* ===================================================
+       GROUPED PRINT
+    =================================================== */
 
-            <td>${escapeHTML(
-              row.ip
-            )}</td>
+    if (grouped) {
 
-            <td>${escapeHTML(
-              row.cause
-            )}</td>
-          </tr>
-        `
-      ).join("");
+      headers = [
+        ...selectedGroupLabels,
+        "Count",
+      ];
+
+
+      rows =
+        data.map(
+          (row) => [
+
+            ...(
+              filters.groupBy || []
+            ).map(
+              (group) =>
+                getGroupedValue(
+                  row,
+                  group
+                )
+            ),
+
+            row.count ?? 0,
+
+          ]
+        );
+
+    }
+
+    /* ===================================================
+       NORMAL PRINT
+    =================================================== */
+
+    else {
+
+      headers = [
+        "Date",
+        "Carrier",
+        "Number",
+        "CLI",
+        "IP",
+        "Cause",
+      ];
+
+
+      rows =
+        data.map(
+          (row) => [
+
+            row.date ?? "",
+
+            row.carrier ?? "",
+
+            row.number ?? "",
+
+            row.cli ?? "",
+
+            row.ip ?? "",
+
+            row.cause ?? "",
+
+          ]
+        );
+
+    }
+
+
+    const headerHTML =
+      headers
+        .map(
+          (header) =>
+            `<th>${escapeHTML(header)}</th>`
+        )
+        .join("");
+
+
+    const bodyHTML =
+      rows
+        .map(
+          (row) => `
+
+            <tr>
+
+              ${row
+                .map(
+                  (cell) =>
+                    `<td>${escapeHTML(cell)}</td>`
+                )
+                .join("")}
+
+            </tr>
+
+          `
+        )
+        .join("");
 
 
     const printWindow =
@@ -796,6 +1106,7 @@ export default function FailedReportsPage() {
 
     printWindow.document.write(
       `
+
         <!DOCTYPE html>
 
         <html>
@@ -806,9 +1117,11 @@ export default function FailedReportsPage() {
             Failed Reports
           </title>
 
+
           <style>
 
             body {
+
               font-family:
                 Arial,
                 sans-serif;
@@ -816,48 +1129,67 @@ export default function FailedReportsPage() {
               padding: 30px;
 
               color: #111;
+
             }
 
+
             h1 {
+
               font-size: 22px;
 
               margin-bottom: 5px;
+
             }
 
+
             .count {
+
               margin-bottom: 20px;
 
               color: #555;
+
             }
 
+
             table {
+
               width: 100%;
 
               border-collapse:
                 collapse;
 
               font-size: 12px;
+
             }
+
 
             th,
             td {
+
               border:
                 1px solid #ccc;
 
               padding: 8px;
 
               text-align: left;
+
             }
 
+
             th {
+
               background:
                 #f1f5f9;
+
             }
+
 
             @media print {
 
               body {
+
                 padding: 0;
+
               }
 
             }
@@ -866,35 +1198,38 @@ export default function FailedReportsPage() {
 
         </head>
 
+
         <body>
 
           <h1>
             Failed Reports & Stats
           </h1>
 
+
           <div class="count">
+
             Total Records:
             ${count}
+
           </div>
+
 
           <table>
 
             <thead>
 
               <tr>
-                <th>Date</th>
-                <th>Carrier</th>
-                <th>Number</th>
-                <th>CLI</th>
-                <th>IP</th>
-                <th>Cause</th>
+
+                ${headerHTML}
+
               </tr>
 
             </thead>
 
+
             <tbody>
 
-              ${rows}
+              ${bodyHTML}
 
             </tbody>
 
@@ -903,6 +1238,7 @@ export default function FailedReportsPage() {
         </body>
 
         </html>
+
       `
     );
 
@@ -913,13 +1249,16 @@ export default function FailedReportsPage() {
     printWindow.focus();
 
 
-    setTimeout(() => {
+    setTimeout(
+      () => {
 
-      printWindow.print();
+        printWindow.print();
 
-      printWindow.close();
+        printWindow.close();
 
-    }, 300);
+      },
+      300
+    );
 
   };
 
@@ -947,6 +1286,7 @@ export default function FailedReportsPage() {
         "
       >
 
+
         {/* =================================================
             TITLE
         ================================================= */}
@@ -972,7 +1312,9 @@ export default function FailedReportsPage() {
               dark:text-white
             "
           >
+
             Failed Reports & Stats
+
           </h1>
 
 
@@ -1043,7 +1385,9 @@ export default function FailedReportsPage() {
               dark:text-red-300
             "
           >
+
             {error}
+
           </div>
 
         )}
@@ -1109,6 +1453,7 @@ export default function FailedReportsPage() {
           "
         >
 
+
           {/* TOOLBAR */}
 
           <div
@@ -1141,11 +1486,16 @@ export default function FailedReportsPage() {
               "
             >
 
+
               {/* COPY */}
 
               <button
                 type="button"
                 onClick={handleCopy}
+                disabled={
+                  loading ||
+                  !data.length
+                }
                 className="
                   rounded-md
                   px-4
@@ -1154,11 +1504,15 @@ export default function FailedReportsPage() {
                   text-slate-700
                   transition
                   hover:bg-slate-200
+                  disabled:cursor-not-allowed
+                  disabled:opacity-40
                   dark:text-slate-200
                   dark:hover:bg-slate-700
                 "
               >
+
                 Copy
+
               </button>
 
 
@@ -1170,7 +1524,9 @@ export default function FailedReportsPage() {
                   handleCSVExport
                 }
                 disabled={
-                  exporting
+                  exporting ||
+                  loading ||
+                  !data.length
                 }
                 className="
                   rounded-md
@@ -1186,9 +1542,11 @@ export default function FailedReportsPage() {
                   dark:hover:bg-slate-700
                 "
               >
+
                 {exporting
                   ? "Exporting..."
                   : "CSV"}
+
               </button>
 
 
@@ -1218,7 +1576,9 @@ export default function FailedReportsPage() {
                   dark:hover:bg-slate-700
                 "
               >
+
                 Excel
+
               </button>
 
 
@@ -1248,7 +1608,9 @@ export default function FailedReportsPage() {
                   dark:hover:bg-slate-700
                 "
               >
+
                 PDF
+
               </button>
 
 
@@ -1256,7 +1618,9 @@ export default function FailedReportsPage() {
 
               <button
                 type="button"
-                onClick={handlePrint}
+                onClick={
+                  handlePrint
+                }
                 disabled={
                   loading ||
                   !data.length
@@ -1275,7 +1639,9 @@ export default function FailedReportsPage() {
                   dark:hover:bg-slate-700
                 "
               >
+
                 Print
+
               </button>
 
             </div>
@@ -1299,11 +1665,53 @@ export default function FailedReportsPage() {
 
               {" "}
 
-              records
+              {grouped
+                ? "groups"
+                : "records"}
 
             </span>
 
           </div>
+
+
+          {/* GROUPED INFO */}
+
+          {grouped && (
+
+            <div
+              className="
+                border-b
+                border-slate-200
+                bg-slate-50
+                px-4
+                py-3
+                text-sm
+                text-slate-600
+                dark:border-slate-800
+                dark:bg-slate-950
+                dark:text-slate-300
+              "
+            >
+
+              Grouped By:
+
+              {" "}
+
+              <span
+                className="
+                  font-semibold
+                "
+              >
+
+                {selectedGroupLabels.join(
+                  " + "
+                )}
+
+              </span>
+
+            </div>
+
+          )}
 
 
           {/* TABLE */}
@@ -1311,6 +1719,10 @@ export default function FailedReportsPage() {
           <FailedReportsTable
             loading={loading}
             data={data}
+            grouped={grouped}
+            groupBy={
+              filters.groupBy || []
+            }
           />
 
 
@@ -1344,6 +1756,98 @@ export default function FailedReportsPage() {
     </div>
 
   );
+
+}
+
+
+/* =========================================================
+   GROUPED VALUE
+========================================================= */
+
+function getGroupedValue(
+  row,
+  group
+) {
+
+  switch (
+    String(group)
+  ) {
+
+    /* Carrier */
+
+    case "1":
+
+      return (
+        row?.carrier ??
+        "-"
+      );
+
+
+    /* Cause */
+
+    case "2":
+
+      return (
+        row?.cause ??
+        "-"
+      );
+
+
+    /* Number */
+
+    case "3":
+
+      return (
+        row?.number ??
+        "-"
+      );
+
+
+    /* CLI */
+
+    case "4":
+
+      return (
+        row?.cli ??
+        "-"
+      );
+
+
+    /* IP */
+
+    case "5":
+
+      return (
+        row?.ip ??
+        "-"
+      );
+
+
+    /* Date */
+
+    case "6":
+
+      return (
+        row?.date ??
+        "-"
+      );
+
+
+    /* Hour */
+
+    case "7":
+
+      return (
+        row?.hour ??
+        "-"
+      );
+
+
+    default:
+
+      return "-";
+
+  }
 
 }
 
@@ -1411,22 +1915,27 @@ function escapeHTML(
 
 
   return String(value)
+
     .replace(
       /&/g,
       "&amp;"
     )
+
     .replace(
       /</g,
       "&lt;"
     )
+
     .replace(
       />/g,
       "&gt;"
     )
+
     .replace(
       /"/g,
       "&quot;"
     )
+
     .replace(
       /'/g,
       "&#039;"
