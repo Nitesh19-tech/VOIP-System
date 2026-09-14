@@ -2,384 +2,462 @@ from apps.number_pool.models import NumberPool
 
 
 class NumberPoolGenerator:
-
     CONTEXT = "from-carrier"
 
-    # =====================================================
-    # GENERATE SINGLE NUMBER MAPPING
-    # =====================================================
+    # Number Service IDs / Names
+    SERVICE_MAP = {
+        "1": "Playback",
+        "2": "PlaybackLoop",
+        "3": "ConferenceCut",
+        "4": "Reject",
+        "playback": "Playback",
+        "playbackloop": "PlaybackLoop",
+        "conferencecut": "ConferenceCut",
+        "reject": "Reject",
+    }
+
+    @classmethod
+    def normalize_service(cls, service):
+        if service is None:
+            return ""
+
+        value = str(service).strip()
+
+        if not value:
+            return ""
+
+        return cls.SERVICE_MAP.get(
+            value.lower(),
+            value,
+        )
 
     @staticmethod
-    def generate(number):
+    def _get_service_variables(number):
+        variables = number.service_variables
 
-        if not number:
-            return ""
+        if not isinstance(variables, dict):
+            return {}
 
-        # -------------------------------------------------
-        # ONLY ASSIGNED NUMBERS
-        # -------------------------------------------------
+        return variables
 
-        if number.status != "ASSIGNED":
-            return ""
+    @classmethod
+    def _get_audio_file(cls, number):
+        variables = cls._get_service_variables(number)
 
-        # -------------------------------------------------
-        # DID
-        # -------------------------------------------------
-
-        did = (
-            number.did_number or ""
-        ).strip()
-
-        if not did:
-            return ""
-
-        # -------------------------------------------------
-        # CARRIER
-        # -------------------------------------------------
-
-        carrier = number.carrier
-
-        if not carrier:
-            return ""
-
-        if not carrier.is_active:
-            return ""
-
-        # -------------------------------------------------
-        # TERMINATION
-        # -------------------------------------------------
-
-        termination = number.termination
-
-        if not termination:
-            return ""
-
-        if not termination.is_active:
-            return ""
-
-        # -------------------------------------------------
-        # CLIENT
-        # -------------------------------------------------
-
-        client_name = (
-            number.client.name
-            if number.client
-            else "N/A"
+        audio_file = (
+            variables.get("audio_file")
+            or variables.get("audio")
+            or variables.get("file")
+            or ""
         )
 
-        # -------------------------------------------------
-        # CARRIER IPS
-        # -------------------------------------------------
+        return str(audio_file).strip()
 
-        ips = list(
-            carrier.ips
-            .filter(
-                is_active=True
-            )
-            .order_by("id")
-        )
-
-        if not ips:
-            return ""
-
-        # -------------------------------------------------
-        # GENERATE MAPPING INFORMATION
-        # -------------------------------------------------
+    @classmethod
+    def generate(cls, number):
+        """
+        Generates the Number Pool mapping information.
+        """
 
         lines = []
 
         lines.append(
-            "; =================================================="
+            f"; =================================================="
+        )
+        lines.append(
+            f"; DID: {number.number}"
+        )
+        lines.append(
+            f"; =================================================="
+        )
+
+        if not getattr(number, "is_active", True):
+            lines.append("; Number inactive")
+            return "\n".join(lines)
+
+        carrier = getattr(number, "carrier", None)
+
+        if not carrier:
+            lines.append("; No carrier assigned")
+            return "\n".join(lines)
+
+        if not getattr(carrier, "is_active", True):
+            lines.append("; Carrier inactive")
+            return "\n".join(lines)
+
+        termination = getattr(number, "termination", None)
+
+        if not termination:
+            lines.append("; No termination assigned")
+            return "\n".join(lines)
+
+        if not getattr(termination, "is_active", True):
+            lines.append("; Termination inactive")
+            return "\n".join(lines)
+
+        service = cls.normalize_service(
+            getattr(number, "number_service", "")
         )
 
         lines.append(
-            f"; DID         : {did}"
+            f"; Carrier: {carrier.name}"
         )
 
         lines.append(
-            f"; Client      : {client_name}"
+            f"; Termination: {termination.name}"
         )
 
         lines.append(
-            f"; Carrier     : {carrier.name}"
+            f"; Number Service: {service or 'None'}"
         )
-
-        lines.append(
-            f"; Termination : {termination.name}"
-        )
-
-        lines.append(
-            "; Carrier IPs :"
-        )
-
-        for ip in ips:
-
-            lines.append(
-                f";   - {ip.ip_address}"
-            )
-
-        lines.append(
-            "; =================================================="
-        )
-
-        lines.append("")
 
         return "\n".join(lines)
 
-    # =====================================================
-    # GENERATE SINGLE INBOUND DID DIALPLAN
-    # =====================================================
+    @classmethod
+    def generate_dialplan(cls, number):
+        """
+        Generates inbound Asterisk dialplan for one DID.
+        """
 
-    @staticmethod
-    def generate_dialplan(number):
-
-        if not number:
-            return ""
-
-        # -------------------------------------------------
-        # ONLY ASSIGNED NUMBERS
-        # -------------------------------------------------
-
-        if number.status != "ASSIGNED":
-            return ""
-
-        # -------------------------------------------------
-        # DID
-        # -------------------------------------------------
-
-        did = (
-            number.did_number or ""
-        ).strip()
-
-        if not did:
-            return ""
-
-        # -------------------------------------------------
-        # CARRIER
-        # -------------------------------------------------
-
-        carrier = number.carrier
-
-        if not carrier:
-            return ""
-
-        if not carrier.is_active:
-            return ""
-
-        # -------------------------------------------------
-        # TERMINATION
-        # -------------------------------------------------
-
-        termination = number.termination
-
-        if not termination:
-            return ""
-
-        if not termination.is_active:
-            return ""
-
-        # -------------------------------------------------
-        # CLIENT
-        # -------------------------------------------------
-
-        client_name = (
-            number.client.name
-            if number.client
-            else "N/A"
-        )
-
-        # -------------------------------------------------
-        # IMPORTANT
-        # -------------------------------------------------
-        # Incoming DID ke liye Carrier IP ki zarurat nahi hai.
-        #
-        # Carrier already Asterisk ki IP par SIP INVITE
-        # bhej raha hai.
-        #
-        # Isliye yahan carrier.ips check nahi karna hai.
-        # -------------------------------------------------
-
-        # -------------------------------------------------
-        # ACTUAL INBOUND DIALPLAN
-        # -------------------------------------------------
+        did = str(number.number).strip()
 
         lines = []
 
         lines.append(
-            "; =================================================="
+            f"; =================================================="
+        )
+        lines.append(
+            f"; INBOUND DID: {did}"
+        )
+        lines.append(
+            f"; =================================================="
+        )
+
+        # --------------------------------------------------
+        # Basic validation
+        # --------------------------------------------------
+
+        if not getattr(number, "is_active", True):
+            lines.append(
+                f"exten => {did},1,NoOp(Number inactive)"
+            )
+            lines.append(
+                f" same => n,Hangup(1)"
+            )
+            return "\n".join(lines)
+
+        carrier = getattr(number, "carrier", None)
+
+        if not carrier:
+            lines.append(
+                f"exten => {did},1,NoOp(No carrier assigned)"
+            )
+            lines.append(
+                f" same => n,Hangup(1)"
+            )
+            return "\n".join(lines)
+
+        if not getattr(carrier, "is_active", True):
+            lines.append(
+                f"exten => {did},1,NoOp(Carrier inactive)"
+            )
+            lines.append(
+                f" same => n,Hangup(1)"
+            )
+            return "\n".join(lines)
+
+        termination = getattr(number, "termination", None)
+
+        if not termination:
+            lines.append(
+                f"exten => {did},1,NoOp(No termination assigned)"
+            )
+            lines.append(
+                f" same => n,Hangup(1)"
+            )
+            return "\n".join(lines)
+
+        if not getattr(termination, "is_active", True):
+            lines.append(
+                f"exten => {did},1,NoOp(Termination inactive)"
+            )
+            lines.append(
+                f" same => n,Hangup(1)"
+            )
+            return "\n".join(lines)
+
+        # --------------------------------------------------
+        # Number Service
+        # --------------------------------------------------
+
+        service = cls.normalize_service(
+            getattr(number, "number_service", "")
+        )
+
+        variables = cls._get_service_variables(number)
+
+        audio_file = cls._get_audio_file(number)
+
+        lines.append(
+            f"exten => {did},1,NoOp(Inbound DID {did})"
         )
 
         lines.append(
-            f"; DID         : {did}"
+            f" same => n,NoOp(Number Service: {service or 'None'})"
         )
+
+        # --------------------------------------------------
+        # No service
+        #
+        # Existing behaviour:
+        # Answer -> wait -> Hangup
+        #
+        # This keeps the current IVR/inbound flow intact.
+        # --------------------------------------------------
+
+        if not service:
+            lines.append(
+                " same => n,Answer()"
+            )
+            lines.append(
+                " same => n,Wait(60)"
+            )
+            lines.append(
+                " same => n,Hangup()"
+            )
+
+            return "\n".join(lines)
+
+        # --------------------------------------------------
+        # PLAYBACK
+        #
+        # Play an audio file once and terminate the call.
+        # --------------------------------------------------
+
+        if service == "Playback":
+
+            lines.append(
+                " same => n,Answer()"
+            )
+
+            if audio_file:
+                lines.append(
+                    f" same => n,Playback({audio_file})"
+                )
+            else:
+                lines.append(
+                    " same => n,NoOp(Playback service: no audio_file configured)"
+                )
+
+            lines.append(
+                " same => n,Hangup()"
+            )
+
+            return "\n".join(lines)
+
+        # --------------------------------------------------
+        # PLAYBACK LOOP
+        #
+        # Continuously play the configured audio file.
+        #
+        # Caller can terminate the call by hanging up.
+        # --------------------------------------------------
+
+        if service == "PlaybackLoop":
+
+            lines.append(
+                " same => n,Answer()"
+            )
+
+            if audio_file:
+
+                lines.append(
+                    " same => n(loop),Playback("
+                    f"{audio_file}"
+                    ")"
+                )
+
+                lines.append(
+                    f" same => n,Goto({did},loop)"
+                )
+
+            else:
+                lines.append(
+                    " same => n,NoOp(PlaybackLoop service: no audio_file configured)"
+                )
+
+                lines.append(
+                    " same => n,Wait(60)"
+                )
+
+            lines.append(
+                " same => n,Hangup()"
+            )
+
+            return "\n".join(lines)
+
+        # --------------------------------------------------
+        # REJECT
+        #
+        # Immediately reject the incoming call.
+        # Cause 21 = Call Rejected
+        # --------------------------------------------------
+
+        if service == "Reject":
+
+            lines.append(
+                " same => n,NoOp(Rejecting inbound call)"
+            )
+
+            lines.append(
+                " same => n,Hangup(21)"
+            )
+
+            return "\n".join(lines)
+
+        # --------------------------------------------------
+        # CONFERENCE CUT
+        #
+        # The project currently has no existing conference
+        # implementation. Therefore we treat this service as
+        # a controlled call termination instead of pretending
+        # that a conference participant exists.
+        #
+        # This gives ConferenceCut a safe deterministic
+        # behaviour now and keeps it ready for a future
+        # ConfBridge implementation.
+        # --------------------------------------------------
+
+        if service == "ConferenceCut":
+
+            room = (
+                variables.get("room")
+                or variables.get("conference")
+                or variables.get("conference_room")
+                or "default"
+            )
+
+            lines.append(
+                f" same => n,NoOp(ConferenceCut - Room: {room})"
+            )
+
+            lines.append(
+                " same => n,Answer()"
+            )
+
+            lines.append(
+                " same => n,NoOp(Cutting current conference call)"
+            )
+
+            lines.append(
+                " same => n,Hangup()"
+            )
+
+            return "\n".join(lines)
+
+        # --------------------------------------------------
+        # UNKNOWN SERVICE
+        # --------------------------------------------------
 
         lines.append(
-            f"; Client      : {client_name}"
+            f" same => n,NoOp(Unknown Number Service: {service})"
         )
-
-        lines.append(
-            f"; Carrier     : {carrier.name}"
-        )
-
-        lines.append(
-            f"; Termination : {termination.name}"
-        )
-
-        lines.append(
-            "; =================================================="
-        )
-
-        # -------------------------------------------------
-        # INCOMING DID
-        # -------------------------------------------------
-
-        lines.append(
-            f"exten => {did},1,NoOp(Incoming DID {did})"
-        )
-
-        lines.append(
-            f" same => n,NoOp(Client: {client_name})"
-        )
-
-        lines.append(
-            f" same => n,NoOp(Carrier: {carrier.name})"
-        )
-
-        lines.append(
-            f" same => n,NoOp(Termination: {termination.name})"
-        )
-
-        # -------------------------------------------------
-        # PRESERVE / LOG CALLER ID
-        # -------------------------------------------------
-
-        lines.append(
-            ' same => n,NoOp(Incoming CLI: ${CALLERID(all)})'
-        )
-
-        lines.append(
-            ' same => n,NoOp(Incoming Number: ${EXTEN})'
-        )
-
-        # -------------------------------------------------
-        # RECEIVE IN ASTERISK
-        # -------------------------------------------------
 
         lines.append(
             " same => n,Answer()"
         )
 
         lines.append(
-            " same => n,Wait(60)"
+            " same => n,Wait(5)"
         )
 
         lines.append(
             " same => n,Hangup()"
         )
 
+        return "\n".join(lines)
+
+    @classmethod
+    def generate_all(cls):
+        """
+        Generates Number Pool mapping configuration.
+        """
+
+        numbers = (
+            NumberPool.objects
+            .select_related(
+                "carrier",
+                "termination",
+            )
+            .filter(is_active=True)
+            .order_by("number")
+        )
+
+        lines = []
+
+        lines.append(
+            "; =================================================="
+        )
+        lines.append(
+            "; VOIP BACKEND NUMBER POOL"
+        )
+        lines.append(
+            "; =================================================="
+        )
         lines.append("")
+
+        for number in numbers:
+            lines.append(
+                cls.generate(number)
+            )
+            lines.append("")
 
         return "\n".join(lines)
 
-    # =====================================================
-    # GENERATE ALL MAPPINGS
-    # =====================================================
-
-    @staticmethod
-    def generate_all():
-
-        config = [
-
-            "; ==================================================",
-            "; AUTO GENERATED NUMBER POOL MAPPING",
-            "; DO NOT EDIT MANUALLY",
-            "; ==================================================",
-            "",
-        ]
+    @classmethod
+    def generate_all_dialplan(cls):
+        """
+        Generates complete inbound dialplan.
+        """
 
         numbers = (
             NumberPool.objects
-            .filter(
-                status="ASSIGNED",
-                carrier__is_active=True,
-                termination__is_active=True,
-            )
             .select_related(
-                "client",
                 "carrier",
                 "termination",
             )
-            .prefetch_related(
-                "carrier__ips",
-            )
-            .order_by(
-                "did_number"
-            )
+            .filter(is_active=True)
+            .order_by("number")
+        )
+
+        lines = []
+
+        lines.append(
+            f"[{cls.CONTEXT}]"
+        )
+
+        lines.append(
+            "; =================================================="
+        )
+        lines.append(
+            "; VOIP BACKEND INBOUND DIALPLAN"
+        )
+        lines.append(
+            "; =================================================="
         )
 
         for number in numbers:
 
-            generated = (
-                NumberPoolGenerator.generate(
-                    number
-                )
+            lines.append("")
+
+            dialplan = cls.generate_dialplan(
+                number
             )
 
-            if generated:
-
-                config.append(
-                    generated
-                )
-
-        return "\n".join(config)
-
-    # =====================================================
-    # GENERATE ALL INBOUND DIALPLAN
-    # =====================================================
-
-    @staticmethod
-    def generate_all_dialplan():
-
-        config = [
-
-            "; ==================================================",
-            "; AUTO GENERATED INBOUND DID DIALPLAN",
-            "; DO NOT EDIT MANUALLY",
-            "; ==================================================",
-            "",
-            f"[{NumberPoolGenerator.CONTEXT}]",
-            "",
-        ]
-
-        numbers = (
-            NumberPool.objects
-            .filter(
-                status="ASSIGNED",
-                carrier__is_active=True,
-                termination__is_active=True,
-            )
-            .select_related(
-                "client",
-                "carrier",
-                "termination",
-            )
-            .order_by(
-                "did_number"
-            )
-        )
-
-        for number in numbers:
-
-            generated = (
-                NumberPoolGenerator.generate_dialplan(
-                    number
-                )
+            lines.append(
+                dialplan
             )
 
-            if generated:
+        lines.append("")
 
-                config.append(
-                    generated
-                )
-
-        return "\n".join(config)
+        return "\n".join(lines)
