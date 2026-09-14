@@ -5,14 +5,6 @@ from apps.sip.models import SIPAccount
 
 class CallRecord(models.Model):
 
-    DISPOSITION_CHOICES = [
-        ("ANSWERED", "Answered"),
-        ("NO ANSWER", "No Answer"),
-        ("BUSY", "Busy"),
-        ("FAILED", "Failed"),
-        ("CANCEL", "Cancel"),
-    ]
-
     # =====================================================
     # SIP / CALL PARTICIPANTS
     # =====================================================
@@ -86,10 +78,19 @@ class CallRecord(models.Model):
         default="",
     )
 
+    # =====================================================
+    # CDR CAUSE / DISPOSITION
+    # =====================================================
+
     disposition = models.CharField(
-        max_length=30,
-        choices=DISPOSITION_CHOICES,
-        default="ANSWERED",
+        max_length=100,
+        default="UNKNOWN",
+    )
+
+    cause = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
     )
 
     # =====================================================
