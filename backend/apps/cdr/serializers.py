@@ -41,7 +41,7 @@ class CallRecordSerializer(serializers.ModelSerializer):
     client_payout = serializers.SerializerMethodField()
 
     cause = serializers.CharField(
-        source="cause",
+        
         read_only=True,
     )
 
