@@ -9,6 +9,10 @@ const GROUP_BY_LABELS = {
 };
 
 
+/* =========================================================
+   VALUE HELPER
+========================================================= */
+
 const value = (
   row,
   ...keys
@@ -33,6 +37,10 @@ const value = (
 };
 
 
+/* =========================================================
+   GROUPED VALUE
+========================================================= */
+
 function getGroupedValue(
   row,
   group
@@ -40,7 +48,10 @@ function getGroupedValue(
 
   switch (String(group)) {
 
+    /* Carrier */
+
     case "1":
+
       return value(
         row,
         "carrier",
@@ -48,7 +59,11 @@ function getGroupedValue(
         "provider"
       );
 
+
+    /* Cause */
+
     case "2":
+
       return value(
         row,
         "cause",
@@ -57,7 +72,11 @@ function getGroupedValue(
         "disposition"
       );
 
+
+    /* Number */
+
     case "3":
+
       return value(
         row,
         "number",
@@ -65,14 +84,22 @@ function getGroupedValue(
         "destination"
       );
 
+
+    /* CLI */
+
     case "4":
+
       return value(
         row,
         "cli",
         "caller_number"
       );
 
+
+    /* IP */
+
     case "5":
+
       return value(
         row,
         "ip",
@@ -81,7 +108,11 @@ function getGroupedValue(
         "caller_ip"
       );
 
+
+    /* Date */
+
     case "6":
+
       return value(
         row,
         "date",
@@ -89,18 +120,29 @@ function getGroupedValue(
         "created_at"
       );
 
+
+    /* Hour */
+
     case "7":
+
       return value(
         row,
         "hour"
       );
 
+
     default:
+
       return "-";
+
   }
 
 }
 
+
+/* =========================================================
+   TABLE
+========================================================= */
 
 export default function FailedReportsTable({
   loading,
@@ -109,20 +151,63 @@ export default function FailedReportsTable({
   groupBy = [],
 }) {
 
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
+
   if (loading) {
 
     return (
 
       <div className="
-        flex
-        min-h-[330px]
-        items-center
-        justify-center
-        text-sm
-        text-slate-500
+        w-full
+        overflow-x-auto
       ">
 
-        Loading failed reports...
+        <table className="
+          min-w-[1050px]
+          w-full
+          border-collapse
+        ">
+
+          <TableHeader
+            grouped={grouped}
+            groupBy={groupBy}
+          />
+
+          <tbody>
+
+            <tr>
+
+              <td
+                colSpan={
+                  grouped
+                    ? Math.max(
+                        groupBy.length + 1,
+                        2
+                      )
+                    : 6
+                }
+                className="
+                  px-4
+                  py-12
+                  text-center
+                  text-sm
+                  text-slate-500
+                  dark:text-slate-400
+                "
+              >
+
+                Loading failed reports...
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
 
       </div>
 
@@ -131,67 +216,44 @@ export default function FailedReportsTable({
   }
 
 
-  if (!data.length) {
+  /* =======================================================
+     GROUP HEADINGS
+  ======================================================= */
 
-    return (
-
-      <div className="
-        flex
-        min-h-[280px]
-        items-center
-        justify-center
-        text-sm
-        text-slate-500
-      ">
-
-        No Failed Records Found
-
-      </div>
-
-    );
-
-  }
-
-
-  /*
-   * GROUPED HEADERS
-   *
-   * Example:
-   * groupBy = ["1", "2"]
-   *
-   * Result:
-   * Carrier | Cause | Count
-   */
-
-  const groupedHeadings = (
+  const groupedHeadings =
     Array.isArray(groupBy)
       ? groupBy
-      : []
-  )
-    .map(
-      (group) =>
-        GROUP_BY_LABELS[
-          String(group)
-        ]
-    )
-    .filter(Boolean);
+          .map(
+            (group) =>
+              GROUP_BY_LABELS[
+                String(group)
+              ]
+          )
+          .filter(Boolean)
+      : [];
 
 
-  const headings = grouped
+  /* =======================================================
+     NORMAL HEADINGS
+  ======================================================= */
 
-    ? [
-        ...groupedHeadings,
-        "Count",
-      ]
+  const normalHeadings = [
+    "Date",
+    "Carrier",
+    "Number",
+    "CLI",
+    "IP",
+    "Cause",
+  ];
 
-    : [
-        "Date",
-        "Carrier",
-        "Number",
-        "CLI",
-        "IP",
-        "Cause",
-      ];
+
+  /* =======================================================
+     EMPTY GROUP BY SAFETY
+  ======================================================= */
+
+  const isGrouped =
+    grouped &&
+    groupedHeadings.length > 0;
 
 
   return (
@@ -209,296 +271,299 @@ export default function FailedReportsTable({
 
 
         {/* =================================================
-            TABLE HEADER
+            HEADER
         ================================================= */}
 
-        <thead>
-
-          <tr className="
-            border-b
-            border-slate-200
-            dark:border-slate-800
-          ">
-
-            {headings.map(
-              (heading, index) => (
-
-                <th
-                  key={`${heading}-${index}`}
-                  className="
-                    whitespace-nowrap
-                    px-4
-                    py-4
-                    text-left
-                    text-sm
-                    font-semibold
-                    text-slate-700
-                    dark:text-slate-200
-                  "
-                >
-
-                  {heading}
-
-                </th>
-
-              )
-            )}
-
-          </tr>
-
-        </thead>
+        <TableHeader
+          grouped={isGrouped}
+          groupBy={groupBy}
+        />
 
 
         {/* =================================================
-            TABLE BODY
+            BODY
         ================================================= */}
 
         <tbody>
 
-          {data.map(
-            (row, index) => (
+          {!data.length ? (
 
-              <tr
-                key={
-                  row.id ??
-                  `failed-${index}`
+            <tr>
+
+              <td
+                colSpan={
+                  isGrouped
+                    ? groupedHeadings.length + 1
+                    : normalHeadings.length
                 }
                 className="
-                  border-b
-                  border-slate-100
-                  hover:bg-slate-50
-                  dark:border-slate-800
-                  dark:hover:bg-slate-800/40
+                  px-4
+                  py-12
+                  text-center
+                  text-sm
+                  text-slate-500
+                  dark:text-slate-400
                 "
               >
 
+                No Failed Records Found
 
-                {/* =================================================
-                    GROUPED MODE
-                ================================================= */}
+              </td>
 
-                {grouped ? (
+            </tr>
 
-                  <>
+          ) : (
 
-                    {(
-                      Array.isArray(groupBy)
-                        ? groupBy
-                        : []
-                    ).map(
-                      (group, groupIndex) => (
+            data.map(
+              (row, index) => (
 
-                        <td
-                          key={
-                            `${group}-${groupIndex}`
-                          }
-                          className="
-                            px-4
-                            py-3
-                            text-sm
-                            whitespace-nowrap
-                          "
-                        >
+                <tr
+                  key={
+                    row.id ??
+                    `failed-${index}`
+                  }
+                  className="
+                    border-b
+                    border-slate-100
+                    hover:bg-slate-50
+                    dark:border-slate-800
+                    dark:hover:bg-slate-800/40
+                  "
+                >
 
-                          {String(group) === "2" ? (
 
-                            <span className="
-                              inline-flex
-                              rounded-full
-                              bg-red-50
-                              px-2.5
-                              py-1
-                              text-xs
-                              font-semibold
-                              text-red-700
-                              dark:bg-red-500/10
-                              dark:text-red-400
-                            ">
+                  {/* =================================================
+                      GROUPED MODE
+                  ================================================= */}
 
-                              {getGroupedValue(
-                                row,
-                                group
-                              )}
+                  {isGrouped ? (
 
-                            </span>
+                    <>
 
-                          ) : (
+                      {groupBy.map(
+                        (
+                          group,
+                          groupIndex
+                        ) => {
 
+                          const groupValue =
                             getGroupedValue(
                               row,
                               group
-                            )
-
-                          )}
-
-                        </td>
-
-                      )
-                    )}
+                            );
 
 
-                    {/* COUNT */}
+                          return (
 
-                    <td className="
-                      px-4
-                      py-3
-                      text-sm
-                      font-semibold
-                      whitespace-nowrap
-                    ">
+                            <td
+                              key={
+                                `${group}-${groupIndex}`
+                              }
+                              className="
+                                px-4
+                                py-3
+                                text-sm
+                                whitespace-nowrap
+                              "
+                            >
 
-                      {row.count ?? 0}
+                              {String(group) === "2" ? (
 
-                    </td>
+                                <span className="
+                                  inline-flex
+                                  rounded-full
+                                  bg-red-50
+                                  px-2.5
+                                  py-1
+                                  text-xs
+                                  font-semibold
+                                  text-red-700
+                                  dark:bg-red-500/10
+                                  dark:text-red-400
+                                ">
 
-                  </>
+                                  {groupValue}
 
-                ) : (
+                                </span>
 
-                  /* =================================================
-                     NORMAL MODE
-                  ================================================= */
+                              ) : (
 
-                  <>
+                                groupValue
 
-                    {/* DATE */}
+                              )}
 
-                    <td className="
-                      px-4
-                      py-3
-                      text-sm
-                      whitespace-nowrap
-                    ">
+                            </td>
 
-                      {formatDate(
-                        value(
-                          row,
-                          "date",
-                          "start_time",
-                          "created_at"
-                        )
+                          );
+
+                        }
                       )}
 
-                    </td>
 
+                      {/* COUNT */}
 
-                    {/* CARRIER */}
-
-                    <td className="
-                      px-4
-                      py-3
-                      text-sm
-                    ">
-
-                      {value(
-                        row,
-                        "carrier",
-                        "carrier_name",
-                        "provider"
-                      )}
-
-                    </td>
-
-
-                    {/* NUMBER */}
-
-                    <td className="
-                      px-4
-                      py-3
-                      font-mono
-                      text-sm
-                      whitespace-nowrap
-                    ">
-
-                      {value(
-                        row,
-                        "number",
-                        "receiver_number",
-                        "destination"
-                      )}
-
-                    </td>
-
-
-                    {/* CLI */}
-
-                    <td className="
-                      px-4
-                      py-3
-                      font-mono
-                      text-sm
-                      whitespace-nowrap
-                    ">
-
-                      {value(
-                        row,
-                        "cli",
-                        "caller_number"
-                      )}
-
-                    </td>
-
-
-                    {/* IP */}
-
-                    <td className="
-                      px-4
-                      py-3
-                      font-mono
-                      text-sm
-                      whitespace-nowrap
-                    ">
-
-                      {value(
-                        row,
-                        "ip",
-                        "carrier_ip",
-                        "source_ip",
-                        "caller_ip"
-                      )}
-
-                    </td>
-
-
-                    {/* CAUSE */}
-
-                    <td className="
-                      px-4
-                      py-3
-                    ">
-
-                      <span className="
-                        inline-flex
-                        rounded-full
-                        bg-red-50
-                        px-2.5
-                        py-1
-                        text-xs
+                      <td className="
+                        px-4
+                        py-3
+                        text-sm
                         font-semibold
-                        text-red-700
-                        dark:bg-red-500/10
-                        dark:text-red-400
+                        whitespace-nowrap
+                      ">
+
+                        {row.count ?? 0}
+
+                      </td>
+
+                    </>
+
+                  ) : (
+
+                    /* =================================================
+                       NORMAL MODE
+                    ================================================= */
+
+                    <>
+
+                      {/* DATE */}
+
+                      <td className="
+                        px-4
+                        py-3
+                        text-sm
+                        whitespace-nowrap
+                      ">
+
+                        {formatDate(
+                          value(
+                            row,
+                            "date",
+                            "start_time",
+                            "created_at"
+                          )
+                        )}
+
+                      </td>
+
+
+                      {/* CARRIER */}
+
+                      <td className="
+                        px-4
+                        py-3
+                        text-sm
                       ">
 
                         {value(
                           row,
-                          "cause",
-                          "failure_cause",
-                          "reason",
-                          "disposition"
+                          "carrier",
+                          "carrier_name",
+                          "provider"
                         )}
 
-                      </span>
+                      </td>
 
-                    </td>
 
-                  </>
+                      {/* NUMBER */}
 
-                )}
+                      <td className="
+                        px-4
+                        py-3
+                        font-mono
+                        text-sm
+                        whitespace-nowrap
+                      ">
 
-              </tr>
+                        {value(
+                          row,
+                          "number",
+                          "receiver_number",
+                          "destination"
+                        )}
 
+                      </td>
+
+
+                      {/* CLI */}
+
+                      <td className="
+                        px-4
+                        py-3
+                        font-mono
+                        text-sm
+                        whitespace-nowrap
+                      ">
+
+                        {value(
+                          row,
+                          "cli",
+                          "caller_number"
+                        )}
+
+                      </td>
+
+
+                      {/* IP */}
+
+                      <td className="
+                        px-4
+                        py-3
+                        font-mono
+                        text-sm
+                        whitespace-nowrap
+                      ">
+
+                        {value(
+                          row,
+                          "ip",
+                          "carrier_ip",
+                          "source_ip",
+                          "caller_ip"
+                        )}
+
+                      </td>
+
+
+                      {/* CAUSE */}
+
+                      <td className="
+                        px-4
+                        py-3
+                      ">
+
+                        <span className="
+                          inline-flex
+                          rounded-full
+                          bg-red-50
+                          px-2.5
+                          py-1
+                          text-xs
+                          font-semibold
+                          text-red-700
+                          dark:bg-red-500/10
+                          dark:text-red-400
+                        ">
+
+                          {value(
+                            row,
+                            "cause",
+                            "failure_cause",
+                            "reason",
+                            "disposition"
+                          )}
+
+                        </span>
+
+                      </td>
+
+                    </>
+
+                  )}
+
+                </tr>
+
+              )
             )
+
           )}
 
         </tbody>
@@ -506,6 +571,97 @@ export default function FailedReportsTable({
       </table>
 
     </div>
+
+  );
+
+}
+
+
+/* =========================================================
+   TABLE HEADER
+========================================================= */
+
+function TableHeader({
+  grouped = false,
+  groupBy = [],
+}) {
+
+
+  const groupedHeadings =
+    Array.isArray(groupBy)
+      ? groupBy
+          .map(
+            (group) =>
+              GROUP_BY_LABELS[
+                String(group)
+              ]
+          )
+          .filter(Boolean)
+      : [];
+
+
+  const headings =
+    grouped &&
+    groupedHeadings.length > 0
+
+      ? [
+          ...groupedHeadings,
+          "Count",
+        ]
+
+      : [
+          "Date",
+          "Carrier",
+          "Number",
+          "CLI",
+          "IP",
+          "Cause",
+        ];
+
+
+  return (
+
+    <thead>
+
+      <tr className="
+        border-b
+        border-slate-200
+        dark:border-slate-800
+      ">
+
+        {headings.map(
+          (
+            heading,
+            index
+          ) => (
+
+            <th
+              key={
+                `${heading}-${index}`
+              }
+              scope="col"
+              className="
+                whitespace-nowrap
+                px-4
+                py-4
+                text-left
+                text-sm
+                font-semibold
+                text-slate-700
+                dark:text-slate-200
+              "
+            >
+
+              {heading}
+
+            </th>
+
+          )
+        )}
+
+      </tr>
+
+    </thead>
 
   );
 
